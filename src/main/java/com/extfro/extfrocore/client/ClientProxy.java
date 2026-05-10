@@ -1,4 +1,4 @@
-package com.extfro.template.client;
+package com.extfro.extfrocore.client;
 
 import net.neoforged.bus.api.IEventBus;
 

@@ -1,4 +1,4 @@
-package com.extfro.template.mixin;
+package com.extfro.extfrocore.mixin;
 
 import org.spongepowered.asm.mixin.MixinEnvironment;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfig;
