@@ -16,6 +16,7 @@ public class ExtForCore {
 
     public static final String MOD_ID = "extfrocore";
     public static final String MOD_NAME = "ExtremelyFrozenCore";
+
     public static final Logger LOGGER = LogManager.getLogger(MOD_NAME);
 
     @ApiStatus.Internal
