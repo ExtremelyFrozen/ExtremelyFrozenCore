@@ -17,7 +17,6 @@ dependencies {
 
     // Recipe Viewers
     compileOnly(forge.bundles.jei)
-    compileOnly(forge.bundles.rei)
     compileOnly(forge.emi)
 
 

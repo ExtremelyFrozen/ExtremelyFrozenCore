@@ -8,6 +8,7 @@ lombok = "9.5.0"
 jetbrains-annotations = "26.1.0"
 renderNurse = "0.0.14"
 mixin = "0.8.7"
+accesstransformers = "5.0.3"
 
 [libraries]
 minecraft               = { module = "com.mojang:minecraft", version.ref = "minecraft" }
@@ -21,3 +22,4 @@ mixin                   = { module = "org.spongepowered:mixin", version.ref = "m
 modDevGradle            = { id = "net.neoforged.moddev", version.ref = "modDevGradle" }
 spotless                = { id = "com.diffplug.spotless", version.ref = "spotless" }
 lombok                  = { id = "io.freefair.lombok", version.ref = "lombok" }
+accesstransformers      = { id = "net.minecraftforge.accesstransformers", version.ref = "accesstransformers" }

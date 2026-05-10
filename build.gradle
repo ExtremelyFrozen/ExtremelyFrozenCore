@@ -9,6 +9,7 @@ plugins {
     //alias libs.plugins.shadow
     alias libs.plugins.spotless
     alias libs.plugins.lombok
+    alias libs.plugins.accesstransformers
 }
 
 group = maven_group
