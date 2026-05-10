@@ -10,8 +10,12 @@ emi = "1.1.22+1.21.1"
 
 
 ## modrinth maven ##
+jade = "15.10.0+neoforge"
+sodium = "mc1.21.1-0.6.13-neoforge"
+iris = "1.8.8+1.21.1-neoforge"
 
 ## curseforge maven ##
+spark = "6225208"
 
 ## libs ##
 
@@ -29,6 +33,13 @@ rei-plugin          = { module = "me.shedaniel:RoughlyEnoughItems-default-plugin
 rei-api             = { module = "me.shedaniel:RoughlyEnoughItems-api-neoforge", version.ref = "rei" }
 rei-neoforge        = { module = "me.shedaniel:RoughlyEnoughItems-neoforge", version.ref = "rei" }
 emi                 = { module = "dev.emi:emi-neoforge", version.ref = "emi" }
+
+
+jade                = { module = "maven.modrinth:jade", version.ref = "jade" }
+sodium              = { module = "maven.modrinth:sodium", version.ref = "sodium" }
+iris                = { module = "maven.modrinth:iris", version.ref = "iris" }
+
+spark               = { module = "curse.maven:spark-361579", version.ref = "spark" }
 
 
 [bundles]
