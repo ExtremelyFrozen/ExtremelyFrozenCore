@@ -28,13 +28,13 @@ afterEvaluate {
     tasks.withType(org.gradle.jvm.tasks.Jar).configureEach {
         destinationDirectory = file('build/libs/')
         manifest.attributes([
-                'MixinConfigs': "synceddata.mixins.json",
+                'MixinConfigs': "extfrocore.mixins.json",
                 'Specification-Title': project.name,
                 'Specification-Version': mod_version,
-                'Specification-Vendor': 'ModularMCLib Team',
+                'Specification-Vendor': 'ExtremelyFrozen Team',
                 'Implementation-Title': base.archivesName,
                 'Implementation-Version': version,
-                'Implementation-Vendor': 'ModularMCLib Team',
+                'Implementation-Vendor': 'ExtremelyFrozen Team',
         ])
     }
 }
