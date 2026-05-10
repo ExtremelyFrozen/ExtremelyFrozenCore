@@ -78,7 +78,6 @@ apply from: "$rootDir/gradle/scripts/spotless.gradle"
 tasks.withType(JavaCompile).configureEach {
     options.encoding = "UTF-8"
     options.compilerArgs << "-Xlint:-removal"
-    options.compilerArgs << "-Aquiet=true" // Suppress mixin notes
 }
 
 tasks.withType(Test).configureEach {
@@ -87,7 +86,7 @@ tasks.withType(Test).configureEach {
 }
 
 lombok {
-    version = "1.18.38"
+    version = "1.18.46"
 }
 
 jacoco {
