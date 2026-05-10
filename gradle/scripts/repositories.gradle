@@ -11,9 +11,6 @@ repositories {
             includeGroup("io.netty")
         }
     }
-    maven {
-        url = "https://maven.quiltmc.org/repository/release/"
-    }
     maven { // JEI
         name = "Jared's Maven"
         url = "https://maven.blamejared.com/"
@@ -21,6 +18,29 @@ repositories {
     maven { // JEI mirror, AE2
         name = "ModMaven"
         url = "https://modmaven.dev"
+    }
+    maven { // LDLib, Shimmer
+        name = "FirstDarkDev Maven"
+        url = "https://maven.firstdark.dev/snapshots"
+    }
+    exclusiveContent { // shedaniel - REI, architectury, cloth-config
+        forRepository { maven { url = "https://maven.shedaniel.me/" } }
+        filter {
+            includeGroupAndSubgroups("me.shedaniel")
+            includeGroup("dev.architectury")
+        }
+    }
+    exclusiveContent { // KotlinForForge
+        forRepository { maven { url = "https://thedarkcolour.github.io/KotlinForForge/" } }
+        filter { includeGroup("thedarkcolour") }
+    }
+    exclusiveContent { // tterrag - registrate
+        forRepository { maven { url = "https://maven.gegy.dev/releases" } }
+        filter { includeGroup("com.tterrag.registrate") }
+    }
+    exclusiveContent { // Configuration
+        forRepository { maven { url = "https://repo.repsy.io/mvn/toma/public" } }
+        filter { includeGroup("dev.toma.configuration")}
     }
     exclusiveContent { // terraformers - EMI
         forRepository { maven { url = "https://maven.terraformersmc.com/releases/" } }
