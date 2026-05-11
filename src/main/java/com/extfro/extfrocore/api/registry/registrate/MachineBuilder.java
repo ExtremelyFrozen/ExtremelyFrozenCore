@@ -57,8 +57,10 @@ import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
 
 @SuppressWarnings("unused")
 public class MachineBuilder<DEFINITION extends MachineDefinition, TYPE extends MachineBuilder<DEFINITION, TYPE>> {
@@ -452,6 +454,27 @@ public class MachineBuilder<DEFINITION extends MachineDefinition, TYPE extends M
                 configureModel(ctx, provider, builder);
                 after.configureModel(ctx, provider, builder);
             };
+        }
+
+        default ModelInitializer andThen(Consumer<MachineModelBuilder<BlockModelBuilder>> after) {
+            Objects.requireNonNull(after);
+            return (ctx, provider, builder) -> {
+                configureModel(ctx, provider, builder);
+                after.accept(builder);
+            };
+        }
+
+        default ModelInitializer compose(ModelInitializer before) {
+            Objects.requireNonNull(before);
+            return (ctx, provider, builder) -> {
+                before.configureModel(ctx, provider, builder);
+                configureModel(ctx, provider, builder);
+            };
+        }
+
+        default ModelInitializer compose(UnaryOperator<MachineModelBuilder<BlockModelBuilder>> before) {
+            Objects.requireNonNull(before);
+            return (ctx, provider, builder) -> configureModel(ctx, provider, before.apply(builder));
         }
     }
 
