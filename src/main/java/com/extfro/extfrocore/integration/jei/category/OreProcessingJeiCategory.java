@@ -1,7 +1,7 @@
 package com.extfro.extfrocore.integration.jei.category;
 
-import com.extfro.extfrocore.integration.xei.oreprocessing.OreProcessingDisplay;
 import com.extfro.extfrocore.integration.xei.oreprocessing.OreProcessingCategory;
+import com.extfro.extfrocore.integration.xei.oreprocessing.OreProcessingDisplay;
 
 import net.minecraft.client.gui.GuiGraphics;
 

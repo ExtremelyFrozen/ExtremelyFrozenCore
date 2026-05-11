@@ -4,10 +4,10 @@ import net.minecraft.nbt.EndTag;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.Tag;
 
+import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
 import com.mojang.serialization.Dynamic;
-import com.mojang.datafixers.util.Pair;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.LinkedHashMap;

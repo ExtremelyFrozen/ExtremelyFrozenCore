@@ -5,8 +5,8 @@ import com.extfro.extfrocore.api.capability.recipe.RecipeCapability;
 import com.extfro.extfrocore.api.data.RotationState;
 import com.extfro.extfrocore.api.item.MetaMachineItem;
 import com.extfro.extfrocore.api.machine.feature.IRecipeLogicMachine;
-import com.extfro.extfrocore.api.recipe.MachineRecipeType;
 import com.extfro.extfrocore.api.recipe.MachineRecipe;
+import com.extfro.extfrocore.api.recipe.MachineRecipeType;
 import com.extfro.extfrocore.api.recipe.modifier.RecipeModifier;
 import com.extfro.extfrocore.api.registry.registrate.EFDefinitionHolder;
 

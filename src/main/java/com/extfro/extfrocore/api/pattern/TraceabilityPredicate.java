@@ -36,8 +36,7 @@ public class TraceabilityPredicate implements Predicate<MultiblockState> {
     }
 
     public static TraceabilityPredicate controller() {
-        return new TraceabilityPredicate(state -> state.getBlockEntity() instanceof
-                com.extfro.extfrocore.api.machine.multiblock.MultiblockControllerMachine,
+        return new TraceabilityPredicate(state -> state.getBlockEntity() instanceof com.extfro.extfrocore.api.machine.multiblock.MultiblockControllerMachine,
                 () -> new BlockInfo[] { BlockInfo.EMPTY }, false, false, true);
     }
 

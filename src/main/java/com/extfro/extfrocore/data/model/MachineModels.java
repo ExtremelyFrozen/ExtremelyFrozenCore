@@ -26,12 +26,12 @@ public final class MachineModels {
     }
 
     public static MachineBuilder.ModelInitializer createBasicReplaceableTextureMachineModel(ResourceLocation baseModel,
-                                                                                             String... textureNames) {
+                                                                                            String... textureNames) {
         return createBasicMachineModel(baseModel).andThen(builder -> builder.addReplaceableTextures(textureNames));
     }
 
     public static MachineBuilder.ModelInitializer createOverlayCasingMachineModel(ResourceLocation casingTexture,
-                                                                                    ResourceLocation overlayModel) {
+                                                                                  ResourceLocation overlayModel) {
         return (context, provider, builder) -> {
             BlockModelBuilder model = provider.models().nested()
                     .parent(provider.models().getExistingFile(overlayModel))
@@ -42,8 +42,8 @@ public final class MachineModels {
     }
 
     public static MachineBuilder.ModelInitializer createFormedOverlayCasingMachineModel(ResourceLocation casingTexture,
-                                                                                         ResourceLocation overlayModel,
-                                                                                         ResourceLocation formedOverlayModel) {
+                                                                                        ResourceLocation overlayModel,
+                                                                                        ResourceLocation formedOverlayModel) {
         return (context, provider, builder) -> {
             BlockModelBuilder model = provider.models().nested()
                     .parent(provider.models().getExistingFile(overlayModel))
@@ -58,7 +58,7 @@ public final class MachineModels {
     }
 
     public static MachineBuilder.ModelInitializer createSidedOverlayCasingMachineModel(ResourceLocation casingTexture,
-                                                                                        ResourceLocation overlayModel) {
+                                                                                       ResourceLocation overlayModel) {
         return (context, provider, builder) -> {
             BlockModelBuilder model = provider.models().nested()
                     .parent(provider.models().getExistingFile(overlayModel));
@@ -69,9 +69,9 @@ public final class MachineModels {
     }
 
     public static MachineBuilder.ModelInitializer createColorOverlayMachineModel(ResourceLocation parentModel,
-                                                                                  ResourceLocation overlay,
-                                                                                  @Nullable ResourceLocation pipeOverlay,
-                                                                                  @Nullable ResourceLocation emissiveOverlay) {
+                                                                                 ResourceLocation overlay,
+                                                                                 @Nullable ResourceLocation pipeOverlay,
+                                                                                 @Nullable ResourceLocation emissiveOverlay) {
         return (context, provider, builder) -> {
             BlockModelBuilder model = colorOverlayModel(parentModel, overlay, pipeOverlay, emissiveOverlay,
                     provider.models());
@@ -80,9 +80,9 @@ public final class MachineModels {
     }
 
     public static BlockModelBuilder colorOverlayModel(ResourceLocation parentModel, ResourceLocation overlay,
-                                                       @Nullable ResourceLocation pipeOverlay,
-                                                       @Nullable ResourceLocation emissiveOverlay,
-                                                       BlockModelProvider models) {
+                                                      @Nullable ResourceLocation pipeOverlay,
+                                                      @Nullable ResourceLocation emissiveOverlay,
+                                                      BlockModelProvider models) {
         BlockModelBuilder model = models.nested()
                 .parent(models.getExistingFile(parentModel))
                 .texture("overlay", overlay);
@@ -96,9 +96,8 @@ public final class MachineModels {
     }
 
     public static BlockModelBuilder addWorkableOverlays(WorkableOverlaySet overlays, WorkableOverlayStatus status,
-                                                         BlockModelBuilder model) {
-        for (Map.Entry<WorkableOverlaySet.OverlayFace, WorkableOverlaySet.StatusTextures> entry :
-                overlays.getTextures().entrySet()) {
+                                                        BlockModelBuilder model) {
+        for (Map.Entry<WorkableOverlaySet.OverlayFace, WorkableOverlaySet.StatusTextures> entry : overlays.getTextures().entrySet()) {
             String faceName = entry.getKey().getName();
             WorkableOverlaySet.StatusTextures textures = entry.getValue();
             ResourceLocation overlay = textures.getTexture(status);
@@ -127,6 +126,5 @@ public final class MachineModels {
         return model;
     }
 
-    private MachineModels() {
-    }
+    private MachineModels() {}
 }

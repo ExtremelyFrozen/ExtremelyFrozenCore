@@ -34,8 +34,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @SuppressWarnings("unchecked")
 public final class MapIngredientTypeManager {
 
-    private static final Map<Class<?>, List<? extends MapIngredientFunction<?>>> INGREDIENT_FUNCTIONS =
-            new ConcurrentHashMap<>(7);
+    private static final Map<Class<?>, List<? extends MapIngredientFunction<?>>> INGREDIENT_FUNCTIONS = new ConcurrentHashMap<>(7);
     private static final Map<MapIngredientFunction<?>, Class<?>> INGREDIENT_TYPES = new ConcurrentHashMap<>(7);
 
     private MapIngredientTypeManager() {}

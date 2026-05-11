@@ -10,12 +10,10 @@ import java.util.function.Supplier;
 
 public final class XEIPageRegistry {
 
-    private static final Supplier<List<? extends XEIPageDefinition<?>>> BUILTIN_PAGES =
-            com.extfro.extfrocore.integration.xei.XEIPages::getBuiltinPages;
+    private static final Supplier<List<? extends XEIPageDefinition<?>>> BUILTIN_PAGES = com.extfro.extfrocore.integration.xei.XEIPages::getBuiltinPages;
     private static final List<Supplier<? extends List<? extends XEIPage>>> PAGE_PROVIDERS = new ArrayList<>();
     private static final List<Consumer<XEIPage>> PAGE_REGISTRARS = new ArrayList<>();
-    private static final List<Supplier<? extends List<? extends XEIPageDefinition<?>>>> DEFINITION_PROVIDERS =
-            new ArrayList<>();
+    private static final List<Supplier<? extends List<? extends XEIPageDefinition<?>>>> DEFINITION_PROVIDERS = new ArrayList<>();
 
     private XEIPageRegistry() {}
 

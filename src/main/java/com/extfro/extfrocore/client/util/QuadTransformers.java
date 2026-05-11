@@ -78,6 +78,5 @@ public final class QuadTransformers {
         return TextureKeyedBakedQuad.setTextureKey(copy, TextureKeyedBakedQuad.getTextureKey(quad));
     }
 
-    private QuadTransformers() {
-    }
+    private QuadTransformers() {}
 }

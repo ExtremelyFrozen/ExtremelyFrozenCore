@@ -26,7 +26,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public record MultiPartUnbakedModel(StateDefinition<MachineDefinition, MachineRenderState> definition,
-                                    List<MultiPartSelector> selectors) implements UnbakedModel {
+                                    List<MultiPartSelector> selectors)
+        implements UnbakedModel {
 
     public Set<MultiVariantModel> getModels() {
         Set<MultiVariantModel> set = new HashSet<>();

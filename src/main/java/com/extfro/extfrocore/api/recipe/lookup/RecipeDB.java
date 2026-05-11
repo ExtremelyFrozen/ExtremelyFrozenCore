@@ -90,8 +90,7 @@ public final class RecipeDB {
     }
 
     private @Nullable List<List<AbstractMapIngredient>> fromHolder(@NotNull IRecipeCapabilityHolder holder) {
-        Map<RecipeCapability<?>, List<com.extfro.extfrocore.api.capability.recipe.IRecipeHandler<?>>> handlerMap =
-                holder.getCapabilitiesFlat().getOrDefault(IO.IN, Collections.emptyMap());
+        Map<RecipeCapability<?>, List<com.extfro.extfrocore.api.capability.recipe.IRecipeHandler<?>>> handlerMap = holder.getCapabilitiesFlat().getOrDefault(IO.IN, Collections.emptyMap());
         if (handlerMap.isEmpty()) {
             return null;
         }
@@ -111,8 +110,8 @@ public final class RecipeDB {
     }
 
     private static @NotNull Map<AbstractMapIngredient, Either<MachineRecipe, Branch>> nodesForIngredient(
-                                                                                                          @NotNull AbstractMapIngredient ingredient,
-                                                                                                          @NotNull Branch branch) {
+                                                                                                         @NotNull AbstractMapIngredient ingredient,
+                                                                                                         @NotNull Branch branch) {
         return ingredient.isSpecialIngredient() ? branch.getSpecialNodes() : branch.getNodes();
     }
 

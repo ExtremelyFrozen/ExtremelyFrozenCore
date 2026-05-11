@@ -11,8 +11,7 @@ public final class VariantRotationHelpers {
 
     private static final Transformation[] TRANSFORMS = createTransformations();
 
-    private VariantRotationHelpers() {
-    }
+    private VariantRotationHelpers() {}
 
     private static Transformation[] createTransformations() {
         Transformation[] result = new Transformation[4 * 4 * 4];

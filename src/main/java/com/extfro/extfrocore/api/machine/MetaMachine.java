@@ -21,7 +21,6 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.shapes.VoxelShape;
@@ -84,15 +83,13 @@ public abstract class MetaMachine extends ManagedSyncBlockEntity implements ITic
         onUnload();
     }
 
-    public void onMachinePlaced(@Nullable LivingEntity player, ItemStack stack) {
-    }
+    public void onMachinePlaced(@Nullable LivingEntity player, ItemStack stack) {}
 
     public void onMachineDestroyed() {
         coverContainer.dropAllCovers();
     }
 
-    public void onRotated(Direction oldFacing, Direction newFacing) {
-    }
+    public void onRotated(Direction oldFacing, Direction newFacing) {}
 
     public void modifyDrops(List<ItemStack> drops) {
         for (var cover : coverContainer.getCovers()) {
@@ -101,8 +98,7 @@ public abstract class MetaMachine extends ManagedSyncBlockEntity implements ITic
         }
     }
 
-    public void animateTick(net.minecraft.util.RandomSource random) {
-    }
+    public void animateTick(net.minecraft.util.RandomSource random) {}
 
     public void serverTick() {
         serverTicks.removeIf(subscription -> {

@@ -9,6 +9,5 @@ public final class EFModelProperties {
     public static final ModelProperty<BlockAndTintGetter> LEVEL = new ModelProperty<>();
     public static final ModelProperty<BlockPos> POS = new ModelProperty<>();
 
-    private EFModelProperties() {
-    }
+    private EFModelProperties() {}
 }

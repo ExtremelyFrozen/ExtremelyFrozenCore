@@ -12,14 +12,14 @@ import java.util.Objects;
 import java.util.function.Supplier;
 
 public record XEIPageDefinition<T>(
-        ResourceLocation id,
-        Component title,
-        ItemStack icon,
-        Class<T> displayType,
-        int width,
-        int height,
-        Supplier<? extends List<? extends T>> displaySupplier,
-        Supplier<? extends List<ItemStack>> catalystSupplier)
+                                   ResourceLocation id,
+                                   Component title,
+                                   ItemStack icon,
+                                   Class<T> displayType,
+                                   int width,
+                                   int height,
+                                   Supplier<? extends List<? extends T>> displaySupplier,
+                                   Supplier<? extends List<ItemStack>> catalystSupplier)
         implements XEIPage {
 
     public XEIPageDefinition {

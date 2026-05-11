@@ -8,7 +8,8 @@ import com.mojang.serialization.MapCodec;
 import org.jetbrains.annotations.NotNull;
 
 public record DynamicMachineRenderType<T extends IMachineFeature, S extends DynamicMachineRender<T, S>>(
-        MapCodec<S> codec) implements Comparable<DynamicMachineRenderType<T, S>> {
+                                                                                                        MapCodec<S> codec)
+        implements Comparable<DynamicMachineRenderType<T, S>> {
 
     public ResourceLocation getId() {
         return DynamicMachineRenderManager.getId(this);

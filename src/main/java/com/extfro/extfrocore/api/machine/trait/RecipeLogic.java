@@ -11,10 +11,10 @@ import com.extfro.extfrocore.api.recipe.RecipeHelper;
 import com.extfro.extfrocore.api.recipe.RecipeLogicContext;
 import com.extfro.extfrocore.api.registry.EFRegistries;
 import com.extfro.extfrocore.api.sync_system.ISyncManaged;
-import com.extfro.extfrocore.api.sync_system.holder.SyncDataHolder;
 import com.extfro.extfrocore.api.sync_system.annotations.RerenderOnChanged;
 import com.extfro.extfrocore.api.sync_system.annotations.SaveField;
 import com.extfro.extfrocore.api.sync_system.annotations.SyncToClient;
+import com.extfro.extfrocore.api.sync_system.holder.SyncDataHolder;
 
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.StringRepresentable;
@@ -208,8 +208,8 @@ public class RecipeLogic implements RecipeLogicContext, ISyncManaged {
             unsubscribe = true;
         } else if (lastRecipe == null && isIdle() && !machine.keepSubscribing() && !recipeDirty &&
                 lastFailedMatches == null) {
-            unsubscribe = true;
-        }
+                    unsubscribe = true;
+                }
         if (isIdle()) {
             failureReasons.clear();
             failureReasons.addAll(failureReasonMap.values());

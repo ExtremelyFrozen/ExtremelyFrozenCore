@@ -9,7 +9,7 @@ import com.mojang.serialization.Codec;
 import org.jetbrains.annotations.NotNull;
 
 public abstract class DynamicMachineRender<T extends IMachineFeature, S extends DynamicMachineRender<T, S>>
-        implements Comparable<DynamicMachineRender<T, S>>, IMachineRendererModel<T> {
+                                          implements Comparable<DynamicMachineRender<T, S>>, IMachineRendererModel<T> {
 
     public static final Codec<DynamicMachineRender<?, ?>> CODEC = DynamicMachineRenderManager.TYPE_CODEC
             .dispatchStable(DynamicMachineRender::getType, DynamicMachineRenderType::codec);

@@ -15,9 +15,9 @@ import net.neoforged.neoforge.client.model.generators.ModelFile;
 import net.neoforged.neoforge.common.data.ExistingFileHelper;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.MultimapBuilder;
-import com.google.common.collect.Maps;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -49,7 +49,7 @@ import java.util.function.Supplier;
 public class MachineModelBuilder<T extends ModelBuilder<T>> extends CustomLoaderBuilder<T> {
 
     public static <T extends ModelBuilder<T>> BiFunction<T, ExistingFileHelper, MachineModelBuilder<T>> begin(
-            MachineDefinition owner) {
+                                                                                                              MachineDefinition owner) {
         return (parent, existingFileHelper) -> new MachineModelBuilder<>(parent, existingFileHelper, owner);
     }
 

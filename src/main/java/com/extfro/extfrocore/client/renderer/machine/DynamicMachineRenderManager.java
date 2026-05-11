@@ -30,11 +30,9 @@ public final class DynamicMachineRenderManager {
         return DataResult.error(() -> "Dynamic machine render type " + type + " is not registered");
     });
 
-    private static final BiMap<ResourceLocation, DynamicMachineRenderType<?, ?>> DYNAMIC_RENDER_TYPES =
-            HashBiMap.create(5);
+    private static final BiMap<ResourceLocation, DynamicMachineRenderType<?, ?>> DYNAMIC_RENDER_TYPES = HashBiMap.create(5);
 
-    public static <T extends IMachineFeature, S extends DynamicMachineRender<T, S>> DynamicMachineRenderType<T, S>
-            register(ResourceLocation id, DynamicMachineRenderType<T, S> type) {
+    public static <T extends IMachineFeature, S extends DynamicMachineRender<T, S>> DynamicMachineRenderType<T, S> register(ResourceLocation id, DynamicMachineRenderType<T, S> type) {
         if (DYNAMIC_RENDER_TYPES.containsKey(id)) {
             throw new IllegalArgumentException("Cannot register multiple dynamic machine render types with the same id: " + id);
         }
@@ -43,8 +41,7 @@ public final class DynamicMachineRenderManager {
     }
 
     @SuppressWarnings("unchecked")
-    public static <T extends IMachineFeature, S extends DynamicMachineRender<T, S>>
-            @Nullable DynamicMachineRenderType<T, S> getType(ResourceLocation id) {
+    public static <T extends IMachineFeature, S extends DynamicMachineRender<T, S>> @Nullable DynamicMachineRenderType<T, S> getType(ResourceLocation id) {
         return (DynamicMachineRenderType<T, S>) DYNAMIC_RENDER_TYPES.get(id);
     }
 
@@ -52,6 +49,5 @@ public final class DynamicMachineRenderManager {
         return DYNAMIC_RENDER_TYPES.inverse().get(type);
     }
 
-    private DynamicMachineRenderManager() {
-    }
+    private DynamicMachineRenderManager() {}
 }

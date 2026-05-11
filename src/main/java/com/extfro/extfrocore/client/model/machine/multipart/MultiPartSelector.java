@@ -42,12 +42,12 @@ public class MultiPartSelector implements ModelState {
 
         @Override
         public MultiPartSelector deserialize(JsonElement json, Type type, JsonDeserializationContext context)
-                throws JsonParseException {
+                                                                                                              throws JsonParseException {
             return fromJson(json, context);
         }
 
         public static MultiPartSelector fromJson(JsonElement json, JsonDeserializationContext context)
-                throws JsonParseException {
+                                                                                                       throws JsonParseException {
             JsonObject jsonObject = json.getAsJsonObject();
             return new MultiPartSelector(getSelector(jsonObject),
                     context.deserialize(jsonObject.get("apply"), MultiVariantModel.class));
@@ -65,14 +65,14 @@ public class MultiPartSelector implements ModelState {
             if (entries.size() == 1) {
                 if (json.has(OrPartCondition.TOKEN)) {
                     List<PartCondition> conditions = Streams.stream(GsonHelper.getAsJsonArray(json,
-                                    OrPartCondition.TOKEN))
+                            OrPartCondition.TOKEN))
                             .map(element -> getCondition(element.getAsJsonObject()))
                             .toList();
                     return new OrPartCondition(conditions);
                 }
                 if (json.has(AndPartCondition.TOKEN)) {
                     List<PartCondition> conditions = Streams.stream(GsonHelper.getAsJsonArray(json,
-                                    AndPartCondition.TOKEN))
+                            AndPartCondition.TOKEN))
                             .map(element -> getCondition(element.getAsJsonObject()))
                             .toList();
                     return new AndPartCondition(conditions);

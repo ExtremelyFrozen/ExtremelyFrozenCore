@@ -1,7 +1,6 @@
 package com.extfro.extfrocore.api.recipe.modifier;
 
 import com.extfro.extfrocore.api.capability.recipe.IRecipeCapabilityHolder;
-import com.extfro.extfrocore.api.capability.recipe.IO;
 import com.extfro.extfrocore.api.capability.recipe.RecipeCapability;
 import com.extfro.extfrocore.api.machine.MetaMachine;
 import com.extfro.extfrocore.api.machine.feature.IRecipeLogicMachine;

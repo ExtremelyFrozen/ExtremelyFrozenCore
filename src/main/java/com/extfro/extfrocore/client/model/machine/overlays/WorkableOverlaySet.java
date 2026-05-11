@@ -17,8 +17,7 @@ import java.util.Map;
 
 public class WorkableOverlaySet {
 
-    public static final ExistingFileHelper.ResourceType TEXTURE =
-            new ExistingFileHelper.ResourceType(PackType.CLIENT_RESOURCES, ".png", "textures");
+    public static final ExistingFileHelper.ResourceType TEXTURE = new ExistingFileHelper.ResourceType(PackType.CLIENT_RESOURCES, ".png", "textures");
 
     public static WorkableOverlaySet get(ResourceLocation textureDir, ExistingFileHelper fileHelper) {
         WorkableOverlaySet overlays = new WorkableOverlaySet(textureDir);
@@ -89,10 +88,8 @@ public class WorkableOverlaySet {
 
         public static final StatusTextures EMPTY = new StatusTextures();
 
-        private final Map<WorkableOverlayStatus, ResourceLocation> textures =
-                new EnumMap<>(WorkableOverlayStatus.class);
-        private final Map<WorkableOverlayStatus, ResourceLocation> emissiveTextures =
-                new EnumMap<>(WorkableOverlayStatus.class);
+        private final Map<WorkableOverlayStatus, ResourceLocation> textures = new EnumMap<>(WorkableOverlayStatus.class);
+        private final Map<WorkableOverlayStatus, ResourceLocation> emissiveTextures = new EnumMap<>(WorkableOverlayStatus.class);
 
         public StatusTextures(@Nullable ResourceLocation normalSprite,
                               @Nullable ResourceLocation activeSprite,
@@ -110,8 +107,7 @@ public class WorkableOverlaySet {
             emissiveTextures.put(WorkableOverlayStatus.SUSPENDED, pausedSpriteEmissive);
         }
 
-        private StatusTextures() {
-        }
+        private StatusTextures() {}
 
         public @Nullable ResourceLocation getTexture(@NotNull WorkableOverlayStatus status) {
             return textures.get(status);

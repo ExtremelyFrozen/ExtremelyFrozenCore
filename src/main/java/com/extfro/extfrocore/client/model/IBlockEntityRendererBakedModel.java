@@ -24,8 +24,7 @@ public interface IBlockEntityRendererBakedModel<T extends BlockEntity>
                 int packedLight, int packedOverlay);
 
     default void renderByItem(ItemStack stack, ItemDisplayContext displayContext,
-                              PoseStack poseStack, MultiBufferSource buffer, int packedLight, int packedOverlay) {
-    }
+                              PoseStack poseStack, MultiBufferSource buffer, int packedLight, int packedOverlay) {}
 
     default boolean shouldRender(T blockEntity, Vec3 cameraPos) {
         return Vec3.atCenterOf(blockEntity.getBlockPos()).closerThan(cameraPos, getViewDistance());

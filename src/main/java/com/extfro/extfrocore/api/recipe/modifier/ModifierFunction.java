@@ -30,6 +30,7 @@ public interface ModifierFunction {
 
     static ModifierFunction cancel(Component reason) {
         return new ModifierFunction() {
+
             @Override
             public @Nullable MachineRecipe apply(@NotNull MachineRecipe recipe) {
                 return null;
@@ -124,7 +125,7 @@ public interface ModifierFunction {
 
         @SuppressWarnings("unused")
         private static Map<RecipeCapability<?>, List<Content>> applyContents(ContentModifier modifier,
-                                                                              Map<RecipeCapability<?>, List<Content>> contents) {
+                                                                             Map<RecipeCapability<?>, List<Content>> contents) {
             return modifier.applyContents(contents);
         }
     }

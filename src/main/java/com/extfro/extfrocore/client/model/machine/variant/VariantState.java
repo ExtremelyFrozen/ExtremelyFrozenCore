@@ -60,7 +60,7 @@ public class VariantState implements ModelState {
 
         @Override
         public VariantState deserialize(JsonElement json, Type type, JsonDeserializationContext context)
-                throws JsonParseException {
+                                                                                                         throws JsonParseException {
             JsonObject object = json.getAsJsonObject();
             var model = MachineModelLoader.parseVariant(object.get("model"), context);
             Transformation rotation = getBlockRotation(object);

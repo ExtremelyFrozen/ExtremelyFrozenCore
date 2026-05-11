@@ -1,7 +1,7 @@
 package com.extfro.extfrocore.client.renderer;
 
-import com.extfro.extfrocore.client.model.IBlockEntityRendererBakedModel;
 import com.extfro.extfrocore.api.machine.MetaMachine;
+import com.extfro.extfrocore.client.model.IBlockEntityRendererBakedModel;
 import com.extfro.extfrocore.client.renderer.cover.ICoverableRenderer;
 
 import net.minecraft.client.renderer.MultiBufferSource;

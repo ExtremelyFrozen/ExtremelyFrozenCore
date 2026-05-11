@@ -15,8 +15,8 @@ public class MachineRenderState extends StateHolder<MachineDefinition, MachineRe
             MachineDefinition::defaultRenderState).stable();
 
     public MachineRenderState(
-                               MachineDefinition owner,
-                               Reference2ObjectArrayMap<Property<?>, Comparable<?>> values,
+                              MachineDefinition owner,
+                              Reference2ObjectArrayMap<Property<?>, Comparable<?>> values,
                               MapCodec<MachineRenderState> propertiesCodec) {
         super(owner, values, propertiesCodec);
     }

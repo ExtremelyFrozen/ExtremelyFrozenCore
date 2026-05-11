@@ -3,6 +3,7 @@ package com.extfro.extfrocore.api.pattern.util;
 import net.minecraft.core.Direction;
 
 public enum RelativeDirection {
+
     UP,
     DOWN,
     LEFT,

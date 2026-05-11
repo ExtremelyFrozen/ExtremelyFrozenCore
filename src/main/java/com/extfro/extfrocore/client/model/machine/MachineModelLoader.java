@@ -48,8 +48,8 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -81,12 +81,11 @@ public class MachineModelLoader implements IGeometryLoader<UnbakedMachineModel> 
     private static final Splitter EQUAL_SPLITTER = Splitter.on('=').limit(2);
     public static final UnbakedModel MISSING_MARKER = new BasicUnbakedModel();
 
-    private MachineModelLoader() {
-    }
+    private MachineModelLoader() {}
 
     @Override
     public @Nullable UnbakedMachineModel read(JsonObject json, JsonDeserializationContext context)
-            throws JsonParseException {
+                                                                                                   throws JsonParseException {
         ResourceLocation machineId = ResourceLocation.parse(GsonHelper.getAsString(json, "machine"));
         MachineDefinition definition = EFRegistries.MACHINES.get(machineId);
         if (definition == null) {

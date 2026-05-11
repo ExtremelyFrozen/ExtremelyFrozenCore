@@ -39,8 +39,7 @@ public interface IMachineRendererModel<T extends IMachineFeature> {
                 int packedLight, int packedOverlay);
 
     default void renderByItem(ItemStack stack, ItemDisplayContext displayContext,
-                              PoseStack poseStack, MultiBufferSource buffer, int packedLight, int packedOverlay) {
-    }
+                              PoseStack poseStack, MultiBufferSource buffer, int packedLight, int packedOverlay) {}
 
     default boolean shouldRenderOffScreen(T machine) {
         return false;

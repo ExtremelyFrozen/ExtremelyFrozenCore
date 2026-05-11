@@ -29,8 +29,7 @@ public abstract class WorkableMachine extends MetaMachine implements IRecipeLogi
     @SyncToClient
     protected int activeRecipeType;
     private final Map<IO, List<RecipeHandlerList>> capabilitiesProxy = new Reference2ObjectOpenHashMap<>();
-    private final Map<IO, Map<RecipeCapability<?>, List<IRecipeHandler<?>>>> capabilitiesFlat =
-            new Reference2ObjectOpenHashMap<>();
+    private final Map<IO, Map<RecipeCapability<?>, List<IRecipeHandler<?>>>> capabilitiesFlat = new Reference2ObjectOpenHashMap<>();
 
     public WorkableMachine(BlockEntityCreationInfo info) {
         super(info);

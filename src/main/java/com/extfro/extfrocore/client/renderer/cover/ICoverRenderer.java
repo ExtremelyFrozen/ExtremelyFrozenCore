@@ -28,8 +28,8 @@ public interface ICoverRenderer {
 
     @OnlyIn(Dist.CLIENT)
     default ChunkRenderTypeSet getRenderTypes(@NotNull CoverBehavior coverBehavior, BlockPos pos,
-                                               BlockAndTintGetter level, RandomSource rand,
-                                               @NotNull ModelData modelData) {
+                                              BlockAndTintGetter level, RandomSource rand,
+                                              @NotNull ModelData modelData) {
         return ChunkRenderTypeSet.of(RenderType.solid());
     }
 

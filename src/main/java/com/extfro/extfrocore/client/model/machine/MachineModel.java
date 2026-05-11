@@ -45,9 +45,9 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.IdentityHashMap;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -202,7 +202,7 @@ public final class MachineModel extends BaseBakedModel implements ICoverableRend
             baseTypes = multiPart.getRenderTypes(state, rand, modelData);
         } else {
             baseTypes = model == null ? ChunkRenderTypeSet.none() :
-                model.getRenderTypes(state, rand, modelData);
+                    model.getRenderTypes(state, rand, modelData);
         }
 
         BlockAndTintGetter level = modelData.get(EFModelProperties.LEVEL);
