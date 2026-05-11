@@ -654,10 +654,11 @@ Already extracted in this repository:
 - item/fluid capability wrapping chain from machine handlers through attached covers
 - item-to-cover-definition install mapping
 - tick subscription and copyable config interfaces
+- dynamic cover block entity renderer registration for registered machine block entity types
 
 Remaining infrastructure gaps:
 
-- actual machine model/render integration so cover renderers are invoked
+- static baked machine model integration so cover quads and cover render types are invoked
 - real cover GUI opener registration for the final UI framework; current `CoverUIFactory` is the neutral extension point
 - smart item filter only if generic recipe/machine lookup is available without concrete content coupling
 - facade recipe infrastructure only if the generic facade path is needed; do not migrate concrete facade cover content
@@ -675,6 +676,6 @@ Current implementation order:
 2. Migrate `api.cover.filter` in parallel. Done.
 3. Migrate `client.renderer.cover` generic pieces in parallel. Done.
 4. Add main-thread tool/UI hook surface and `MetaMachineBlock` interaction dispatch. Done.
-5. Integrate redstone/capability/render hooks that are required for compile-safe behavior. Partially done; capability
-   and baked model render integration still need their owning systems.
+5. Integrate redstone/capability/render hooks that are required for compile-safe behavior. Partially done; dynamic cover
+   block entity rendering is registered, while baked model integration still needs the machine model system.
 6. Run `compileJava`, stale-name scan, and `CompoundTag` scan for new public cover code.
