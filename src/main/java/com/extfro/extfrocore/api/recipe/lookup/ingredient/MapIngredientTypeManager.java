@@ -1,15 +1,21 @@
 package com.extfro.extfrocore.api.recipe.lookup.ingredient;
 
 import com.extfro.extfrocore.api.capability.recipe.RecipeCapability;
+import com.extfro.extfrocore.api.recipe.lookup.ingredient.fluid.CustomFluidMapIngredient;
+import com.extfro.extfrocore.api.recipe.lookup.ingredient.fluid.FluidDataComponentMapIngredient;
 import com.extfro.extfrocore.api.recipe.lookup.ingredient.fluid.FluidStackMapIngredient;
 import com.extfro.extfrocore.api.recipe.lookup.ingredient.fluid.FluidTagMapIngredient;
+import com.extfro.extfrocore.api.recipe.lookup.ingredient.item.CustomItemMapIngredient;
+import com.extfro.extfrocore.api.recipe.lookup.ingredient.item.ItemDataComponentMapIngredient;
 import com.extfro.extfrocore.api.recipe.lookup.ingredient.item.ItemStackMapIngredient;
 import com.extfro.extfrocore.api.recipe.lookup.ingredient.item.ItemTagMapIngredient;
 
 import net.minecraft.Util;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
+import net.neoforged.neoforge.common.crafting.DataComponentIngredient;
 import net.neoforged.neoforge.fluids.FluidStack;
+import net.neoforged.neoforge.fluids.crafting.DataComponentFluidIngredient;
 import net.neoforged.neoforge.fluids.crafting.SingleFluidIngredient;
 import net.neoforged.neoforge.fluids.crafting.TagFluidIngredient;
 
@@ -39,20 +45,30 @@ public final class MapIngredientTypeManager {
             List<AbstractMapIngredient> list = new ArrayList<>();
             list.addAll(ItemTagMapIngredient.from(ingredient));
             list.addAll(ItemStackMapIngredient.from(ingredient));
+            if (ingredient.getCustomIngredient() instanceof DataComponentIngredient componentIngredient) {
+                list.addAll(ItemDataComponentMapIngredient.from(componentIngredient));
+            }
+            list.addAll(CustomItemMapIngredient.from(ingredient));
             return list;
         });
         registerMapIngredient(ItemStack.class, stack -> {
             List<AbstractMapIngredient> list = new ArrayList<>();
             list.addAll(ItemTagMapIngredient.from(stack));
             list.addAll(ItemStackMapIngredient.from(stack));
+            list.addAll(ItemDataComponentMapIngredient.from(stack));
+            list.addAll(CustomItemMapIngredient.from(stack));
             return list;
         });
+        registerMapIngredient(DataComponentIngredient.class, ItemDataComponentMapIngredient::from);
         registerMapIngredient(SingleFluidIngredient.class, FluidStackMapIngredient::from);
         registerMapIngredient(TagFluidIngredient.class, FluidTagMapIngredient::from);
+        registerMapIngredient(DataComponentFluidIngredient.class, FluidDataComponentMapIngredient::from);
         registerMapIngredient(FluidStack.class, stack -> {
             List<AbstractMapIngredient> list = new ArrayList<>();
             list.addAll(FluidTagMapIngredient.from(stack));
             list.addAll(FluidStackMapIngredient.from(stack));
+            list.addAll(FluidDataComponentMapIngredient.from(stack));
+            list.addAll(CustomFluidMapIngredient.from(stack));
             return list;
         });
     }
