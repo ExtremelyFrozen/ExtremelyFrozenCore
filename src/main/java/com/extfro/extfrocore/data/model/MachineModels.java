@@ -1,12 +1,16 @@
 package com.extfro.extfrocore.data.model;
 
 import com.extfro.extfrocore.api.registry.registrate.MachineBuilder;
+import com.extfro.extfrocore.client.model.machine.overlays.WorkableOverlaySet;
+import com.extfro.extfrocore.client.model.machine.overlays.WorkableOverlayStatus;
 
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.neoforge.client.model.generators.BlockModelBuilder;
 import net.neoforged.neoforge.client.model.generators.BlockModelProvider;
 
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Map;
 
 public final class MachineModels {
 
@@ -70,6 +74,24 @@ public final class MachineModels {
         }
         if (pipeOverlay != null) {
             model.texture("overlay_pipe", pipeOverlay);
+        }
+        return model;
+    }
+
+    public static BlockModelBuilder addWorkableOverlays(WorkableOverlaySet overlays, WorkableOverlayStatus status,
+                                                         BlockModelBuilder model) {
+        for (Map.Entry<WorkableOverlaySet.OverlayFace, WorkableOverlaySet.StatusTextures> entry :
+                overlays.getTextures().entrySet()) {
+            String faceName = entry.getKey().getName();
+            WorkableOverlaySet.StatusTextures textures = entry.getValue();
+            ResourceLocation overlay = textures.getTexture(status);
+            ResourceLocation overlayEmissive = textures.getEmissiveTexture(status);
+            if (overlay != null) {
+                model.texture(OVERLAY_PREFIX + faceName, overlay);
+            }
+            if (overlayEmissive != null) {
+                model.texture(OVERLAY_PREFIX + faceName + EMISSIVE_SUFFIX, overlayEmissive);
+            }
         }
         return model;
     }
