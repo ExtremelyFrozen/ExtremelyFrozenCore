@@ -7,6 +7,7 @@ import net.minecraft.nbt.Tag;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
 import com.mojang.serialization.Dynamic;
+import com.mojang.datafixers.util.Pair;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.LinkedHashMap;
@@ -16,7 +17,7 @@ public final class SyncTagMap {
 
     public static final Codec<SyncTagMap> CODEC = Codec.PASSTHROUGH.comapFlatMap(
             dynamic -> decodeMap(dynamic.convert(NbtOps.INSTANCE)),
-            map -> new Dynamic<>(NbtOps.INSTANCE, map.toVanillaTag()));
+            map -> new Dynamic<>(NbtOps.INSTANCE, map.toTag()));
 
     private final Map<String, Tag> values;
 
@@ -64,10 +65,9 @@ public final class SyncTagMap {
         return values;
     }
 
-    public net.minecraft.nbt.CompoundTag toVanillaTag() {
-        var tag = new net.minecraft.nbt.CompoundTag();
-        values.forEach(tag::put);
-        return tag;
+    public Tag toTag() {
+        return NbtOps.INSTANCE.createMap(values.entrySet().stream()
+                .map(entry -> Pair.of(NbtOps.INSTANCE.createString(entry.getKey()), entry.getValue())));
     }
 
     public void put(String key, Tag value) {

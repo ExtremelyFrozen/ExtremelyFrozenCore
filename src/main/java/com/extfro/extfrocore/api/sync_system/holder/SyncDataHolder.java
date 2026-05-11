@@ -346,7 +346,7 @@ public class SyncDataHolder {
             return result.getOrThrow();
         }
         if (field.isSyncManaged && value instanceof ISyncManaged syncObj) {
-            return syncObj.getSyncDataHolder().serializeToSaveData(registries).toVanillaTag();
+            return syncObj.getSyncDataHolder().serializeToSaveData(registries).toTag();
         }
         ExtForCore.LOGGER.error("Sync: No codec for field {} in {}", field.fieldName, holder.getClass());
         return SyncTagMap.emptyContainer();

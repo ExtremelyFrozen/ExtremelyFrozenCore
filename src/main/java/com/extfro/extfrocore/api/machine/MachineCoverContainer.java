@@ -67,7 +67,7 @@ public class MachineCoverContainer implements ICoverable, ISyncManaged {
             if (sideTag == null || sideTag.isEmpty()) {
                 continue;
             }
-            CoverSnapshot snapshot = COVER_SNAPSHOT_CODEC.parse(new Dynamic<>(NbtOps.INSTANCE, sideTag.toVanillaTag()))
+            CoverSnapshot snapshot = COVER_SNAPSHOT_CODEC.parse(new Dynamic<>(NbtOps.INSTANCE, sideTag.toTag()))
                     .result()
                     .orElse(null);
             if (snapshot == null) {
@@ -94,12 +94,12 @@ public class MachineCoverContainer implements ICoverable, ISyncManaged {
         for (Direction direction : ICoverable.DIRECTIONS) {
             CoverBehavior cover = getCoverAtSide(direction);
             if (cover == null) {
-                tag.put(direction.getName(), SyncTagMap.empty().toVanillaTag());
+                tag.put(direction.getName(), SyncTagMap.empty().toTag());
                 continue;
             }
             ResourceLocation id = EFRegistries.COVERS.getKey(cover.coverDefinition);
             if (id == null) {
-                tag.put(direction.getName(), SyncTagMap.empty().toVanillaTag());
+                tag.put(direction.getName(), SyncTagMap.empty().toTag());
                 continue;
             }
             SyncTagMap sideTag = SyncTagMap.empty();
@@ -108,8 +108,8 @@ public class MachineCoverContainer implements ICoverable, ISyncManaged {
                     cover.getAttachItem()).getOrThrow());
             SyncTagMap coverData = cover.getSyncDataHolder().serializeToSaveData(registries);
             coverData.merge(cover.getSyncDataHolder().serializeFullClientSyncData(registries));
-            sideTag.put("data", coverData.toVanillaTag());
-            tag.put(direction.getName(), sideTag.toVanillaTag());
+            sideTag.put("data", coverData.toTag());
+            tag.put(direction.getName(), sideTag.toTag());
         }
         return tag;
     }

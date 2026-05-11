@@ -302,7 +302,7 @@ public interface ICoverable extends ITickSubscription, ISyncManaged, ICopyable {
                 .ifPresent(item -> tag.put("item", item));
         SyncTagMap data = cover.getSyncDataHolder().serializeToSaveData(registries);
         data.merge(cover.copyConfig(SyncTagMap.empty()));
-        tag.put("data", data.toVanillaTag());
+        tag.put("data", data.toTag());
         return tag;
     }
 
@@ -343,7 +343,7 @@ public interface ICoverable extends ITickSubscription, ISyncManaged, ICopyable {
     default SyncTagMap copyConfig(SyncTagMap tag) {
         HolderLookup.Provider registries = getLevel().registryAccess();
         for (Direction dir : DIRECTIONS) {
-            tag.put(dir.getName(), createCoverConfigTag(getCoverAtSide(dir), registries).toVanillaTag());
+            tag.put(dir.getName(), createCoverConfigTag(getCoverAtSide(dir), registries).toTag());
         }
         return tag;
     }

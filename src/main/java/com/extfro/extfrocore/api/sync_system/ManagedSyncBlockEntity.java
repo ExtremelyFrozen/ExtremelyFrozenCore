@@ -107,8 +107,7 @@ public abstract class ManagedSyncBlockEntity extends BlockEntity implements ISyn
     @Override
     public @Nullable Packet<ClientGamePacketListener> getUpdatePacket() {
         return ClientboundBlockEntityDataPacket.create(this,
-                (blockEntity, registries) -> ((ManagedSyncBlockEntity) blockEntity).syncDataHolder.getPendingChanges()
-                        .toVanillaTag());
+                (blockEntity, registries) -> ((ManagedSyncBlockEntity) blockEntity).toVanillaUpdateTag());
     }
 
     @Override
@@ -147,5 +146,11 @@ public abstract class ManagedSyncBlockEntity extends BlockEntity implements ISyn
                 PacketDistributor.sendToServer(new ClientBlockEntitySyncPayload(getBlockPos().asLong(), changes));
             }
         }
+    }
+
+    private net.minecraft.nbt.CompoundTag toVanillaUpdateTag() {
+        var tag = new net.minecraft.nbt.CompoundTag();
+        syncDataHolder.getPendingChanges().values().forEach(tag::put);
+        return tag;
     }
 }
