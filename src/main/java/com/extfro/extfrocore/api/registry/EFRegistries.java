@@ -26,6 +26,7 @@ import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.registries.DataPackRegistryEvent;
+import net.neoforged.neoforge.registries.IdMappingEvent;
 import net.neoforged.neoforge.registries.NewRegistryEvent;
 import net.neoforged.neoforge.registries.RegisterEvent;
 import net.neoforged.neoforge.registries.RegistryBuilder;
@@ -131,9 +132,14 @@ public final class EFRegistries {
         frozen = false;
     }
 
+    private static void freeze(IdMappingEvent event) {
+        frozen = event.isFrozen();
+    }
+
     public static void init(IEventBus eventBus) {
         eventBus.addListener(EventPriority.HIGHEST, EFRegistries::unfreeze);
         eventBus.addListener(EventPriority.LOW, EFRegistries::registerPending);
+        NeoForge.EVENT_BUS.addListener(EFRegistries::freeze);
         NeoForge.EVENT_BUS.addListener(EFRegistries::onAddReloadListener);
     }
 

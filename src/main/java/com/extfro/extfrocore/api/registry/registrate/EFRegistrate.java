@@ -292,22 +292,25 @@ public class EFRegistrate extends AbstractRegistrate<EFRegistrate> {
 
     @Override
     public EFRegistrate registerEventListeners(IEventBus bus) {
-        if (!registered.getAndSet(true)) {
+        if (registered.getAndSet(true)) {
+            return this;
+        }
+        if (getModEventBus() == null) {
             setModEventBus(bus);
+        }
 
-            Consumer<RegisterEvent> onRegister = this::onRegister;
-            Consumer<RegisterEvent> onRegisterLate = this::onRegisterLate;
-            bus.addListener(EventPriority.LOW, onRegister);
-            bus.addListener(EventPriority.LOWEST, onRegisterLate);
-            bus.addListener(this::onBuildCreativeModeTabContents);
+        Consumer<RegisterEvent> onRegister = this::onRegister;
+        Consumer<RegisterEvent> onRegisterLate = this::onRegisterLate;
+        bus.addListener(EventPriority.LOW, onRegister);
+        bus.addListener(EventPriority.LOWEST, onRegisterLate);
+        bus.addListener(this::onBuildCreativeModeTabContents);
 
-            OneTimeEventReceiver.addModListener(this, FMLCommonSetupEvent.class, ignored -> {
-                OneTimeEventReceiver.unregister(this, onRegister, RegisterEvent.class);
-                OneTimeEventReceiver.unregister(this, onRegisterLate, RegisterEvent.class);
-            });
-            if (DatagenModLoader.isRunningDataGen()) {
-                OneTimeEventReceiver.addModListener(this, GatherDataEvent.class, this::onData);
-            }
+        OneTimeEventReceiver.addModListener(this, FMLCommonSetupEvent.class, ignored -> {
+            OneTimeEventReceiver.unregister(this, onRegister, RegisterEvent.class);
+            OneTimeEventReceiver.unregister(this, onRegisterLate, RegisterEvent.class);
+        });
+        if (DatagenModLoader.isRunningDataGen()) {
+            OneTimeEventReceiver.addModListener(this, GatherDataEvent.class, this::onData);
         }
         return this;
     }
