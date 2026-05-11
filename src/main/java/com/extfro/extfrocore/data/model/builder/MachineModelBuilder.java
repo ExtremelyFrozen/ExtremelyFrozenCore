@@ -14,7 +14,10 @@ import net.neoforged.neoforge.client.model.generators.ModelFile;
 import net.neoforged.neoforge.common.data.ExistingFileHelper;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.Maps;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
@@ -22,10 +25,13 @@ import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -47,6 +53,8 @@ public class MachineModelBuilder<T extends ModelBuilder<T>> extends CustomLoader
     private final MachineDefinition owner;
     @Getter
     private final Map<PartialState<T>, ModelFile> models = new LinkedHashMap<>();
+    @Getter
+    private final List<PartBuilder> parts = new ArrayList<>();
     private final Set<MachineRenderState> coveredStates = new HashSet<>();
 
     protected MachineModelBuilder(T parent, ExistingFileHelper existingFileHelper, MachineDefinition owner) {
@@ -60,22 +68,65 @@ public class MachineModelBuilder<T extends ModelBuilder<T>> extends CustomLoader
         json.addProperty("machine", owner.getId().toString());
 
         StateDefinition<MachineDefinition, MachineRenderState> stateDefinition = owner.getStateDefinition();
-        Preconditions.checkState(!models.isEmpty(), "A machine model must have at least one variant model");
+        Preconditions.checkState(!models.isEmpty() || !parts.isEmpty(),
+                "A machine model must have at least one variant or multipart model");
         Set<MachineRenderState> missingStates = new HashSet<>(stateDefinition.getPossibleStates());
         missingStates.removeAll(coveredStates);
-        Preconditions.checkState(missingStates.isEmpty(),
-                "Render state for machine %s does not cover all states. Missing: %s", owner, missingStates);
 
-        JsonObject variants = new JsonObject();
-        models.entrySet().stream()
-                .sorted(Map.Entry.comparingByKey(PartialState.comparingByProperties()))
-                .forEach(entry -> variants.add(entry.getKey().toString(), modelToJson(entry.getValue())));
-        json.add("variants", variants);
+        if (!parts.isEmpty()) {
+            JsonArray multipart = new JsonArray();
+            for (PartBuilder part : parts) {
+                missingStates.removeIf(part::matchesState);
+                multipart.add(part.toJson());
+            }
+            json.add("multipart", multipart);
+        }
+
+        if (!models.isEmpty()) {
+            Preconditions.checkState(missingStates.isEmpty(),
+                    "Render state for machine %s does not cover all states. Missing: %s", owner, missingStates);
+            JsonObject variants = new JsonObject();
+            models.entrySet().stream()
+                    .sorted(Map.Entry.comparingByKey(PartialState.comparingByProperties()))
+                    .forEach(entry -> variants.add(entry.getKey().toString(), modelToJson(entry.getValue())));
+            json.add("variants", variants);
+        }
         return json;
     }
 
     public static JsonElement modelToJson(ModelFile model) {
         return new JsonPrimitive(model.getLocation().toString());
+    }
+
+    public static JsonElement configuredModelToJson(ConfiguredModel model, boolean includeWeight) {
+        JsonObject modelJson = new JsonObject();
+        modelJson.addProperty("model", model.model.getLocation().toString());
+        if (model.rotationX != 0) {
+            modelJson.addProperty("x", model.rotationX);
+        }
+        if (model.rotationY != 0) {
+            modelJson.addProperty("y", model.rotationY);
+        }
+        if (model.uvLock) {
+            modelJson.addProperty("uvlock", true);
+        }
+        if (includeWeight && model.weight != ConfiguredModel.DEFAULT_WEIGHT) {
+            modelJson.addProperty("weight", model.weight);
+        }
+        return modelJson;
+    }
+
+    public static JsonElement configuredModelsToJson(ConfiguredModel... models) {
+        Preconditions.checkNotNull(models, "models must not be null");
+        Preconditions.checkArgument(models.length > 0, "models must not be empty");
+        if (models.length == 1) {
+            return configuredModelToJson(models[0], false);
+        }
+        JsonArray array = new JsonArray();
+        for (ConfiguredModel model : models) {
+            array.add(configuredModelToJson(model, true));
+        }
+        return array;
     }
 
     public MachineModelBuilder<T> replaceModel(PartialState<T> state, ModelFile model) {
@@ -112,6 +163,21 @@ public class MachineModelBuilder<T extends ModelBuilder<T>> extends CustomLoader
         return new PartialState<>(owner, this);
     }
 
+    public PartBuilder part(ModelFile model) {
+        Preconditions.checkNotNull(model, "model must not be null");
+        ConfiguredModel[] models = ConfiguredModel.builder()
+                .modelFile(model)
+                .build();
+        PartBuilder part = new PartBuilder(models);
+        parts.add(part);
+        return part;
+    }
+
+    public PartBuilder part(ResourceLocation model) {
+        Preconditions.checkNotNull(model, "model must not be null");
+        return part(new ModelFile.ExistingModelFile(model, existingFileHelper));
+    }
+
     public MachineModelBuilder<T> forAllStatesModels(Function<MachineRenderState, ModelFile> mapper) {
         return forAllStatesExcept(mapper);
     }
@@ -130,6 +196,107 @@ public class MachineModelBuilder<T extends ModelBuilder<T>> extends CustomLoader
             }
         }
         return this;
+    }
+
+    public class PartBuilder {
+
+        private final ConfiguredModel[] models;
+        private final Multimap<Property<?>, Comparable<?>> conditions = MultimapBuilder.linkedHashKeys()
+                .arrayListValues()
+                .build();
+        private boolean useOr;
+
+        private PartBuilder(ConfiguredModel[] models) {
+            Preconditions.checkNotNull(models, "models must not be null");
+            Preconditions.checkArgument(models.length > 0, "models must not be empty");
+            this.models = models;
+        }
+
+        public PartBuilder useOr() {
+            this.useOr = true;
+            return this;
+        }
+
+        @SafeVarargs
+        public final <V extends Comparable<V>> PartBuilder when(Property<V> property, V... values) {
+            return condition(property, values);
+        }
+
+        @SafeVarargs
+        public final <V extends Comparable<V>> PartBuilder condition(Property<V> property, V... values) {
+            Preconditions.checkNotNull(property, "property must not be null");
+            Preconditions.checkNotNull(values, "values must not be null");
+            Preconditions.checkArgument(values.length > 0, "values must not be empty");
+            Preconditions.checkArgument(owner.getStateDefinition().getProperties().contains(property),
+                    "Property %s not found on machine %s", property, owner);
+            Preconditions.checkArgument(!conditions.containsKey(property),
+                    "Cannot set condition for property \"%s\" more than once", property.getName());
+            for (V value : values) {
+                Preconditions.checkArgument(property.getPossibleValues().contains(value),
+                        "%s is not a valid value for %s", value, property);
+            }
+            conditions.putAll(property, Arrays.asList(values));
+            return this;
+        }
+
+        public MachineModelBuilder<T> end() {
+            return MachineModelBuilder.this;
+        }
+
+        public JsonObject toJson() {
+            JsonObject json = new JsonObject();
+            if (!conditions.isEmpty()) {
+                json.add("when", conditionsToJson());
+            }
+            json.add("apply", configuredModelsToJson(models));
+            return json;
+        }
+
+        protected boolean matchesState(MachineRenderState state) {
+            if (state.getDefinition() != owner) {
+                return false;
+            }
+            if (conditions.isEmpty()) {
+                return true;
+            }
+            boolean matched = !useOr;
+            for (Map.Entry<Property<?>, Comparable<?>> entry : conditions.entries()) {
+                boolean contains = state.getValue(entry.getKey()) == entry.getValue();
+                if (useOr) {
+                    matched |= contains;
+                } else {
+                    matched &= contains;
+                }
+            }
+            return matched;
+        }
+
+        @SuppressWarnings({ "rawtypes", "unchecked" })
+        private JsonObject conditionsToJson() {
+            JsonObject conditionJson = new JsonObject();
+            for (Map.Entry<Property<?>, java.util.Collection<Comparable<?>>> entry : conditions.asMap().entrySet()) {
+                StringBuilder values = new StringBuilder();
+                for (Comparable<?> value : entry.getValue()) {
+                    if (!values.isEmpty()) {
+                        values.append('|');
+                    }
+                    values.append(((Property) entry.getKey()).getName(value));
+                }
+                conditionJson.addProperty(entry.getKey().getName(), values.toString());
+            }
+            if (!useOr) {
+                return conditionJson;
+            }
+            JsonArray anyConditions = new JsonArray();
+            for (Map.Entry<String, JsonElement> entry : conditionJson.entrySet()) {
+                JsonObject single = new JsonObject();
+                single.add(entry.getKey(), entry.getValue());
+                anyConditions.add(single);
+            }
+            JsonObject wrapped = new JsonObject();
+            wrapped.add("OR", anyConditions);
+            return wrapped;
+        }
     }
 
     public static class PartialState<B extends ModelBuilder<B>> implements Predicate<MachineRenderState> {
