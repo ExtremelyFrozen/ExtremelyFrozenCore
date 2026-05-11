@@ -87,8 +87,15 @@ public class MetaMachineBlock extends Block implements EntityBlock {
 
     @Override
     protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        return getRotationState() == RotationState.NONE ? definition.getShape(Direction.NORTH) :
+        VoxelShape shape = getRotationState() == RotationState.NONE ? definition.getShape(Direction.NORTH) :
                 definition.getShape(state.getValue(getRotationState().property));
+        if (level.getBlockEntity(pos) instanceof MetaMachine machine) {
+            VoxelShape[] coverShapes = machine.getCoverContainer().addCoverCollisionBoundingBox();
+            for (VoxelShape coverShape : coverShapes) {
+                shape = net.minecraft.world.phys.shapes.Shapes.or(shape, coverShape);
+            }
+        }
+        return shape;
     }
 
     @Override
@@ -119,6 +126,17 @@ public class MetaMachineBlock extends Block implements EntityBlock {
     protected void onPlace(BlockState state, Level level, BlockPos pos, BlockState oldState, boolean movedByPiston) {
         super.onPlace(state, level, pos, oldState, movedByPiston);
         level.updateNeighbourForOutputSignal(pos, this);
+        level.invalidateCapabilities(pos);
+    }
+
+    @Override
+    protected void neighborChanged(BlockState state, Level level, BlockPos pos, Block block, BlockPos fromPos,
+                                   boolean isMoving) {
+        super.neighborChanged(state, level, pos, block, fromPos, isMoving);
+        MetaMachine machine = MetaMachine.getMachine(level, pos);
+        if (machine != null) {
+            machine.getCoverContainer().onNeighborChanged(block, fromPos, isMoving);
+        }
     }
 
     @Override
@@ -200,6 +218,7 @@ public class MetaMachineBlock extends Block implements EntityBlock {
                     machine.onMachineDestroyed();
                 }
                 level.updateNeighbourForOutputSignal(pos, this);
+                level.invalidateCapabilities(pos);
                 level.removeBlockEntity(pos);
             } else if (getRotationState() != RotationState.NONE) {
                 Direction oldFacing = state.getValue(getRotationState().property);

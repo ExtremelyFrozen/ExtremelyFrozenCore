@@ -161,22 +161,33 @@ public class SyncDataHolder {
 
     public SyncTagMap serializeToSaveData(HolderLookup.Provider registries) {
         SyncTagMap tag = SyncTagMap.empty();
-        for (var field : syncData.getWorldSaveFields()) {
-            Object value = field.handle.get(holder);
-            Tag serialized = encodeField(field, value, registries);
-            tag.put(field.nbtSaveKey, serialized);
-        }
+        writeSaveData(registries, tag);
         return tag;
     }
 
     public SyncTagMap serializeToItemData(HolderLookup.Provider registries) {
         SyncTagMap tag = SyncTagMap.empty();
+        writeItemData(registries, tag);
+        return tag;
+    }
+
+    public void writeSaveData(HolderLookup.Provider registries, SyncTagMap tag) {
+        for (var field : syncData.getWorldSaveFields()) {
+            Object value = field.handle.get(holder);
+            if (value instanceof ISyncManaged syncObj) {
+                syncObj.getSyncDataHolder().writeSaveData(registries, SyncTagMap.empty());
+            }
+            Tag serialized = encodeField(field, value, registries);
+            tag.put(field.nbtSaveKey, serialized);
+        }
+    }
+
+    public void writeItemData(HolderLookup.Provider registries, SyncTagMap tag) {
         for (var field : syncData.getItemSaveFields()) {
             Object value = field.handle.get(holder);
             Tag serialized = encodeField(field, value, registries);
             tag.put(field.itemNbtKey, serialized);
         }
-        return tag;
     }
 
     public SyncTagMap serializeFullClientSyncData(HolderLookup.Provider registries) {
@@ -335,7 +346,7 @@ public class SyncDataHolder {
             return result.getOrThrow();
         }
         if (field.isSyncManaged && value instanceof ISyncManaged syncObj) {
-            return syncObj.getSyncDataHolder().serializeToSaveData(registries).toTag();
+            return syncObj.getSyncDataHolder().serializeToSaveData(registries).toVanillaTag();
         }
         ExtForCore.LOGGER.error("Sync: No codec for field {} in {}", field.fieldName, holder.getClass());
         return SyncTagMap.emptyContainer();

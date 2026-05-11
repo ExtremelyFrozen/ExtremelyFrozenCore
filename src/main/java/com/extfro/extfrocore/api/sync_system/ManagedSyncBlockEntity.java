@@ -10,7 +10,7 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.component.DataComponentMap;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
@@ -51,18 +51,26 @@ public abstract class ManagedSyncBlockEntity extends BlockEntity implements ISyn
     }
 
     @Override
-    protected final void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
+    protected final void saveAdditional(net.minecraft.nbt.CompoundTag tag, HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
-        tag.merge(getSyncDataHolder().serializeToSaveData(registries).toTag());
-        tag.merge(getSyncDataHolder().serializeToItemData(registries).toTag());
+        SyncTagMap syncData = SyncTagMap.empty();
+        getSyncDataHolder().writeSaveData(registries, syncData);
+        getSyncDataHolder().writeItemData(registries, syncData);
+        syncData.values().forEach(tag::put);
     }
 
     @Override
     @MustBeInvokedByOverriders
-    public void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
+    public void loadAdditional(net.minecraft.nbt.CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
         boolean clientSide = getLevel() == null ? ExtForCore.isClientThread() : getLevel().isClientSide;
-        SyncTagMap data = SyncTagMap.fromTag(tag);
+        SyncTagMap data = SyncTagMap.empty();
+        for (String key : tag.getAllKeys()) {
+            Tag value = tag.get(key);
+            if (value != null) {
+                data.put(key, value);
+            }
+        }
         getSyncDataHolder().deserializeData(registries, data, clientSide);
         if (!clientSide) {
             getSyncDataHolder().deserializeItemData(registries, data);
@@ -73,8 +81,10 @@ public abstract class ManagedSyncBlockEntity extends BlockEntity implements ISyn
     protected void collectImplicitComponents(DataComponentMap.Builder components) {
         super.collectImplicitComponents(components);
         var level = Objects.requireNonNull(getLevel());
-        components.set(SyncedComponents.BLOCK_ITEM_DATA.get(),
-                getSyncDataHolder().serializeToItemData(level.registryAccess()));
+        SyncTagMap data = getSyncDataHolder().serializeToItemData(level.registryAccess());
+        if (!data.isEmpty()) {
+            components.set(SyncedComponents.BLOCK_ITEM_DATA.get(), data);
+        }
     }
 
     @Override
@@ -87,16 +97,18 @@ public abstract class ManagedSyncBlockEntity extends BlockEntity implements ISyn
     }
 
     @Override
-    public CompoundTag getUpdateTag(HolderLookup.Provider registries) {
+    public net.minecraft.nbt.CompoundTag getUpdateTag(HolderLookup.Provider registries) {
         getSyncDataHolder().resyncAllFields();
-        return getSyncDataHolder().serializeFullClientSyncData(registries).toTag();
+        var tag = new net.minecraft.nbt.CompoundTag();
+        getSyncDataHolder().serializeFullClientSyncData(registries).values().forEach(tag::put);
+        return tag;
     }
 
     @Override
     public @Nullable Packet<ClientGamePacketListener> getUpdatePacket() {
         return ClientboundBlockEntityDataPacket.create(this,
                 (blockEntity, registries) -> ((ManagedSyncBlockEntity) blockEntity).syncDataHolder.getPendingChanges()
-                        .toTag());
+                        .toVanillaTag());
     }
 
     @Override
@@ -105,9 +117,10 @@ public abstract class ManagedSyncBlockEntity extends BlockEntity implements ISyn
     }
 
     public final void updateTick() {
-        setChanged();
         if (getLevel() instanceof ServerLevel serverLevel) {
-            if (syncDataHolder.scanAndMarkChanges(serverLevel.registryAccess())) {
+            boolean hasSyncChanges = syncDataHolder.scanAndMarkChanges(serverLevel.registryAccess());
+            if (hasSyncChanges) {
+                setChanged();
                 byte[] data = syncDataHolder.collectClientNetworkChanges(serverLevel.registryAccess(), false);
                 if (data.length > 0) {
                     PacketDistributor.sendToPlayersTrackingChunk(serverLevel,
@@ -116,6 +129,7 @@ public abstract class ManagedSyncBlockEntity extends BlockEntity implements ISyn
                 }
             }
             if (isDirty) {
+                setChanged();
                 serverLevel.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), Block.UPDATE_CLIENTS);
                 isDirty = false;
             }

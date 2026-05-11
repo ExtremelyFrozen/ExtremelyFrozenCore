@@ -3,6 +3,7 @@ package com.extfro.extfrocore.client;
 import com.extfro.extfrocore.ExtForCore;
 import com.extfro.extfrocore.client.renderer.block.EFMaterialBlockRenderer;
 import com.extfro.extfrocore.client.renderer.item.EFMaterialItemRenderer;
+import com.extfro.extfrocore.data.pack.EFDynamicResourceRegistrar;
 import com.extfro.extfrocore.data.pack.EFDynamicResourcePack;
 import com.extfro.extfrocore.data.pack.EFPackSource;
 import com.extfro.extfrocore.data.pack.event.EFRegisterDynamicResourcesEvent;
@@ -13,6 +14,13 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.event.AddPackFindersEvent;
 
 public class ClientProxy {
+
+    static {
+        EFDynamicResourceRegistrar.registerClient(event -> {
+            EFMaterialBlockRenderer.reinitModels();
+            EFMaterialItemRenderer.reinitModels();
+        });
+    }
 
     public static void init(IEventBus modBus) {
         modBus.addListener(ClientProxy::registerPackFinders);
@@ -28,7 +36,6 @@ public class ClientProxy {
     }
 
     private static void registerDynamicAssets(EFRegisterDynamicResourcesEvent event) {
-        EFMaterialBlockRenderer.reinitModels();
-        EFMaterialItemRenderer.reinitModels();
+        EFDynamicResourceRegistrar.generateClient(event);
     }
 }

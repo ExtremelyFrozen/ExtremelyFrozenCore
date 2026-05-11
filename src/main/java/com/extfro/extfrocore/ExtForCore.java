@@ -39,10 +39,10 @@ public class ExtForCore {
     private static final ResourceLocation TEMPLATE_LOCATION = ResourceLocation.fromNamespaceAndPath(MOD_ID, "");
 
     @ApiStatus.Internal
-    public static IEventBus tenModBus;
+    public static IEventBus modBus;
 
     public ExtForCore(IEventBus modBus, FMLModContainer container) {
-        ExtForCore.tenModBus = modBus;
+        ExtForCore.modBus = modBus;
         CommonProxy.init(modBus);
     }
 

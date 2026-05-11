@@ -2,13 +2,15 @@ package com.extfro.extfrocore.api.registry.registrate;
 
 import com.extfro.extfrocore.api.block.MetaMachineBlock;
 import com.extfro.extfrocore.api.blockentity.BlockEntityCreationInfo;
+import com.extfro.extfrocore.api.capability.recipe.RecipeCapability;
 import com.extfro.extfrocore.api.data.RotationState;
 import com.extfro.extfrocore.api.item.MetaMachineItem;
 import com.extfro.extfrocore.api.machine.MachineDefinition;
 import com.extfro.extfrocore.api.machine.MachineRenderState;
 import com.extfro.extfrocore.api.machine.MetaMachine;
 import com.extfro.extfrocore.api.machine.multiblock.PartAbility;
-import com.extfro.extfrocore.common.registry.EFRegistration;
+import com.extfro.extfrocore.api.recipe.MachineRecipeType;
+import com.extfro.extfrocore.api.registry.EFRegistries;
 
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -34,6 +36,9 @@ import com.tterrag.registrate.util.entry.BlockEntry;
 import com.tterrag.registrate.util.nullness.NonNullBiConsumer;
 import com.tterrag.registrate.util.nullness.NonNullConsumer;
 import com.tterrag.registrate.util.nullness.NonNullUnaryOperator;
+import org.apache.commons.lang3.ArrayUtils;
+import it.unimi.dsi.fastutil.objects.Reference2IntMap;
+import it.unimi.dsi.fastutil.objects.Reference2IntOpenHashMap;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -76,7 +81,9 @@ public class MachineBuilder<DEFINITION extends MachineDefinition, TYPE extends M
     @Nullable
     private java.util.function.Consumer<ItemBuilder<? extends MetaMachineItem, ?>> itemBuilder;
     private NonNullConsumer<BlockEntityType<MetaMachine>> onBlockEntityRegister = NonNullConsumer.noop();
+    private MachineRecipeType[] recipeTypes = new MachineRecipeType[0];
     private int tier;
+    private Reference2IntMap<RecipeCapability<?>> recipeOutputLimits = new Reference2IntOpenHashMap<>();
     private int paintingColor = -1;
     private BiFunction<ItemStack, Integer, Integer> itemColor = (itemStack, tintIndex) -> -1;
     private PartAbility[] abilities = new PartAbility[0];
@@ -179,6 +186,29 @@ public class MachineBuilder<DEFINITION extends MachineDefinition, TYPE extends M
 
     public TYPE tier(int tier) {
         this.tier = tier;
+        return getThis();
+    }
+
+    public TYPE recipeType(MachineRecipeType type) {
+        this.recipeTypes = ArrayUtils.add(this.recipeTypes, type);
+        return getThis();
+    }
+
+    public TYPE recipeTypes(MachineRecipeType... types) {
+        List<MachineRecipeType> typeList = new ArrayList<>();
+        typeList.addAll(Arrays.asList(this.recipeTypes));
+        typeList.addAll(Arrays.asList(types));
+        this.recipeTypes = typeList.toArray(MachineRecipeType[]::new);
+        return getThis();
+    }
+
+    public TYPE recipeOutputLimits(Reference2IntMap<RecipeCapability<?>> recipeOutputLimits) {
+        this.recipeOutputLimits = recipeOutputLimits;
+        return getThis();
+    }
+
+    public TYPE recipeOutputLimit(RecipeCapability<?> capability, int limit) {
+        this.recipeOutputLimits.put(capability, limit);
         return getThis();
     }
 
@@ -359,7 +389,9 @@ public class MachineBuilder<DEFINITION extends MachineDefinition, TYPE extends M
         definition.setBlock(block);
         definition.setItem(item);
         definition.setBlockEntity(blockEntity);
+        definition.setRecipeTypes(recipeTypes);
         definition.setTier(tier);
+        definition.setRecipeOutputLimits(recipeOutputLimits);
         definition.setTooltipBuilder((itemStack, components) -> {
             components.addAll(tooltips);
             if (tooltipBuilder != null) tooltipBuilder.accept(itemStack, components);
@@ -373,7 +405,7 @@ public class MachineBuilder<DEFINITION extends MachineDefinition, TYPE extends M
         definition.setDefaultPaintingColor(paintingColor);
         definition.setRenderXEIPreview(renderMultiblockXEIPreview);
         definition.setRenderWorldPreview(renderMultiblockWorldPreview);
-        EFRegistration.MACHINES.register(definition.getId(), definition);
+        EFRegistries.register(EFRegistries.MACHINES, definition.getId(), definition);
         return definition;
     }
 

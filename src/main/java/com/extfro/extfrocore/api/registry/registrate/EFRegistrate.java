@@ -3,6 +3,7 @@ package com.extfro.extfrocore.api.registry.registrate;
 import com.extfro.extfrocore.api.block.EFMaterialBlock;
 import com.extfro.extfrocore.api.block.MetaMachineBlock;
 import com.extfro.extfrocore.api.blockentity.BlockEntityCreationInfo;
+import com.extfro.extfrocore.api.cover.CoverDefinition;
 import com.extfro.extfrocore.api.item.EFMaterialBlockItem;
 import com.extfro.extfrocore.api.item.EFMaterialItem;
 import com.extfro.extfrocore.api.item.MetaMachineItem;
@@ -12,7 +13,10 @@ import com.extfro.extfrocore.api.machine.MultiblockMachineDefinition;
 import com.extfro.extfrocore.api.material.EFMaterial;
 import com.extfro.extfrocore.api.material.info.EFMaterialIconType;
 import com.extfro.extfrocore.api.material.tag.EFMaterialTag;
+import com.extfro.extfrocore.api.registry.EFRegistries;
 import com.extfro.extfrocore.api.sound.EFSoundEntry;
+import com.extfro.extfrocore.client.renderer.cover.ICoverRenderer;
+import com.extfro.extfrocore.ExtForCore;
 
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
@@ -75,7 +79,7 @@ public class EFRegistrate extends AbstractRegistrate<EFRegistrate> {
     }
 
     public static EFRegistrate create(String modId) {
-        return create(modId, false);
+        return create(modId, true);
     }
 
     public static EFRegistrate create(String modId, boolean registerEvents) {
@@ -94,9 +98,18 @@ public class EFRegistrate extends AbstractRegistrate<EFRegistrate> {
         if (registerEvents) {
             Optional<IEventBus> modEventBus = ModList.get().getModContainerById(modId).map(ModContainer::getEventBus);
             if (requireValidEventBus) {
-                modEventBus.ifPresent(registrate::registerEventListeners);
+                modEventBus.ifPresentOrElse(registrate::registerEventListeners, () -> {
+                    String message = "# [EFRegistrate] Failed to register event listeners for mod " + modId + " #";
+                    String hashtags = "#".repeat(message.length());
+                    ExtForCore.LOGGER.fatal(hashtags);
+                    ExtForCore.LOGGER.fatal(message);
+                    ExtForCore.LOGGER.fatal(hashtags);
+                });
             } else {
-                modEventBus.ifPresent(registrate::registerEventListeners);
+                IEventBus eventBus = modEventBus.orElse(ExtForCore.modBus);
+                if (eventBus != null) {
+                    registrate.registerEventListeners(eventBus);
+                }
             }
         }
         EXISTING_REGISTRATES.put(modId, registrate);
@@ -137,6 +150,33 @@ public class EFRegistrate extends AbstractRegistrate<EFRegistrate> {
 
     public EFMaterial.Builder material(ResourceLocation name) {
         return new EFMaterial.Builder(name);
+    }
+
+    public RegistryEntry<CoverDefinition, CoverDefinition> cover(String name,
+                                                                 CoverDefinition.CoverBehaviourProvider behaviorCreator,
+                                                                 Supplier<Supplier<ICoverRenderer>> coverRenderer) {
+        return simple(name, EFRegistries.COVER_REGISTRY,
+                () -> new CoverDefinition(makeResourceLocation(name), behaviorCreator, coverRenderer));
+    }
+
+    public RegistryEntry<CoverDefinition, CoverDefinition> cover(String name,
+                                                                 CoverDefinition.CoverBehaviourProvider behaviorCreator) {
+        return cover(name, behaviorCreator, () -> () -> (quads, side, rand, coverBehavior, pos, level, modelData, renderType) -> {});
+    }
+
+    public RegistryEntry<CoverDefinition, CoverDefinition> cover(String name,
+                                                                 CoverDefinition.TieredCoverBehaviourProvider behaviorCreator,
+                                                                 int tier,
+                                                                 Supplier<Supplier<ICoverRenderer>> coverRenderer) {
+        return cover(name, (definition, coverable, side) -> behaviorCreator.create(definition, coverable, side, tier),
+                coverRenderer);
+    }
+
+    public RegistryEntry<CoverDefinition, CoverDefinition> cover(String name,
+                                                                 CoverDefinition.TieredCoverBehaviourProvider behaviorCreator,
+                                                                 int tier) {
+        return cover(name, behaviorCreator, tier,
+                () -> () -> (quads, side, rand, coverBehavior, pos, level, modelData, renderType) -> {});
     }
 
     public ItemEntry<EFMaterialItem> materialItem(EFMaterialTag materialTag, EFMaterial material) {

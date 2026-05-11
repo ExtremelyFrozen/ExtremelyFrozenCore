@@ -1,0 +1,27 @@
+package com.extfro.extfrocore.api.blockentity;
+
+import com.extfro.extfrocore.api.machine.TickableSubscription;
+
+import net.minecraft.world.level.block.entity.BlockEntity;
+
+import org.jetbrains.annotations.Nullable;
+
+public interface ITickSubscription {
+
+    /**
+     * For initialization. To get level and property fields after auto sync, subscribe in
+     * {@link BlockEntity#clearRemoved()}.
+     */
+    @Nullable
+    TickableSubscription subscribeServerTick(Runnable runnable);
+
+    void unsubscribe(@Nullable TickableSubscription current);
+
+    @Nullable
+    default TickableSubscription subscribeServerTick(@Nullable TickableSubscription last, Runnable runnable) {
+        if (last == null || !last.isStillSubscribed()) {
+            return subscribeServerTick(runnable);
+        }
+        return last;
+    }
+}

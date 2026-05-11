@@ -3,7 +3,7 @@
 	"minVersion": "0.8",
 	"package": "com.extfro.extfrocore.mixin",
 	"compatibilityLevel": "JAVA_21",
-	"mixins": [],
+	"mixins": ["RecipeManagerMixin"],
 	"client": ["client.ModelManagerMixin"],
 	"injectors": {
 		"defaultRequire": 1

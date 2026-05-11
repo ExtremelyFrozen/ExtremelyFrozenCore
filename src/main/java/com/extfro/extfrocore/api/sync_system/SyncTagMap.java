@@ -1,27 +1,27 @@
 package com.extfro.extfrocore.api.sync_system;
 
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.EndTag;
+import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.Tag;
 
 import com.mojang.serialization.Codec;
+import com.mojang.serialization.DataResult;
+import com.mojang.serialization.Dynamic;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/**
- * Map-shaped sync data used by the sync system.
- * <p>
- * This keeps Minecraft's compound NBT type at the serialization boundary instead of exposing it through holder APIs.
- */
 public final class SyncTagMap {
 
-    public static final Codec<SyncTagMap> CODEC = CompoundTag.CODEC.xmap(SyncTagMap::fromTag, SyncTagMap::toTag);
+    public static final Codec<SyncTagMap> CODEC = Codec.PASSTHROUGH.comapFlatMap(
+            dynamic -> decodeMap(dynamic.convert(NbtOps.INSTANCE)),
+            map -> new Dynamic<>(NbtOps.INSTANCE, map.toVanillaTag()));
 
     private final Map<String, Tag> values;
 
     public SyncTagMap() {
-        this.values = new LinkedHashMap<>();
+        this(new LinkedHashMap<>());
     }
 
     private SyncTagMap(Map<String, Tag> values) {
@@ -32,31 +32,40 @@ public final class SyncTagMap {
         return new SyncTagMap();
     }
 
-    public static SyncTagMap fromTag(CompoundTag tag) {
-        Map<String, Tag> values = new LinkedHashMap<>();
-        for (String key : tag.getAllKeys()) {
-            Tag value = tag.get(key);
-            if (value != null) {
-                values.put(key, value);
-            }
-        }
-        return new SyncTagMap(values);
+    private static DataResult<SyncTagMap> decodeMap(Dynamic<Tag> dynamic) {
+        return dynamic.getMapValues().map(values -> {
+            SyncTagMap map = empty();
+            values.forEach((keyDynamic, valueDynamic) -> {
+                String key = keyDynamic.asString().result().orElse(null);
+                if (key != null) {
+                    map.put(key, valueDynamic.getValue());
+                }
+            });
+            return map;
+        });
     }
 
     public static @Nullable SyncTagMap tryRead(Tag tag) {
-        return tag instanceof CompoundTag compoundTag ? fromTag(compoundTag) : null;
+        if (tag == EndTag.INSTANCE) {
+            return empty();
+        }
+        return decodeMap(new Dynamic<>(NbtOps.INSTANCE, tag)).result().orElse(null);
     }
 
     public static boolean isEmptyContainer(Tag tag) {
-        return tag instanceof CompoundTag compoundTag && compoundTag.isEmpty();
+        return tag == EndTag.INSTANCE;
     }
 
     public static Tag emptyContainer() {
-        return empty().toTag();
+        return EndTag.INSTANCE;
     }
 
-    public CompoundTag toTag() {
-        CompoundTag tag = new CompoundTag();
+    public Map<String, Tag> values() {
+        return values;
+    }
+
+    public net.minecraft.nbt.CompoundTag toVanillaTag() {
+        var tag = new net.minecraft.nbt.CompoundTag();
         values.forEach(tag::put);
         return tag;
     }

@@ -1,5 +1,7 @@
 package com.extfro.extfrocore.api.sync_system.meta;
 
+import com.extfro.extfrocore.api.sync_system.SyncTagMap;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.ComponentSerialization;
@@ -199,5 +201,6 @@ public class FieldCodecs {
         register(ItemStack.class, ItemStack.CODEC);
         register(FluidStack.class, FluidStack.CODEC);
         register(Component.class, ComponentSerialization.CODEC);
+        register(SyncTagMap.class, SyncTagMap.CODEC);
     }
 }

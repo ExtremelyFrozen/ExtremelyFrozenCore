@@ -1,9 +1,11 @@
 package com.extfro.extfrocore.api.machine;
 
 import com.extfro.extfrocore.api.block.MetaMachineBlock;
+import com.extfro.extfrocore.api.capability.recipe.RecipeCapability;
 import com.extfro.extfrocore.api.data.RotationState;
 import com.extfro.extfrocore.api.item.MetaMachineItem;
 import com.extfro.extfrocore.api.registry.registrate.EFDefinitionHolder;
+import com.extfro.extfrocore.api.recipe.MachineRecipeType;
 
 import net.minecraft.core.Direction;
 import net.minecraft.core.IdMapper;
@@ -21,10 +23,13 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import com.tterrag.registrate.util.entry.BlockEntry;
 import com.tterrag.registrate.util.entry.ItemEntry;
 import com.tterrag.registrate.util.entry.RegistryEntry;
+import it.unimi.dsi.fastutil.objects.Reference2IntMap;
+import it.unimi.dsi.fastutil.objects.Reference2IntOpenHashMap;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.EnumMap;
@@ -50,6 +55,9 @@ public class MachineDefinition implements Supplier<MetaMachineBlock>,
     private Supplier<? extends MetaMachineItem> itemSupplier;
     @Setter
     private Supplier<BlockEntityType<? extends BlockEntity>> blockEntityTypeSupplier;
+    @Getter
+    @Setter
+    private @NotNull MachineRecipeType @NotNull [] recipeTypes = new MachineRecipeType[0];
     @Getter
     @Setter
     private int tier;
@@ -80,6 +88,9 @@ public class MachineDefinition implements Supplier<MetaMachineBlock>,
     @Getter
     @Setter
     private boolean allowCoverOnFront;
+    @Getter
+    @Setter
+    private Reference2IntMap<RecipeCapability<?>> recipeOutputLimits = new Reference2IntOpenHashMap<>();
 
     @Getter
     @Setter(onMethod_ = @ApiStatus.Internal)
