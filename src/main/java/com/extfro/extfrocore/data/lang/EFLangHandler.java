@@ -9,8 +9,7 @@ public final class EFLangHandler {
 
     private static final List<LangEntry> ENTRIES = new ArrayList<>();
 
-    private EFLangHandler() {
-    }
+    private EFLangHandler() {}
 
     public static void init(RegistrateLangProvider provider) {
         for (LangEntry entry : ENTRIES) {
@@ -32,6 +31,5 @@ public final class EFLangHandler {
         multiLang(provider, key, multiline.split("\\n"));
     }
 
-    private record LangEntry(String key, String value) {
-    }
+    private record LangEntry(String key, String value) {}
 }

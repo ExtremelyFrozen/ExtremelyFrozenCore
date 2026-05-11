@@ -8,8 +8,7 @@ public final class SerializerDouble implements IContentSerializer<Double> {
 
     public static final SerializerDouble INSTANCE = new SerializerDouble();
 
-    private SerializerDouble() {
-    }
+    private SerializerDouble() {}
 
     @Override
     public void toNetwork(RegistryFriendlyByteBuf buf, Double content) {
@@ -32,8 +31,7 @@ public final class SerializerDouble implements IContentSerializer<Double> {
         if (object instanceof CharSequence value) {
             try {
                 return Double.parseDouble(value.toString());
-            } catch (NumberFormatException ignored) {
-            }
+            } catch (NumberFormatException ignored) {}
         }
         return defaultValue();
     }

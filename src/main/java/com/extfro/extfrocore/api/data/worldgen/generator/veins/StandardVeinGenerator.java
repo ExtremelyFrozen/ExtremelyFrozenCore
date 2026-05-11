@@ -37,22 +37,18 @@ import java.util.Map;
 @NoArgsConstructor
 public class StandardVeinGenerator extends VeinGenerator {
 
-    public static final MapCodec<StandardVeinGenerator> CODEC_SEPARATE =
-            RecordCodecBuilder.mapCodec(instance -> instance.group(
-                    BuiltInRegistries.BLOCK.byNameCodec().fieldOf("block").forGetter(generator -> generator.block.get()),
-                    BuiltInRegistries.BLOCK.byNameCodec().fieldOf("deep_block")
-                            .forGetter(generator -> generator.deepBlock.get()),
-                    BuiltInRegistries.BLOCK.byNameCodec().fieldOf("nether_block")
-                            .forGetter(generator -> generator.netherBlock.get()))
-                    .apply(instance, StandardVeinGenerator::new));
-    public static final MapCodec<StandardVeinGenerator> CODEC_LIST =
-            OreConfiguration.TargetBlockState.CODEC.listOf()
-                    .fieldOf("targets")
-                    .xmap(StandardVeinGenerator::new, StandardVeinGenerator::getBlocks);
-    public static final MapCodec<StandardVeinGenerator> CODEC =
-            Codec.mapEither(CODEC_SEPARATE, CODEC_LIST).xmap(either -> either.map(a -> a, b -> b), generator ->
-                    generator.blocks != null ? com.mojang.datafixers.util.Either.right(generator) :
-                            com.mojang.datafixers.util.Either.left(generator));
+    public static final MapCodec<StandardVeinGenerator> CODEC_SEPARATE = RecordCodecBuilder.mapCodec(instance -> instance.group(
+            BuiltInRegistries.BLOCK.byNameCodec().fieldOf("block").forGetter(generator -> generator.block.get()),
+            BuiltInRegistries.BLOCK.byNameCodec().fieldOf("deep_block")
+                    .forGetter(generator -> generator.deepBlock.get()),
+            BuiltInRegistries.BLOCK.byNameCodec().fieldOf("nether_block")
+                    .forGetter(generator -> generator.netherBlock.get()))
+            .apply(instance, StandardVeinGenerator::new));
+    public static final MapCodec<StandardVeinGenerator> CODEC_LIST = OreConfiguration.TargetBlockState.CODEC.listOf()
+            .fieldOf("targets")
+            .xmap(StandardVeinGenerator::new, StandardVeinGenerator::getBlocks);
+    public static final MapCodec<StandardVeinGenerator> CODEC = Codec.mapEither(CODEC_SEPARATE, CODEC_LIST).xmap(either -> either.map(a -> a, b -> b), generator -> generator.blocks != null ? com.mojang.datafixers.util.Either.right(generator) :
+            com.mojang.datafixers.util.Either.left(generator));
 
     public NonNullSupplier<? extends Block> block;
     public NonNullSupplier<? extends Block> deepBlock;

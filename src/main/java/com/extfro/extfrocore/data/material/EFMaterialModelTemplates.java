@@ -12,8 +12,7 @@ public final class EFMaterialModelTemplates {
     private static final ResourceLocation TINTED_CUBE_PARENT = ExtForCore.id("block/cube/tinted/all_0");
     private static final ResourceLocation TINTED_CUBE_OVERLAY_PARENT = ExtForCore.id("block/cube/tinted/all");
 
-    private EFMaterialModelTemplates() {
-    }
+    private EFMaterialModelTemplates() {}
 
     public static JsonObject generatedItem(ResourceLocation layer0) {
         JsonObject model = new JsonObject();

@@ -29,8 +29,7 @@ public abstract class IndicatorGenerator {
                             .map(DataResult::success)
                             .orElseGet(() -> DataResult.error(() -> "IndicatorGenerator " + codec + " not registered")));
 
-    public static final Codec<IndicatorGenerator> DIRECT_CODEC =
-            REGISTRY_CODEC.dispatchStable(IndicatorGenerator::codec, Function.identity());
+    public static final Codec<IndicatorGenerator> DIRECT_CODEC = REGISTRY_CODEC.dispatchStable(IndicatorGenerator::codec, Function.identity());
 
     public abstract Map<ChunkPos, OreIndicatorPlacer> generate(WorldGenLevel level, RandomSource random,
                                                                GeneratedVeinMetadata metadata);

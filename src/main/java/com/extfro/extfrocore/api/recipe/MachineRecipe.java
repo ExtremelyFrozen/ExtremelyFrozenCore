@@ -8,7 +8,6 @@ import com.extfro.extfrocore.api.recipe.content.Content;
 import com.extfro.extfrocore.api.recipe.content.ContentModifier;
 
 import net.minecraft.core.HolderLookup;
-import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Recipe;

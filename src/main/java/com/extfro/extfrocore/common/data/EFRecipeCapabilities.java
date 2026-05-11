@@ -23,8 +23,7 @@ public final class EFRecipeCapabilities {
     public static final RecipeCapability<Boolean> BOOLEAN = new BasicRecipeCapability<>(
             "boolean", 0xFFE0E0E0, false, 4, SerializerBoolean.INSTANCE);
 
-    private EFRecipeCapabilities() {
-    }
+    private EFRecipeCapabilities() {}
 
     public static void init() {
         register(INTEGER);

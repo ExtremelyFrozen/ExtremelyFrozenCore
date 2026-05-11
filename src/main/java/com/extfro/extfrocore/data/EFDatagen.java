@@ -12,8 +12,7 @@ public final class EFDatagen {
 
     private static boolean initialized;
 
-    private EFDatagen() {
-    }
+    private EFDatagen() {}
 
     public static void init() {
         if (initialized) {

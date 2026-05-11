@@ -12,7 +12,6 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.ExtraCodecs;
 import net.minecraft.util.Tuple;
-import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.item.crafting.RecipeType;
 
@@ -61,28 +60,26 @@ public final class MachineRecipeSerializer implements RecipeSerializer<MachineRe
         }
     };
 
-    public static final Codec<Map<RecipeCapability<?>, ChanceLogic>> CHANCE_LOGIC_MAP_CODEC =
-            Codec.unboundedMap(RecipeCapability.DIRECT_CODEC, EFRegistries.CHANCE_LOGICS.byNameCodec());
+    public static final Codec<Map<RecipeCapability<?>, ChanceLogic>> CHANCE_LOGIC_MAP_CODEC = Codec.unboundedMap(RecipeCapability.DIRECT_CODEC, EFRegistries.CHANCE_LOGICS.byNameCodec());
 
     public static final MapCodec<MachineRecipe> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
-                    MACHINE_RECIPE_TYPE_CODEC.fieldOf("type").forGetter(value -> value.recipeType),
-                    RecipeCapability.CODEC.optionalFieldOf("inputs", Map.of()).forGetter(value -> value.inputs),
-                    RecipeCapability.CODEC.optionalFieldOf("outputs", Map.of()).forGetter(value -> value.outputs),
-                    RecipeCapability.CODEC.optionalFieldOf("tickInputs", Map.of()).forGetter(value -> value.tickInputs),
-                    RecipeCapability.CODEC.optionalFieldOf("tickOutputs", Map.of()).forGetter(value -> value.tickOutputs),
-                    CHANCE_LOGIC_MAP_CODEC.optionalFieldOf("inputChanceLogics", Map.of()).forGetter(value -> value.inputChanceLogics),
-                    CHANCE_LOGIC_MAP_CODEC.optionalFieldOf("outputChanceLogics", Map.of()).forGetter(value -> value.outputChanceLogics),
-                    CHANCE_LOGIC_MAP_CODEC.optionalFieldOf("tickInputChanceLogics", Map.of()).forGetter(value -> value.tickInputChanceLogics),
-                    CHANCE_LOGIC_MAP_CODEC.optionalFieldOf("tickOutputChanceLogics", Map.of()).forGetter(value -> value.tickOutputChanceLogics),
-                    RecipeCondition.CODEC.listOf().optionalFieldOf("recipeConditions", List.of()).forGetter(value -> value.conditions),
-                    RecipeDataMap.CODEC.optionalFieldOf("data", RecipeDataMap.empty()).forGetter(value -> value.data),
-                    ExtraCodecs.NON_NEGATIVE_INT.fieldOf("duration").forGetter(value -> value.duration),
-                    EFRegistries.RECIPE_CATEGORIES.byNameCodec().optionalFieldOf("category", RecipeCategory.DEFAULT).forGetter(value -> value.recipeCategory),
-                    Codec.INT.optionalFieldOf("groupColor", -1).forGetter(value -> value.groupColor))
+            MACHINE_RECIPE_TYPE_CODEC.fieldOf("type").forGetter(value -> value.recipeType),
+            RecipeCapability.CODEC.optionalFieldOf("inputs", Map.of()).forGetter(value -> value.inputs),
+            RecipeCapability.CODEC.optionalFieldOf("outputs", Map.of()).forGetter(value -> value.outputs),
+            RecipeCapability.CODEC.optionalFieldOf("tickInputs", Map.of()).forGetter(value -> value.tickInputs),
+            RecipeCapability.CODEC.optionalFieldOf("tickOutputs", Map.of()).forGetter(value -> value.tickOutputs),
+            CHANCE_LOGIC_MAP_CODEC.optionalFieldOf("inputChanceLogics", Map.of()).forGetter(value -> value.inputChanceLogics),
+            CHANCE_LOGIC_MAP_CODEC.optionalFieldOf("outputChanceLogics", Map.of()).forGetter(value -> value.outputChanceLogics),
+            CHANCE_LOGIC_MAP_CODEC.optionalFieldOf("tickInputChanceLogics", Map.of()).forGetter(value -> value.tickInputChanceLogics),
+            CHANCE_LOGIC_MAP_CODEC.optionalFieldOf("tickOutputChanceLogics", Map.of()).forGetter(value -> value.tickOutputChanceLogics),
+            RecipeCondition.CODEC.listOf().optionalFieldOf("recipeConditions", List.of()).forGetter(value -> value.conditions),
+            RecipeDataMap.CODEC.optionalFieldOf("data", RecipeDataMap.empty()).forGetter(value -> value.data),
+            ExtraCodecs.NON_NEGATIVE_INT.fieldOf("duration").forGetter(value -> value.duration),
+            EFRegistries.RECIPE_CATEGORIES.byNameCodec().optionalFieldOf("category", RecipeCategory.DEFAULT).forGetter(value -> value.recipeCategory),
+            Codec.INT.optionalFieldOf("groupColor", -1).forGetter(value -> value.groupColor))
             .apply(instance, MachineRecipe::new));
 
-    public static final StreamCodec<RegistryFriendlyByteBuf, MachineRecipe> STREAM_CODEC =
-            StreamCodec.of(MachineRecipeSerializer::toNetwork, MachineRecipeSerializer::fromNetwork);
+    public static final StreamCodec<RegistryFriendlyByteBuf, MachineRecipe> STREAM_CODEC = StreamCodec.of(MachineRecipeSerializer::toNetwork, MachineRecipeSerializer::fromNetwork);
 
     private MachineRecipeSerializer() {}
 
@@ -147,14 +144,10 @@ public final class MachineRecipeSerializer implements RecipeSerializer<MachineRe
         Map<RecipeCapability<?>, List<Content>> outputs = tuplesToMap(readCollection(buf, MachineRecipeSerializer::entryReader));
         Map<RecipeCapability<?>, List<Content>> tickOutputs = tuplesToMap(readCollection(buf, MachineRecipeSerializer::entryReader));
         List<RecipeCondition<?>> conditions = readCollection(buf, RecipeCondition::fromNetwork);
-        Map<RecipeCapability<?>, ChanceLogic> inputChanceLogics =
-                logicTuplesToMap(readCollection(buf, MachineRecipeSerializer::chanceLogicEntryReader));
-        Map<RecipeCapability<?>, ChanceLogic> outputChanceLogics =
-                logicTuplesToMap(readCollection(buf, MachineRecipeSerializer::chanceLogicEntryReader));
-        Map<RecipeCapability<?>, ChanceLogic> tickInputChanceLogics =
-                logicTuplesToMap(readCollection(buf, MachineRecipeSerializer::chanceLogicEntryReader));
-        Map<RecipeCapability<?>, ChanceLogic> tickOutputChanceLogics =
-                logicTuplesToMap(readCollection(buf, MachineRecipeSerializer::chanceLogicEntryReader));
+        Map<RecipeCapability<?>, ChanceLogic> inputChanceLogics = logicTuplesToMap(readCollection(buf, MachineRecipeSerializer::chanceLogicEntryReader));
+        Map<RecipeCapability<?>, ChanceLogic> outputChanceLogics = logicTuplesToMap(readCollection(buf, MachineRecipeSerializer::chanceLogicEntryReader));
+        Map<RecipeCapability<?>, ChanceLogic> tickInputChanceLogics = logicTuplesToMap(readCollection(buf, MachineRecipeSerializer::chanceLogicEntryReader));
+        Map<RecipeCapability<?>, ChanceLogic> tickOutputChanceLogics = logicTuplesToMap(readCollection(buf, MachineRecipeSerializer::chanceLogicEntryReader));
         RecipeDataMap data = RecipeDataMap.read(buf);
         int groupColor = buf.readInt();
         ResourceLocation categoryLocation = buf.readResourceLocation();

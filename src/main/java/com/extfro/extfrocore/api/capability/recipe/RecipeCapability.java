@@ -29,11 +29,11 @@ import java.util.Map;
 public abstract class RecipeCapability<T> {
 
     public static final Codec<RecipeCapability<?>> DIRECT_CODEC = ExtForCore.ExtForCore_ID.comapFlatMap(
-                    id -> EFRegistries.RECIPE_CAPABILITIES.getHolder(id)
-                            .map(DataResult::success)
-                            .orElseGet(() -> DataResult.error(
-                                    () -> "Unknown registry key in " + EFRegistries.RECIPE_CAPABILITY_REGISTRY + ": " + id)),
-                    (Holder.Reference<RecipeCapability<?>> holder) -> holder.key().location())
+            id -> EFRegistries.RECIPE_CAPABILITIES.getHolder(id)
+                    .map(DataResult::success)
+                    .orElseGet(() -> DataResult.error(
+                            () -> "Unknown registry key in " + EFRegistries.RECIPE_CAPABILITY_REGISTRY + ": " + id)),
+            (Holder.Reference<RecipeCapability<?>> holder) -> holder.key().location())
             .flatComapMap(Holder.Reference::value,
                     capability -> safeReference(EFRegistries.RECIPE_CAPABILITIES.wrapAsHolder(capability)));
 
@@ -133,6 +133,6 @@ public abstract class RecipeCapability<T> {
     private static DataResult<Holder.Reference<RecipeCapability<?>>> safeReference(Holder<RecipeCapability<?>> value) {
         return value.getDelegate() instanceof Holder.Reference<RecipeCapability<?>> reference ?
                 DataResult.success(reference) : DataResult.error(
-                () -> "Unregistered holder in " + EFRegistries.RECIPE_CAPABILITY_REGISTRY + ": " + value);
+                        () -> "Unregistered holder in " + EFRegistries.RECIPE_CAPABILITY_REGISTRY + ": " + value);
     }
 }

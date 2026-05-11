@@ -31,8 +31,7 @@ public abstract class VeinGenerator {
                     codec -> Optional.ofNullable(WorldGeneratorUtils.VEIN_GENERATORS.inverse().get(codec))
                             .map(DataResult::success)
                             .orElseGet(() -> DataResult.error(() -> "VeinGenerator " + codec + " not registered")));
-    public static final Codec<VeinGenerator> DIRECT_CODEC =
-            REGISTRY_CODEC.dispatchStable(VeinGenerator::codec, Function.identity());
+    public static final Codec<VeinGenerator> DIRECT_CODEC = REGISTRY_CODEC.dispatchStable(VeinGenerator::codec, Function.identity());
 
     public abstract List<VeinEntry> getAllEntries();
 

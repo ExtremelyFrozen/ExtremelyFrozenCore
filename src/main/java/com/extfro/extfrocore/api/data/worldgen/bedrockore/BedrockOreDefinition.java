@@ -49,8 +49,7 @@ public class BedrockOreDefinition {
             ResourceKey.codec(Registries.DIMENSION).listOf().fieldOf("dimension_filter")
                     .forGetter(definition -> new ArrayList<>(definition.dimensionFilter)))
             .apply(instance, BedrockOreDefinition::new));
-    public static final Codec<Holder<BedrockOreDefinition>> CODEC =
-            RegistryFixedCodec.create(EFRegistries.BEDROCK_ORE_REGISTRY);
+    public static final Codec<Holder<BedrockOreDefinition>> CODEC = RegistryFixedCodec.create(EFRegistries.BEDROCK_ORE_REGISTRY);
 
     @Getter
     @Setter

@@ -43,32 +43,20 @@ import java.util.List;
 
 public final class EFRegistries {
 
-    public static final ResourceKey<Registry<OreDefinition>> ORE_VEIN_REGISTRY =
-            makeRegistryKey("ore_vein");
-    public static final ResourceKey<Registry<BedrockFluidDefinition>> BEDROCK_FLUID_REGISTRY =
-            makeRegistryKey("bedrock_fluid");
-    public static final ResourceKey<Registry<BedrockOreDefinition>> BEDROCK_ORE_REGISTRY =
-            makeRegistryKey("bedrock_ore");
-    public static final ResourceKey<Registry<RecipeCapability<?>>> RECIPE_CAPABILITY_REGISTRY =
-            makeRegistryKey("recipe_capability");
-    public static final ResourceKey<Registry<MachineRecipeType>> RECIPE_TYPE_REGISTRY =
-            makeRegistryKey("recipe_type");
-    public static final ResourceKey<Registry<RecipeCategory>> RECIPE_CATEGORY_REGISTRY =
-            makeRegistryKey("recipe_category");
-    public static final ResourceKey<Registry<RecipeConditionType<?>>> RECIPE_CONDITION_REGISTRY =
-            makeRegistryKey("recipe_condition");
-    public static final ResourceKey<Registry<ChanceLogic>> CHANCE_LOGIC_REGISTRY =
-            makeRegistryKey("chance_logic");
-    public static final ResourceKey<Registry<EFTagPrefix>> TAG_PREFIX_REGISTRY =
-            makeRegistryKey("tag_prefix");
-    public static final ResourceKey<Registry<MachineDefinition>> MACHINE_REGISTRY =
-            makeRegistryKey("machine");
-    public static final ResourceKey<Registry<CoverDefinition>> COVER_REGISTRY =
-            makeRegistryKey("cover");
+    public static final ResourceKey<Registry<OreDefinition>> ORE_VEIN_REGISTRY = makeRegistryKey("ore_vein");
+    public static final ResourceKey<Registry<BedrockFluidDefinition>> BEDROCK_FLUID_REGISTRY = makeRegistryKey("bedrock_fluid");
+    public static final ResourceKey<Registry<BedrockOreDefinition>> BEDROCK_ORE_REGISTRY = makeRegistryKey("bedrock_ore");
+    public static final ResourceKey<Registry<RecipeCapability<?>>> RECIPE_CAPABILITY_REGISTRY = makeRegistryKey("recipe_capability");
+    public static final ResourceKey<Registry<MachineRecipeType>> RECIPE_TYPE_REGISTRY = makeRegistryKey("recipe_type");
+    public static final ResourceKey<Registry<RecipeCategory>> RECIPE_CATEGORY_REGISTRY = makeRegistryKey("recipe_category");
+    public static final ResourceKey<Registry<RecipeConditionType<?>>> RECIPE_CONDITION_REGISTRY = makeRegistryKey("recipe_condition");
+    public static final ResourceKey<Registry<ChanceLogic>> CHANCE_LOGIC_REGISTRY = makeRegistryKey("chance_logic");
+    public static final ResourceKey<Registry<EFTagPrefix>> TAG_PREFIX_REGISTRY = makeRegistryKey("tag_prefix");
+    public static final ResourceKey<Registry<MachineDefinition>> MACHINE_REGISTRY = makeRegistryKey("machine");
+    public static final ResourceKey<Registry<CoverDefinition>> COVER_REGISTRY = makeRegistryKey("cover");
 
     private static final LinkedHashMap<ResourceLocation, Registry<?>> LOAD_ORDER = new LinkedHashMap<>();
-    private static final LinkedHashMap<ResourceKey<? extends Registry<?>>, DataPackRegistryEntry<?>> DATA_PACK_REGISTRIES =
-            new LinkedHashMap<>();
+    private static final LinkedHashMap<ResourceKey<? extends Registry<?>>, DataPackRegistryEntry<?>> DATA_PACK_REGISTRIES = new LinkedHashMap<>();
     private static final Table<Registry<?>, ResourceLocation, Object> PENDING_REGISTRATIONS = HashBasedTable.create();
 
     private static boolean frozen = true;
@@ -92,8 +80,7 @@ public final class EFRegistries {
         makeDataPackRegistry(BEDROCK_ORE_REGISTRY, BedrockOreDefinition.DIRECT_CODEC);
     }
 
-    private EFRegistries() {
-    }
+    private EFRegistries() {}
 
     public static <T> ResourceKey<Registry<T>> makeRegistryKey(ResourceLocation registryId) {
         return ResourceKey.createRegistryKey(registryId);
@@ -132,7 +119,7 @@ public final class EFRegistries {
         return value;
     }
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     private static void registerPending(RegisterEvent event) {
         for (Registry registry : PENDING_REGISTRATIONS.rowKeySet()) {
             event.register(registry.key(), helper -> PENDING_REGISTRATIONS.row(registry).forEach(helper::register));

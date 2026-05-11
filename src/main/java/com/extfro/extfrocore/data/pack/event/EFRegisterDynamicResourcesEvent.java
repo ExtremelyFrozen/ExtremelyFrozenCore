@@ -4,11 +4,11 @@ import com.extfro.extfrocore.data.pack.EFDynamicResourcePack;
 
 import net.minecraft.data.models.blockstates.BlockStateGenerator;
 import net.minecraft.resources.ResourceLocation;
+import net.neoforged.bus.api.Event;
+import net.neoforged.fml.event.IModBusEvent;
 import net.neoforged.neoforge.client.model.generators.BlockModelBuilder;
 import net.neoforged.neoforge.client.model.generators.ItemModelBuilder;
 import net.neoforged.neoforge.client.model.generators.ModelBuilder;
-import net.neoforged.bus.api.Event;
-import net.neoforged.fml.event.IModBusEvent;
 
 import com.google.gson.JsonElement;
 import org.jetbrains.annotations.ApiStatus;
@@ -18,8 +18,7 @@ import java.util.function.Supplier;
 public class EFRegisterDynamicResourcesEvent extends Event implements IModBusEvent {
 
     @ApiStatus.Internal
-    public EFRegisterDynamicResourcesEvent() {
-    }
+    public EFRegisterDynamicResourcesEvent() {}
 
     public void addResource(ResourceLocation location, JsonElement object) {
         EFDynamicResourcePack.addResource(location, object);

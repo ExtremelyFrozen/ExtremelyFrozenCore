@@ -8,8 +8,7 @@ public final class SerializerInteger implements IContentSerializer<Integer> {
 
     public static final SerializerInteger INSTANCE = new SerializerInteger();
 
-    private SerializerInteger() {
-    }
+    private SerializerInteger() {}
 
     @Override
     public void toNetwork(RegistryFriendlyByteBuf buf, Integer content) {
@@ -32,8 +31,7 @@ public final class SerializerInteger implements IContentSerializer<Integer> {
         if (object instanceof CharSequence value) {
             try {
                 return Integer.parseInt(value.toString());
-            } catch (NumberFormatException ignored) {
-            }
+            } catch (NumberFormatException ignored) {}
         }
         return defaultValue();
     }

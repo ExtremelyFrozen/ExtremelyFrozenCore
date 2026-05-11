@@ -26,10 +26,10 @@ public class Content {
 
     public static <T> Codec<Content> codec(RecipeCapability<T> capability) {
         return RecordCodecBuilder.create(instance -> instance.group(
-                        capability.serializer.codec().fieldOf("content").forGetter(value -> capability.of(value.content)),
-                        ExtraCodecs.NON_NEGATIVE_INT.optionalFieldOf("chance", maxChance()).forGetter(value -> value.chance),
-                        ExtraCodecs.NON_NEGATIVE_INT.optionalFieldOf("maxChance", maxChance()).forGetter(value -> value.maxChance),
-                        Codec.INT.optionalFieldOf("tierChanceBoost", 0).forGetter(value -> value.tierChanceBoost))
+                capability.serializer.codec().fieldOf("content").forGetter(value -> capability.of(value.content)),
+                ExtraCodecs.NON_NEGATIVE_INT.optionalFieldOf("chance", maxChance()).forGetter(value -> value.chance),
+                ExtraCodecs.NON_NEGATIVE_INT.optionalFieldOf("maxChance", maxChance()).forGetter(value -> value.maxChance),
+                Codec.INT.optionalFieldOf("tierChanceBoost", 0).forGetter(value -> value.tierChanceBoost))
                 .apply(instance, Content::new));
     }
 

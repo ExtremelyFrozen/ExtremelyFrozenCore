@@ -67,8 +67,7 @@ public class OreDefinition {
             .apply(instance, OreDefinition::new));
 
     public static final Codec<Holder<OreDefinition>> CODEC = RegistryFixedCodec.create(EFRegistries.ORE_VEIN_REGISTRY);
-    public static final StreamCodec<RegistryFriendlyByteBuf, Holder<OreDefinition>> STREAM_CODEC =
-            ByteBufCodecs.holderRegistry(EFRegistries.ORE_VEIN_REGISTRY);
+    public static final StreamCodec<RegistryFriendlyByteBuf, Holder<OreDefinition>> STREAM_CODEC = ByteBufCodecs.holderRegistry(EFRegistries.ORE_VEIN_REGISTRY);
 
     private final InferredProperties inferredProperties = new InferredProperties();
 

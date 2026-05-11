@@ -31,14 +31,10 @@ import java.util.stream.Collectors;
 public final class WorldGeneratorUtils {
 
     public static final SortedMap<String, IWorldGenLayer> WORLD_GEN_LAYERS = new Object2ObjectLinkedOpenHashMap<>();
-    public static final HashBiMap<ResourceLocation, MapCodec<? extends VeinGenerator>> VEIN_GENERATORS =
-            HashBiMap.create();
-    public static final HashBiMap<ResourceLocation, Supplier<? extends VeinGenerator>> VEIN_GENERATOR_FUNCTIONS =
-            HashBiMap.create();
-    public static final HashBiMap<ResourceLocation, MapCodec<? extends IndicatorGenerator>> INDICATOR_GENERATORS =
-            HashBiMap.create();
-    public static final HashBiMap<ResourceLocation, Supplier<? extends IndicatorGenerator>> INDICATOR_GENERATOR_FUNCTIONS =
-            HashBiMap.create();
+    public static final HashBiMap<ResourceLocation, MapCodec<? extends VeinGenerator>> VEIN_GENERATORS = HashBiMap.create();
+    public static final HashBiMap<ResourceLocation, Supplier<? extends VeinGenerator>> VEIN_GENERATOR_FUNCTIONS = HashBiMap.create();
+    public static final HashBiMap<ResourceLocation, MapCodec<? extends IndicatorGenerator>> INDICATOR_GENERATORS = HashBiMap.create();
+    public static final HashBiMap<ResourceLocation, Supplier<? extends IndicatorGenerator>> INDICATOR_GENERATOR_FUNCTIONS = HashBiMap.create();
 
     private WorldGeneratorUtils() {}
 

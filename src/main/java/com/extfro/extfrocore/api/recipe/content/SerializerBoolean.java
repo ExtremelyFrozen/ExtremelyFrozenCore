@@ -8,8 +8,7 @@ public final class SerializerBoolean implements IContentSerializer<Boolean> {
 
     public static final SerializerBoolean INSTANCE = new SerializerBoolean();
 
-    private SerializerBoolean() {
-    }
+    private SerializerBoolean() {}
 
     @Override
     public void toNetwork(RegistryFriendlyByteBuf buf, Boolean content) {

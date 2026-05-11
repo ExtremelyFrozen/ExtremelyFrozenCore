@@ -1,6 +1,7 @@
 package com.extfro.extfrocore.api.capability.recipe;
 
 public enum IO {
+
     IN,
     OUT,
     BOTH;

@@ -8,8 +8,7 @@ public final class SerializerFloat implements IContentSerializer<Float> {
 
     public static final SerializerFloat INSTANCE = new SerializerFloat();
 
-    private SerializerFloat() {
-    }
+    private SerializerFloat() {}
 
     @Override
     public void toNetwork(RegistryFriendlyByteBuf buf, Float content) {
@@ -32,8 +31,7 @@ public final class SerializerFloat implements IContentSerializer<Float> {
         if (object instanceof CharSequence value) {
             try {
                 return Float.parseFloat(value.toString());
-            } catch (NumberFormatException ignored) {
-            }
+            } catch (NumberFormatException ignored) {}
         }
         return defaultValue();
     }

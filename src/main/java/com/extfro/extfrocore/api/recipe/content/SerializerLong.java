@@ -8,8 +8,7 @@ public final class SerializerLong implements IContentSerializer<Long> {
 
     public static final SerializerLong INSTANCE = new SerializerLong();
 
-    private SerializerLong() {
-    }
+    private SerializerLong() {}
 
     @Override
     public void toNetwork(RegistryFriendlyByteBuf buf, Long content) {
@@ -32,8 +31,7 @@ public final class SerializerLong implements IContentSerializer<Long> {
         if (object instanceof CharSequence value) {
             try {
                 return Long.parseLong(value.toString());
-            } catch (NumberFormatException ignored) {
-            }
+            } catch (NumberFormatException ignored) {}
         }
         return defaultValue();
     }

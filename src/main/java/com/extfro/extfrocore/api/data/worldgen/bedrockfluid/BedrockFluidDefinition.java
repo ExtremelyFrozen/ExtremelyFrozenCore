@@ -48,8 +48,7 @@ public class BedrockFluidDefinition {
             ResourceKey.codec(Registries.DIMENSION).listOf().fieldOf("dimension_filter")
                     .forGetter(definition -> new ArrayList<>(definition.dimensionFilter)))
             .apply(instance, BedrockFluidDefinition::new));
-    public static final Codec<Holder<BedrockFluidDefinition>> CODEC =
-            RegistryFixedCodec.create(EFRegistries.BEDROCK_FLUID_REGISTRY);
+    public static final Codec<Holder<BedrockFluidDefinition>> CODEC = RegistryFixedCodec.create(EFRegistries.BEDROCK_FLUID_REGISTRY);
 
     @Getter
     @Setter

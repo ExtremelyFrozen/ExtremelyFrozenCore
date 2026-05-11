@@ -6,12 +6,11 @@ import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 
+import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
 import com.mojang.serialization.Dynamic;
 import org.jetbrains.annotations.Nullable;
-
-import com.mojang.datafixers.util.Pair;
 
 import java.util.LinkedHashMap;
 import java.util.Map;

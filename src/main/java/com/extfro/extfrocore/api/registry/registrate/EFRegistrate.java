@@ -1,5 +1,6 @@
 package com.extfro.extfrocore.api.registry.registrate;
 
+import com.extfro.extfrocore.ExtForCore;
 import com.extfro.extfrocore.api.block.EFMaterialBlock;
 import com.extfro.extfrocore.api.block.MetaMachineBlock;
 import com.extfro.extfrocore.api.blockentity.BlockEntityCreationInfo;
@@ -16,7 +17,6 @@ import com.extfro.extfrocore.api.material.tag.EFMaterialTag;
 import com.extfro.extfrocore.api.registry.EFRegistries;
 import com.extfro.extfrocore.api.sound.EFSoundEntry;
 import com.extfro.extfrocore.client.renderer.cover.ICoverRenderer;
-import com.extfro.extfrocore.ExtForCore;
 
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;

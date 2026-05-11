@@ -1,6 +1,5 @@
 package com.extfro.extfrocore.api.material.tag;
 
-import com.extfro.extfrocore.api.material.EFMaterial;
 import com.extfro.extfrocore.api.material.info.EFMaterialIconType;
 
 import org.jetbrains.annotations.NotNull;

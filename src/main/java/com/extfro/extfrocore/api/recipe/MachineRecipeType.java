@@ -20,7 +20,6 @@ import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
 import lombok.Getter;
 import lombok.Setter;
 import org.jetbrains.annotations.ApiStatus;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collections;
@@ -40,10 +39,8 @@ public class MachineRecipeType implements RecipeType<MachineRecipe> {
     @Getter
     public final ResourceLocation registryName;
     public final String group;
-    public final Object2IntSortedMap<RecipeCapability<?>> maxInputs =
-            new Object2IntAVLTreeMap<>(RecipeCapability.COMPARATOR);
-    public final Object2IntSortedMap<RecipeCapability<?>> maxOutputs =
-            new Object2IntAVLTreeMap<>(RecipeCapability.COMPARATOR);
+    public final Object2IntSortedMap<RecipeCapability<?>> maxInputs = new Object2IntAVLTreeMap<>(RecipeCapability.COMPARATOR);
+    public final Object2IntSortedMap<RecipeCapability<?>> maxOutputs = new Object2IntAVLTreeMap<>(RecipeCapability.COMPARATOR);
     @Getter
     @Setter
     private ChanceBoostFunction chanceFunction = ChanceBoostFunction.NONE;
