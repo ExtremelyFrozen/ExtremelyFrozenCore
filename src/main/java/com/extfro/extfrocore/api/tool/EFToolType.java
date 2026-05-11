@@ -16,6 +16,7 @@ public record EFToolType(String name) {
     public static final EFToolType SPADE = create("spade");
     public static final EFToolType SAW = create("saw");
     public static final EFToolType HARD_HAMMER = create("hard_hammer");
+    public static final EFToolType SOFT_MALLET = create("soft_mallet");
     public static final EFToolType WRENCH = create("wrench");
     public static final EFToolType FILE = create("file");
     public static final EFToolType CROWBAR = create("crowbar");

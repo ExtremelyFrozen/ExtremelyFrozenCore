@@ -1,0 +1,49 @@
+package com.extfro.extfrocore.api.cover.filter;
+
+import com.extfro.extfrocore.api.sync_system.ISyncManaged;
+
+import net.minecraft.world.item.ItemStack;
+import net.neoforged.neoforge.fluids.FluidStack;
+
+public interface FilterHandlers {
+
+    static FilterHandler<ItemStack, ItemFilter> item(ISyncManaged container) {
+        return new FilterHandler<>(container) {
+
+            @Override
+            protected ItemFilter loadFilter(ItemStack filterItem) {
+                return ItemFilter.loadFilter(filterItem);
+            }
+
+            @Override
+            protected ItemFilter getEmptyFilter() {
+                return ItemFilter.EMPTY;
+            }
+
+            @Override
+            protected boolean canInsertFilterItem(ItemStack itemStack) {
+                return ItemFilter.isFilterItem(itemStack);
+            }
+        };
+    }
+
+    static FilterHandler<FluidStack, FluidFilter> fluid(ISyncManaged container) {
+        return new FilterHandler<>(container) {
+
+            @Override
+            protected FluidFilter loadFilter(ItemStack filterItem) {
+                return FluidFilter.loadFilter(filterItem);
+            }
+
+            @Override
+            protected FluidFilter getEmptyFilter() {
+                return FluidFilter.EMPTY;
+            }
+
+            @Override
+            protected boolean canInsertFilterItem(ItemStack itemStack) {
+                return FluidFilter.isFilterItem(itemStack);
+            }
+        };
+    }
+}

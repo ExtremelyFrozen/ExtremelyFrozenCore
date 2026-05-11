@@ -10,9 +10,14 @@ import net.minecraft.resources.ResourceLocation;
 import lombok.Getter;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
 public final class CoverDefinition {
+
+    private static final Map<net.minecraft.world.item.Item, CoverDefinition> ITEM_LOOKUP = new ConcurrentHashMap<>();
 
     public interface CoverBehaviourProvider {
 
@@ -43,6 +48,18 @@ public final class CoverDefinition {
 
     public CoverBehavior createCoverBehavior(ICoverable coverable, Direction side) {
         return behaviorCreator.create(this, coverable, side);
+    }
+
+    public void bindItem(net.minecraft.world.item.Item item) {
+        ITEM_LOOKUP.put(item, this);
+    }
+
+    public void bindItem(Supplier<? extends net.minecraft.world.item.Item> item) {
+        bindItem(item.get());
+    }
+
+    public static Optional<CoverDefinition> getForItem(net.minecraft.world.item.ItemStack stack) {
+        return Optional.ofNullable(ITEM_LOOKUP.get(stack.getItem()));
     }
 
     private static class ClientHelper {

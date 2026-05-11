@@ -4,8 +4,8 @@ import com.extfro.extfrocore.api.block.MetaMachineBlock;
 import com.extfro.extfrocore.api.capability.recipe.RecipeCapability;
 import com.extfro.extfrocore.api.data.RotationState;
 import com.extfro.extfrocore.api.item.MetaMachineItem;
-import com.extfro.extfrocore.api.registry.registrate.EFDefinitionHolder;
 import com.extfro.extfrocore.api.recipe.MachineRecipeType;
+import com.extfro.extfrocore.api.registry.registrate.EFDefinitionHolder;
 
 import net.minecraft.core.Direction;
 import net.minecraft.core.IdMapper;

@@ -2,25 +2,28 @@ package com.extfro.extfrocore.api.cover;
 
 import com.extfro.extfrocore.api.blockentity.ICopyable;
 import com.extfro.extfrocore.api.capability.ICoverable;
+import com.extfro.extfrocore.api.gui.factory.CoverUIFactory;
 import com.extfro.extfrocore.api.machine.MetaMachine;
 import com.extfro.extfrocore.api.sync_system.ISyncManaged;
-import com.extfro.extfrocore.api.sync_system.holder.SyncDataHolder;
 import com.extfro.extfrocore.api.sync_system.annotations.SaveField;
 import com.extfro.extfrocore.api.sync_system.annotations.SyncToClient;
+import com.extfro.extfrocore.api.sync_system.holder.SyncDataHolder;
+import com.extfro.extfrocore.api.tool.EFToolType;
 import com.extfro.extfrocore.api.transfer.fluid.IFluidHandlerModifiable;
 import com.extfro.extfrocore.client.renderer.cover.ICoverRenderer;
 import com.extfro.extfrocore.client.renderer.cover.IDynamicCoverRenderer;
+import com.extfro.extfrocore.utils.ExtendedUseOnContext;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.items.IItemHandlerModifiable;
 
+import com.mojang.datafixers.util.Pair;
 import lombok.Getter;
 import org.jetbrains.annotations.MustBeInvokedByOverriders;
 import org.jetbrains.annotations.Nullable;
@@ -109,11 +112,25 @@ public abstract class CoverBehavior implements ISyncManaged, ICopyable {
         return false;
     }
 
-    public InteractionResult onScrewdriverClick(Player player) {
+    public final Pair<EFToolType, InteractionResult> onToolClick(ExtendedUseOnContext context) {
+        var toolType = context.getToolType();
+        if (toolType.contains(EFToolType.SCREWDRIVER)) {
+            return Pair.of(EFToolType.SCREWDRIVER, onScrewdriverClick(context));
+        }
+        if (toolType.contains(EFToolType.SOFT_MALLET)) {
+            return Pair.of(EFToolType.SOFT_MALLET, onSoftMalletClick(context));
+        }
+        return Pair.of(null, InteractionResult.PASS);
+    }
+
+    public InteractionResult onScrewdriverClick(ExtendedUseOnContext context) {
+        if (this instanceof IUICover && context.getPlayer() instanceof ServerPlayer serverPlayer) {
+            return CoverUIFactory.INSTANCE.openUI(this, serverPlayer) ? InteractionResult.SUCCESS : InteractionResult.PASS;
+        }
         return InteractionResult.PASS;
     }
 
-    public InteractionResult onSoftMalletClick(Player player) {
+    public InteractionResult onSoftMalletClick(ExtendedUseOnContext context) {
         return InteractionResult.PASS;
     }
 

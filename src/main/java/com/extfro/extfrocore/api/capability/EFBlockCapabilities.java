@@ -9,8 +9,7 @@ import org.jetbrains.annotations.Nullable;
 
 public final class EFBlockCapabilities {
 
-    public static final BlockCapability<ICoverable, @Nullable Direction> COVERABLE =
-            BlockCapability.createSided(ExtForCore.id("coverable"), ICoverable.class);
+    public static final BlockCapability<ICoverable, @Nullable Direction> COVERABLE = BlockCapability.createSided(ExtForCore.id("coverable"), ICoverable.class);
 
     private EFBlockCapabilities() {}
 }

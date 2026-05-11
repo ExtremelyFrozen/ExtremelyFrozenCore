@@ -15,7 +15,6 @@ import com.extfro.extfrocore.api.transfer.fluid.IFluidHandlerModifiable;
 
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
-import net.minecraft.core.RegistryAccess;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.StringTag;
 import net.minecraft.resources.ResourceLocation;

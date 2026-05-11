@@ -4,6 +4,7 @@ import com.extfro.extfrocore.api.block.property.EFBlockStateProperties;
 import com.extfro.extfrocore.api.data.RotationState;
 import com.extfro.extfrocore.api.machine.MachineDefinition;
 import com.extfro.extfrocore.api.machine.MetaMachine;
+import com.extfro.extfrocore.utils.ExtendedUseOnContext;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -237,13 +238,54 @@ public class MetaMachineBlock extends Block implements EntityBlock {
     protected ItemInteractionResult useItemOn(
                                               ItemStack stack, BlockState state, Level level, BlockPos pos, Player player, net.minecraft.world.InteractionHand hand,
                                               BlockHitResult hit) {
-        return MetaMachine.getMachine(level, pos) == null ? ItemInteractionResult.FAIL : ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        MetaMachine machine = MetaMachine.getMachine(level, pos);
+        if (machine == null) {
+            return ItemInteractionResult.FAIL;
+        }
+        InteractionResult result = machine.onUseWithItem(new ExtendedUseOnContext(player, hand, hit));
+        if (result != InteractionResult.PASS) {
+            return switch (result) {
+                case SUCCESS, SUCCESS_NO_ITEM_USED -> ItemInteractionResult.SUCCESS;
+                case CONSUME -> ItemInteractionResult.CONSUME;
+                case FAIL -> ItemInteractionResult.FAIL;
+                default -> ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+            };
+        }
+        return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
     }
 
     @Override
     protected InteractionResult useWithoutItem(
                                                BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
-        return MetaMachine.getMachine(level, pos) == null ? InteractionResult.FAIL : InteractionResult.PASS;
+        MetaMachine machine = MetaMachine.getMachine(level, pos);
+        if (machine == null) {
+            return InteractionResult.FAIL;
+        }
+        InteractionResult result = machine.onUse(new ExtendedUseOnContext(player, net.minecraft.world.InteractionHand.MAIN_HAND, hit));
+        return result == InteractionResult.PASS ? InteractionResult.PASS : result;
+    }
+
+    public boolean canConnectRedstone(BlockState state, BlockGetter level, BlockPos pos, @Nullable Direction side) {
+        MetaMachine machine = MetaMachine.getMachine(level instanceof Level realLevel ? realLevel : null, pos);
+        return machine != null && machine.canConnectRedstone(side);
+    }
+
+    @Override
+    protected int getSignal(BlockState state, BlockGetter level, BlockPos pos, Direction direction) {
+        MetaMachine machine = MetaMachine.getMachine(level instanceof Level realLevel ? realLevel : null, pos);
+        return machine == null ? 0 : machine.getOutputSignal(direction);
+    }
+
+    @Override
+    protected int getDirectSignal(BlockState state, BlockGetter level, BlockPos pos, Direction direction) {
+        MetaMachine machine = MetaMachine.getMachine(level instanceof Level realLevel ? realLevel : null, pos);
+        return machine == null ? 0 : machine.getOutputDirectSignal(direction);
+    }
+
+    @Override
+    protected int getAnalogOutputSignal(BlockState state, Level level, BlockPos pos) {
+        MetaMachine machine = MetaMachine.getMachine(level, pos);
+        return machine == null ? 0 : machine.getAnalogOutputSignal();
     }
 
     @Override
