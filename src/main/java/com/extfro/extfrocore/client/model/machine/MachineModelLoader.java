@@ -5,6 +5,10 @@ import com.extfro.extfrocore.api.machine.MachineDefinition;
 import com.extfro.extfrocore.api.machine.MachineRenderState;
 import com.extfro.extfrocore.api.registry.EFRegistries;
 import com.extfro.extfrocore.client.model.BasicUnbakedModel;
+import com.extfro.extfrocore.client.model.machine.multipart.MultiPartSelector;
+import com.extfro.extfrocore.client.model.machine.multipart.MultiPartUnbakedModel;
+import com.extfro.extfrocore.client.model.machine.variant.MultiVariantModel;
+import com.extfro.extfrocore.client.model.machine.variant.VariantState;
 
 import net.minecraft.client.renderer.block.BlockModelShaper;
 import net.minecraft.client.renderer.block.model.BlockElement;
@@ -30,6 +34,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -61,6 +66,9 @@ public class MachineModelLoader implements IGeometryLoader<UnbakedMachineModel> 
             .registerTypeAdapter(ItemTransforms.class, new ItemTransforms.Deserializer())
             .registerTypeAdapter(ItemOverride.class, new ItemOverride.Deserializer())
             .registerTypeAdapter(Transformation.class, new TransformationHelper.Deserializer())
+            .registerTypeAdapter(MultiVariantModel.class, new MultiVariantModel.Deserializer())
+            .registerTypeAdapter(VariantState.class, new VariantState.Deserializer())
+            .registerTypeAdapter(MultiPartSelector.class, new MultiPartSelector.Deserializer())
             .create();
     private static final Logger LOGGER = LogManager.getLogger("EF MACHINE MODEL LOADER");
     private static final Splitter COMMA_SPLITTER = Splitter.on(',');
@@ -83,11 +91,17 @@ public class MachineModelLoader implements IGeometryLoader<UnbakedMachineModel> 
         if (json.has("variants")) {
             JsonObject variantsJson = GsonHelper.getAsJsonObject(json, "variants");
             for (Map.Entry<String, JsonElement> entry : variantsJson.entrySet()) {
-                variants.put(entry.getKey(), context.deserialize(entry.getValue(), BlockModel.class));
+                variants.put(entry.getKey(), GSON.fromJson(entry.getValue(), MultiVariantModel.class));
             }
         }
-        if (variants.isEmpty()) {
-            throw new JsonParseException("Model for machine %s doesn't have 'variants' defined".formatted(machineId));
+        MultiPartUnbakedModel multiPart = null;
+        if (json.has("multipart")) {
+            JsonArray multipartJson = GsonHelper.getAsJsonArray(json, "multipart");
+            multiPart = MultiPartUnbakedModel.deserialize(definition, multipartJson);
+        }
+        if (variants.isEmpty() && (multiPart == null || multiPart.getModels().isEmpty())) {
+            throw new JsonParseException("Model for machine %s doesn't have 'variants' or 'multipart' defined"
+                    .formatted(machineId));
         }
 
         StateDefinition<MachineDefinition, MachineRenderState> stateDefinition = definition.getStateDefinition();
@@ -95,13 +109,17 @@ public class MachineModelLoader implements IGeometryLoader<UnbakedMachineModel> 
         Map<MachineRenderState, UnbakedModel> statesToModels = new IdentityHashMap<>();
         Map<ModelResourceLocation, MachineRenderState> modelsToStates = new HashMap<>();
         possibleStates.forEach(state -> modelsToStates.put(stateToModelLocation(machineId, state), state));
+        MultiPartUnbakedModel finalMultiPart = multiPart;
+        if (finalMultiPart != null) {
+            possibleStates.forEach(state -> statesToModels.put(state, finalMultiPart));
+        }
 
         try {
             variants.forEach((key, curModel) -> {
                 try {
                     possibleStates.stream().filter(predicate(stateDefinition, key)).forEach(state -> {
                         UnbakedModel previous = statesToModels.put(state, curModel);
-                        if (previous != null) {
+                        if (previous != null && previous != finalMultiPart) {
                             statesToModels.put(state, MISSING_MARKER);
                             throw new IllegalStateException("Overlapping definition for variant: " + key);
                         }
@@ -123,12 +141,16 @@ public class MachineModelLoader implements IGeometryLoader<UnbakedMachineModel> 
 
         ResourceLocation particle = json.has("particle") ?
                 ResourceLocation.parse(GsonHelper.getAsString(json, "particle")) : null;
-        return new UnbakedMachineModel(definition, statesToModels, particle);
+        return new UnbakedMachineModel(definition, statesToModels, multiPart, particle);
     }
 
     protected static void resolveStateModels(UnbakedMachineModel model,
                                              Function<ResourceLocation, UnbakedModel> resolver) {
         UnbakedModel missingModel = resolver.apply(ModelBakery.MISSING_MODEL_LOCATION);
+        MultiPartUnbakedModel multiPart = model.getMultiPart();
+        if (multiPart != null) {
+            multiPart.resolveParents(resolver);
+        }
         Map<MachineRenderState, UnbakedModel> modelsCopy = new IdentityHashMap<>(model.getModels());
         modelsCopy.forEach((state, variant) -> {
             if (variant == null || variant == MISSING_MARKER) {

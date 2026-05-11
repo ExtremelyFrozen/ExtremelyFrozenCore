@@ -6,6 +6,7 @@ import com.extfro.extfrocore.api.machine.MetaMachine;
 import com.extfro.extfrocore.client.model.BaseBakedModel;
 import com.extfro.extfrocore.client.model.EFModelProperties;
 import com.extfro.extfrocore.client.model.IBlockEntityRendererBakedModel;
+import com.extfro.extfrocore.client.model.machine.multipart.MultiPartBakedModel;
 import com.extfro.extfrocore.client.renderer.cover.ICoverableRenderer;
 
 import net.minecraft.client.Minecraft;
@@ -52,6 +53,7 @@ public final class MachineModel extends BaseBakedModel implements ICoverableRend
     @Getter
     private final MachineDefinition definition;
     private final Map<MachineRenderState, BakedModel> modelsByState;
+    private final @Nullable MultiPartBakedModel multiPart;
     private final ItemTransforms transforms;
     private final Transformation rootTransform;
     private final ModelState modelState;
@@ -67,10 +69,12 @@ public final class MachineModel extends BaseBakedModel implements ICoverableRend
     private TextureAtlasSprite particleIcon;
 
     public MachineModel(MachineDefinition definition, Map<MachineRenderState, BakedModel> modelsByState,
+                        @Nullable MultiPartBakedModel multiPart,
                         ItemTransforms transforms, Transformation rootTransform, ModelState modelState,
                         boolean isGui3d, boolean usesBlockLight, boolean useAmbientOcclusion) {
         this.definition = definition;
         this.modelsByState = new IdentityHashMap<>(modelsByState);
+        this.multiPart = multiPart;
         this.transforms = transforms;
         this.rootTransform = rootTransform;
         this.modelState = modelState;
@@ -85,6 +89,9 @@ public final class MachineModel extends BaseBakedModel implements ICoverableRend
             return particleIcon;
         }
         BakedModel model = modelsByState.get(definition.defaultRenderState());
+        if (model == multiPart && multiPart != null) {
+            return multiPart.getParticleIcon();
+        }
         if (model != null) {
             return model.getParticleIcon();
         }
@@ -95,6 +102,9 @@ public final class MachineModel extends BaseBakedModel implements ICoverableRend
     @Override
     public TextureAtlasSprite getParticleIcon(ModelData modelData) {
         MachineRenderState renderState = getRenderState(modelData);
+        if (multiPart != null) {
+            return multiPart.getParticleIcon(renderState, modelData);
+        }
         BakedModel model = modelsByState.get(renderState);
         return model == null ? getParticleIcon() : model.getParticleIcon(modelData);
     }
@@ -106,8 +116,11 @@ public final class MachineModel extends BaseBakedModel implements ICoverableRend
                 .with(EFModelProperties.POS, pos);
         MetaMachine machine = MetaMachine.getMachine(level, pos);
         MachineRenderState renderState = machine == null ? definition.defaultRenderState() : machine.getRenderState();
+        if (multiPart != null) {
+            multiPart.addMachineModelData(renderState, level, pos, state, modelData, builder);
+        }
         BakedModel model = modelsByState.get(renderState);
-        if (model != null) {
+        if (model != null && model != multiPart) {
             ModelData data = model.getModelData(level, pos, state, modelData);
             for (ModelProperty<?> key : data.getProperties()) {
                 copyModelData(builder, data, key);
@@ -125,8 +138,11 @@ public final class MachineModel extends BaseBakedModel implements ICoverableRend
                                     ModelData modelData, @Nullable RenderType renderType) {
         List<BakedQuad> quads = new LinkedList<>();
         MachineRenderState renderState = getRenderState(modelData);
+        if (multiPart != null) {
+            quads.addAll(multiPart.getMachineQuads(definition, renderState, state, side, rand, modelData, renderType));
+        }
         BakedModel model = modelsByState.get(renderState);
-        if (model != null) {
+        if (model != null && model != multiPart) {
             quads.addAll(model.getQuads(state, side, rand, modelData, renderType));
         }
         BlockAndTintGetter level = modelData.get(EFModelProperties.LEVEL);
@@ -142,8 +158,13 @@ public final class MachineModel extends BaseBakedModel implements ICoverableRend
     public ChunkRenderTypeSet getRenderTypes(BlockState state, RandomSource rand, ModelData modelData) {
         MachineRenderState renderState = getRenderState(modelData);
         BakedModel model = modelsByState.get(renderState);
-        ChunkRenderTypeSet baseTypes = model == null ? ChunkRenderTypeSet.none() :
+        ChunkRenderTypeSet baseTypes;
+        if (multiPart != null) {
+            baseTypes = multiPart.getRenderTypes(state, rand, modelData);
+        } else {
+            baseTypes = model == null ? ChunkRenderTypeSet.none() :
                 model.getRenderTypes(state, rand, modelData);
+        }
 
         BlockAndTintGetter level = modelData.get(EFModelProperties.LEVEL);
         BlockPos pos = modelData.get(EFModelProperties.POS);

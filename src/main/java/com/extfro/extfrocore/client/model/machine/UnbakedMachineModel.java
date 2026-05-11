@@ -2,6 +2,8 @@ package com.extfro.extfrocore.client.model.machine;
 
 import com.extfro.extfrocore.api.machine.MachineDefinition;
 import com.extfro.extfrocore.api.machine.MachineRenderState;
+import com.extfro.extfrocore.client.model.machine.multipart.MultiPartBakedModel;
+import com.extfro.extfrocore.client.model.machine.multipart.MultiPartUnbakedModel;
 
 import net.minecraft.client.renderer.block.model.ItemOverrides;
 import net.minecraft.client.renderer.texture.TextureAtlas;
@@ -25,12 +27,14 @@ public class UnbakedMachineModel implements IUnbakedGeometry<UnbakedMachineModel
 
     private final MachineDefinition definition;
     private final Map<MachineRenderState, UnbakedModel> models;
+    private final @Nullable MultiPartUnbakedModel multiPart;
     private final @Nullable ResourceLocation particle;
 
     public UnbakedMachineModel(MachineDefinition definition, Map<MachineRenderState, UnbakedModel> models,
-                               @Nullable ResourceLocation particle) {
+                               @Nullable MultiPartUnbakedModel multiPart, @Nullable ResourceLocation particle) {
         this.definition = definition;
         this.models = models;
+        this.multiPart = multiPart;
         this.particle = particle;
     }
 
@@ -42,6 +46,11 @@ public class UnbakedMachineModel implements IUnbakedGeometry<UnbakedMachineModel
         return models;
     }
 
+    @Nullable
+    public MultiPartUnbakedModel getMultiPart() {
+        return multiPart;
+    }
+
     @Override
     public BakedModel bake(IGeometryBakingContext context, ModelBaker baker,
                            Function<Material, TextureAtlasSprite> spriteGetter, ModelState modelState,
@@ -49,8 +58,10 @@ public class UnbakedMachineModel implements IUnbakedGeometry<UnbakedMachineModel
         Map<MachineRenderState, BakedModel> bakedModels = new IdentityHashMap<>();
         models.forEach((machineState, unbaked) -> bakedModels.put(machineState,
                 unbaked.bake(baker, spriteGetter, modelState)));
+        MultiPartBakedModel bakedMultiPart = multiPart == null ? null :
+                multiPart.bake(baker, spriteGetter, modelState);
 
-        MachineModel model = new MachineModel(definition, bakedModels, context.getTransforms(),
+        MachineModel model = new MachineModel(definition, bakedModels, bakedMultiPart, context.getTransforms(),
                 context.getRootTransform(), modelState, context.isGui3d(), context.useBlockLight(),
                 context.useAmbientOcclusion());
         if (particle != null) {
