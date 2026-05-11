@@ -8,6 +8,7 @@
 		"client.BakedQuadMixin",
 		"client.BlockModelMixin",
 		"client.FaceBakeryMixin",
+		"client.KeyboardHandlerMixin",
 		"client.ModelManagerMixin"
 	],
 	"injectors": {

@@ -2,6 +2,7 @@ package com.extfro.extfrocore;
 
 import com.extfro.extfrocore.api.EFValues;
 import com.extfro.extfrocore.common.CommonProxy;
+import com.extfro.extfrocore.config.ConfigHolder;
 import com.extfro.extfrocore.utils.FormattingUtil;
 
 import net.minecraft.client.Minecraft;
@@ -44,6 +45,7 @@ public class ExtForCore {
 
     public ExtForCore(IEventBus modBus, FMLModContainer container) {
         ExtForCore.modBus = modBus;
+        ConfigHolder.init();
         CommonProxy.init(modBus);
     }
 

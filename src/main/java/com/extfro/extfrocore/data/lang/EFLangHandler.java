@@ -15,6 +15,9 @@ public final class EFLangHandler {
         for (LangEntry entry : ENTRIES) {
             provider.add(entry.key(), entry.value());
         }
+        provider.add("extfrocore.debug.resource_rebuild.start",
+                "Invoking Gradle resource rebuild (./gradlew :processResources)");
+        provider.add("extfrocore.debug.resource_rebuild.done", "Gradle resource rebuild done in %s");
     }
 
     public static void add(String key, String value) {
