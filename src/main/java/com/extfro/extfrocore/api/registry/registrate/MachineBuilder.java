@@ -13,6 +13,7 @@ import com.extfro.extfrocore.api.recipe.MachineRecipeType;
 import com.extfro.extfrocore.api.registry.EFRegistries;
 import com.extfro.extfrocore.client.renderer.BlockEntityWithBERModelRenderer;
 import com.extfro.extfrocore.client.renderer.ItemWithBERModelRenderer;
+import com.extfro.extfrocore.data.model.MachineModels;
 import com.extfro.extfrocore.data.model.builder.MachineModelBuilder;
 
 import net.minecraft.network.chat.Component;
@@ -267,12 +268,29 @@ public class MachineBuilder<DEFINITION extends MachineDefinition, TYPE extends M
     }
 
     public TYPE simpleModel(ResourceLocation modelName) {
-        return model((context, provider, builder) -> builder.forAllStatesModels(
-                state -> provider.models().getExistingFile(modelName)));
+        return model(MachineModels.createBasicMachineModel(modelName));
     }
 
     public TYPE defaultModel() {
         return simpleModel(registrate.makeResourceLocation("block/machine/template/" + name));
+    }
+
+    public TYPE basicReplaceableModel(ResourceLocation modelName, String... textureNames) {
+        return model(MachineModels.createBasicReplaceableTextureMachineModel(modelName, textureNames));
+    }
+
+    public TYPE overlayCasingModel(ResourceLocation casingTexture, ResourceLocation overlayModel) {
+        return model(MachineModels.createOverlayCasingMachineModel(casingTexture, overlayModel));
+    }
+
+    public TYPE sidedOverlayCasingModel(ResourceLocation casingTexture, ResourceLocation overlayModel) {
+        return model(MachineModels.createSidedOverlayCasingMachineModel(casingTexture, overlayModel));
+    }
+
+    public TYPE colorOverlayModel(ResourceLocation parentModel, ResourceLocation overlay,
+                                  @Nullable ResourceLocation pipeOverlay,
+                                  @Nullable ResourceLocation emissiveOverlay) {
+        return model(MachineModels.createColorOverlayMachineModel(parentModel, overlay, pipeOverlay, emissiveOverlay));
     }
 
     public TYPE tooltips(@Nullable Component... components) {
