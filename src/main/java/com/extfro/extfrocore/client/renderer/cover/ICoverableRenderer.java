@@ -45,6 +45,11 @@ public interface ICoverableRenderer {
     }
 
     @OnlyIn(Dist.CLIENT)
+    static void onResourceManagerReload() {
+        COVER_BACK_PLATE[0] = null;
+    }
+
+    @OnlyIn(Dist.CLIENT)
     default void renderCovers(java.util.List<BakedQuad> quads, @NotNull ICoverable coverable,
                               BlockPos pos, BlockAndTintGetter level, @Nullable Direction side,
                               RandomSource rand, @NotNull ModelData modelData, @Nullable RenderType renderType) {

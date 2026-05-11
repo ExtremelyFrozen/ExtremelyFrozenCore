@@ -42,6 +42,13 @@ public class SimpleCoverRenderer implements ICoverRenderer {
 
     @Override
     @OnlyIn(Dist.CLIENT)
+    public void onResourceManagerReload() {
+        sprite = null;
+        emissiveSprite = null;
+    }
+
+    @Override
+    @OnlyIn(Dist.CLIENT)
     public void renderCover(List<BakedQuad> quads, @Nullable Direction side, RandomSource rand,
                             @NotNull CoverBehavior coverBehavior, BlockPos pos, BlockAndTintGetter level,
                             @NotNull ModelData modelData, @Nullable RenderType renderType) {

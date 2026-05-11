@@ -3,6 +3,7 @@ package com.extfro.extfrocore.client;
 import com.extfro.extfrocore.ExtForCore;
 import com.extfro.extfrocore.client.model.machine.MachineModelLoader;
 import com.extfro.extfrocore.client.renderer.block.EFMaterialBlockRenderer;
+import com.extfro.extfrocore.client.renderer.cover.CoverRenderers;
 import com.extfro.extfrocore.client.renderer.item.EFMaterialItemRenderer;
 import com.extfro.extfrocore.data.pack.EFDynamicResourcePack;
 import com.extfro.extfrocore.data.pack.EFDynamicResourceRegistrar;
@@ -21,6 +22,7 @@ public class ClientProxy {
         EFDynamicResourceRegistrar.registerClient(event -> {
             EFMaterialBlockRenderer.reinitModels();
             EFMaterialItemRenderer.reinitModels();
+            CoverRenderers.onResourceManagerReload();
         });
     }
 

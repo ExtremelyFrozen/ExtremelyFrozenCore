@@ -2,10 +2,12 @@ package com.extfro.extfrocore.api.cover;
 
 import com.extfro.extfrocore.ExtForCore;
 import com.extfro.extfrocore.api.capability.ICoverable;
+import com.extfro.extfrocore.api.item.CoverItem;
 import com.extfro.extfrocore.client.renderer.cover.ICoverRenderer;
 
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.Item;
 
 import lombok.Getter;
 import org.jetbrains.annotations.Nullable;
@@ -34,6 +36,8 @@ public final class CoverDefinition {
     private final CoverBehaviourProvider behaviorCreator;
     @Getter
     private final @Nullable Supplier<ICoverRenderer> coverRenderer;
+    @Getter
+    private @Nullable Supplier<? extends CoverItem> item;
 
     public CoverDefinition(ResourceLocation id, CoverBehaviourProvider behaviorCreator,
                            Supplier<Supplier<ICoverRenderer>> coverRenderer) {
@@ -50,12 +54,17 @@ public final class CoverDefinition {
         return behaviorCreator.create(this, coverable, side);
     }
 
-    public void bindItem(net.minecraft.world.item.Item item) {
+    public void bindItem(Item item) {
         ITEM_LOOKUP.put(item, this);
     }
 
-    public void bindItem(Supplier<? extends net.minecraft.world.item.Item> item) {
+    public void bindItem(Supplier<? extends Item> item) {
         bindItem(item.get());
+    }
+
+    public void setItem(Supplier<? extends CoverItem> item) {
+        this.item = item;
+        bindItem(item);
     }
 
     public static Optional<CoverDefinition> getForItem(net.minecraft.world.item.ItemStack stack) {

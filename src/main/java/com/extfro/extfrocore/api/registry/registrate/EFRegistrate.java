@@ -62,6 +62,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.IntFunction;
 import java.util.function.Supplier;
 
 public class EFRegistrate extends AbstractRegistrate<EFRegistrate> {
@@ -152,31 +153,67 @@ public class EFRegistrate extends AbstractRegistrate<EFRegistrate> {
         return new EFMaterial.Builder(name);
     }
 
-    public RegistryEntry<CoverDefinition, CoverDefinition> cover(String name,
-                                                                 CoverDefinition.CoverBehaviourProvider behaviorCreator,
-                                                                 Supplier<Supplier<ICoverRenderer>> coverRenderer) {
+    public RegistryEntry<CoverDefinition, CoverDefinition> simpleCover(String name,
+                                                                       CoverDefinition.CoverBehaviourProvider behaviorCreator,
+                                                                       Supplier<Supplier<ICoverRenderer>> coverRenderer) {
         return simple(name, EFRegistries.COVER_REGISTRY,
                 () -> new CoverDefinition(makeResourceLocation(name), behaviorCreator, coverRenderer));
     }
 
-    public RegistryEntry<CoverDefinition, CoverDefinition> cover(String name,
-                                                                 CoverDefinition.CoverBehaviourProvider behaviorCreator) {
-        return cover(name, behaviorCreator, () -> () -> (quads, side, rand, coverBehavior, pos, level, modelData, renderType) -> {});
+    public RegistryEntry<CoverDefinition, CoverDefinition> simpleCover(String name,
+                                                                       CoverDefinition.CoverBehaviourProvider behaviorCreator) {
+        return simpleCover(name, behaviorCreator, CoverBuilder.simpleCoverRenderer(this, name));
     }
 
-    public RegistryEntry<CoverDefinition, CoverDefinition> cover(String name,
-                                                                 CoverDefinition.TieredCoverBehaviourProvider behaviorCreator,
-                                                                 int tier,
-                                                                 Supplier<Supplier<ICoverRenderer>> coverRenderer) {
+    public CoverBuilder cover(String name,
+                              CoverDefinition.CoverBehaviourProvider behaviorCreator,
+                              Supplier<Supplier<ICoverRenderer>> coverRenderer) {
+        return new CoverBuilder(this, name, behaviorCreator, coverRenderer);
+    }
+
+    public CoverBuilder cover(String name, CoverDefinition.CoverBehaviourProvider behaviorCreator) {
+        return cover(name, behaviorCreator, CoverBuilder.simpleCoverRenderer(this, name));
+    }
+
+    public CoverBuilder tieredCover(String name,
+                                    CoverDefinition.TieredCoverBehaviourProvider behaviorCreator,
+                                    int tier,
+                                    Supplier<Supplier<ICoverRenderer>> coverRenderer) {
         return cover(name, (definition, coverable, side) -> behaviorCreator.create(definition, coverable, side, tier),
                 coverRenderer);
     }
 
-    public RegistryEntry<CoverDefinition, CoverDefinition> cover(String name,
-                                                                 CoverDefinition.TieredCoverBehaviourProvider behaviorCreator,
-                                                                 int tier) {
-        return cover(name, behaviorCreator, tier,
-                () -> () -> (quads, side, rand, coverBehavior, pos, level, modelData, renderType) -> {});
+    public CoverBuilder tieredCover(String name,
+                                    CoverDefinition.TieredCoverBehaviourProvider behaviorCreator,
+                                    int tier) {
+        return tieredCover(name, behaviorCreator, tier, CoverBuilder.simpleCoverRenderer(this, name));
+    }
+
+    public CoverDefinitionHolder[] tieredCovers(String name,
+                                                CoverDefinition.TieredCoverBehaviourProvider behaviorCreator,
+                                                IntFunction<String> tierName,
+                                                int... tiers) {
+        CoverDefinitionHolder[] holders = new CoverDefinitionHolder[tiers.length];
+        for (int i = 0; i < tiers.length; i++) {
+            int tier = tiers[i];
+            holders[i] = tieredCover(CoverBuilder.tieredName(name, tierName.apply(tier)), behaviorCreator, tier)
+                    .register();
+        }
+        return holders;
+    }
+
+    public CoverDefinitionHolder[] tieredCovers(String name,
+                                                CoverDefinition.TieredCoverBehaviourProvider behaviorCreator,
+                                                IntFunction<String> tierName,
+                                                IntFunction<Supplier<Supplier<ICoverRenderer>>> coverRenderer,
+                                                int... tiers) {
+        CoverDefinitionHolder[] holders = new CoverDefinitionHolder[tiers.length];
+        for (int i = 0; i < tiers.length; i++) {
+            int tier = tiers[i];
+            holders[i] = tieredCover(CoverBuilder.tieredName(name, tierName.apply(tier)), behaviorCreator, tier,
+                    coverRenderer.apply(tier)).register();
+        }
+        return holders;
     }
 
     public ItemEntry<EFMaterialItem> materialItem(EFMaterialTag materialTag, EFMaterial material) {
