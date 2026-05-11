@@ -23,9 +23,11 @@ import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 public class MachineRecipeType implements RecipeType<MachineRecipe> {
@@ -120,6 +122,24 @@ public class MachineRecipeType implements RecipeType<MachineRecipe> {
 
     public Set<MachineRecipe> getRecipesInCategory(RecipeCategory category) {
         return Collections.unmodifiableSet(categoryMap.getOrDefault(category, Set.of()));
+    }
+
+    public Iterator<MachineRecipe> searchRecipe(RecipeLogicContext context, Predicate<MachineRecipe> canHandle) {
+        List<MachineRecipe> matches = categoryMap.values().stream()
+                .flatMap(Set::stream)
+                .filter(recipe -> recipe.conditions.size() >= minRecipeConditions)
+                .filter(canHandle)
+                .toList();
+        if (!matches.isEmpty()) {
+            return matches.iterator();
+        }
+        for (ICustomRecipeLogic logic : customRecipeLogicRunners) {
+            MachineRecipe recipe = logic.createCustomRecipe(context);
+            if (recipe != null && canHandle.test(recipe)) {
+                return Collections.singleton(recipe).iterator();
+            }
+        }
+        return Collections.emptyIterator();
     }
 
     public String getTranslationKey() {

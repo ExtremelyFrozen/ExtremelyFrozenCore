@@ -5,6 +5,7 @@ import com.extfro.extfrocore.api.blockentity.ITickSubscription;
 import com.extfro.extfrocore.api.cover.CoverDefinition;
 import com.extfro.extfrocore.api.data.RotationState;
 import com.extfro.extfrocore.api.machine.feature.IMachineFeature;
+import com.extfro.extfrocore.api.machine.feature.IRecipeLogicMachine;
 import com.extfro.extfrocore.api.sync_system.ManagedSyncBlockEntity;
 import com.extfro.extfrocore.api.sync_system.annotations.RerenderOnChanged;
 import com.extfro.extfrocore.api.sync_system.annotations.SaveField;
@@ -68,6 +69,9 @@ public abstract class MetaMachine extends ManagedSyncBlockEntity implements ITic
 
     public void onLoad() {
         coverContainer.onLoad();
+        if (this instanceof IRecipeLogicMachine recipeLogicMachine) {
+            recipeLogicMachine.getRecipeLogic().onMachineLoad();
+        }
     }
 
     public void onUnload() {
@@ -238,6 +242,19 @@ public abstract class MetaMachine extends ManagedSyncBlockEntity implements ITic
             return Direction.NORTH;
         }
         return getBlockState().getValue(rotationState.property);
+    }
+
+    public Direction getUpwardsFacing() {
+        if (getDefinition().isAllowExtendedFacing() &&
+                getBlockState().hasProperty(com.extfro.extfrocore.api.block.property.EFBlockStateProperties.UPWARDS_FACING)) {
+            return getBlockState().getValue(com.extfro.extfrocore.api.block.property.EFBlockStateProperties.UPWARDS_FACING);
+        }
+        Direction frontFacing = getFrontFacing();
+        return frontFacing.getAxis() == Direction.Axis.Y ? Direction.NORTH : Direction.UP;
+    }
+
+    public boolean isFacingValid(Direction facing) {
+        return getDefinition().getRotationState().test(facing);
     }
 
     public void addCollisionBoundingBox(List<VoxelShape> collisionList) {

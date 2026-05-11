@@ -17,6 +17,8 @@ import net.minecraft.network.chat.MutableComponent;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
 import io.netty.buffer.Unpooled;
+import it.unimi.dsi.fastutil.objects.Object2IntMap;
+import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.ArrayList;
@@ -118,12 +120,30 @@ public abstract class RecipeCapability<T> {
         return new ArrayList<>(ingredients);
     }
 
+    public int limitMaxParallelByOutput(IRecipeCapabilityHolder holder,
+                                        com.extfro.extfrocore.api.recipe.MachineRecipe recipe,
+                                        int maxMultiplier,
+                                        boolean tick) {
+        return Integer.MAX_VALUE;
+    }
+
+    public int getMaxParallelByInput(IRecipeCapabilityHolder holder,
+                                     com.extfro.extfrocore.api.recipe.MachineRecipe recipe,
+                                     int limit,
+                                     boolean tick) {
+        return Integer.MAX_VALUE;
+    }
+
     public boolean doMatchInRecipe() {
         return true;
     }
 
     public boolean doAddGuiSlots() {
         return isRecipeSearchFilter();
+    }
+
+    public Object2IntMap<T> makeChanceCache() {
+        return new Object2IntOpenHashMap<>();
     }
 
     public boolean shouldBypassDistinct() {

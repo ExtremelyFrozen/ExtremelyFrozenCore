@@ -4,7 +4,9 @@ import com.extfro.extfrocore.api.block.MetaMachineBlock;
 import com.extfro.extfrocore.api.capability.recipe.RecipeCapability;
 import com.extfro.extfrocore.api.data.RotationState;
 import com.extfro.extfrocore.api.item.MetaMachineItem;
+import com.extfro.extfrocore.api.machine.feature.IRecipeLogicMachine;
 import com.extfro.extfrocore.api.recipe.MachineRecipeType;
+import com.extfro.extfrocore.api.recipe.MachineRecipe;
 import com.extfro.extfrocore.api.registry.registrate.EFDefinitionHolder;
 
 import net.minecraft.core.Direction;
@@ -36,6 +38,9 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
+import java.util.function.BiPredicate;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 public class MachineDefinition implements Supplier<MetaMachineBlock>,
@@ -91,6 +96,21 @@ public class MachineDefinition implements Supplier<MetaMachineBlock>,
     @Getter
     @Setter
     private Reference2IntMap<RecipeCapability<?>> recipeOutputLimits = new Reference2IntOpenHashMap<>();
+    @Getter
+    @Setter
+    private BiPredicate<IRecipeLogicMachine, MachineRecipe> beforeWorking = (machine, recipe) -> true;
+    @Getter
+    @Setter
+    private Predicate<IRecipeLogicMachine> onWorking = machine -> true;
+    @Getter
+    @Setter
+    private Consumer<IRecipeLogicMachine> onWaiting = machine -> {};
+    @Getter
+    @Setter
+    private Consumer<IRecipeLogicMachine> afterWorking = machine -> {};
+    @Getter
+    @Setter
+    private boolean regressWhenWaiting;
 
     @Getter
     @Setter(onMethod_ = @ApiStatus.Internal)

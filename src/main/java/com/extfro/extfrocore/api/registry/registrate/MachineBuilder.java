@@ -8,7 +8,10 @@ import com.extfro.extfrocore.api.item.MetaMachineItem;
 import com.extfro.extfrocore.api.machine.MachineDefinition;
 import com.extfro.extfrocore.api.machine.MachineRenderState;
 import com.extfro.extfrocore.api.machine.MetaMachine;
+import com.extfro.extfrocore.api.machine.feature.IRecipeLogicMachine;
 import com.extfro.extfrocore.api.machine.multiblock.PartAbility;
+import com.extfro.extfrocore.api.machine.property.MachineModelProperties;
+import com.extfro.extfrocore.api.recipe.MachineRecipe;
 import com.extfro.extfrocore.api.recipe.MachineRecipeType;
 import com.extfro.extfrocore.api.registry.EFRegistries;
 import com.extfro.extfrocore.client.renderer.BlockEntityWithBERModelRenderer;
@@ -57,9 +60,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
+import java.util.function.BiPredicate;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
@@ -105,6 +110,11 @@ public class MachineBuilder<DEFINITION extends MachineDefinition, TYPE extends M
     private Supplier<BlockState> appearance;
     @Nullable
     private String langValue;
+    private BiPredicate<IRecipeLogicMachine, MachineRecipe> beforeWorking = (machine, recipe) -> true;
+    private Predicate<IRecipeLogicMachine> onWorking = machine -> true;
+    private Consumer<IRecipeLogicMachine> onWaiting = machine -> {};
+    private Consumer<IRecipeLogicMachine> afterWorking = machine -> {};
+    private boolean regressWhenWaiting;
 
     public MachineBuilder(
                           EFRegistrate registrate,
@@ -227,6 +237,31 @@ public class MachineBuilder<DEFINITION extends MachineDefinition, TYPE extends M
         return getThis();
     }
 
+    public TYPE beforeWorking(BiPredicate<IRecipeLogicMachine, MachineRecipe> beforeWorking) {
+        this.beforeWorking = beforeWorking;
+        return getThis();
+    }
+
+    public TYPE onWorking(Predicate<IRecipeLogicMachine> onWorking) {
+        this.onWorking = onWorking;
+        return getThis();
+    }
+
+    public TYPE onWaiting(Consumer<IRecipeLogicMachine> onWaiting) {
+        this.onWaiting = onWaiting;
+        return getThis();
+    }
+
+    public TYPE afterWorking(Consumer<IRecipeLogicMachine> afterWorking) {
+        this.afterWorking = afterWorking;
+        return getThis();
+    }
+
+    public TYPE regressWhenWaiting(boolean regressWhenWaiting) {
+        this.regressWhenWaiting = regressWhenWaiting;
+        return getThis();
+    }
+
     public TYPE paintingColor(int paintingColor) {
         this.paintingColor = paintingColor;
         return getThis();
@@ -280,10 +315,12 @@ public class MachineBuilder<DEFINITION extends MachineDefinition, TYPE extends M
     }
 
     public TYPE overlayCasingModel(ResourceLocation casingTexture, ResourceLocation overlayModel) {
+        modelProperty(MachineModelProperties.IS_FORMED, false);
         return model(MachineModels.createOverlayCasingMachineModel(casingTexture, overlayModel));
     }
 
     public TYPE sidedOverlayCasingModel(ResourceLocation casingTexture, ResourceLocation overlayModel) {
+        modelProperty(MachineModelProperties.IS_FORMED, false);
         return model(MachineModels.createSidedOverlayCasingMachineModel(casingTexture, overlayModel));
     }
 
@@ -434,6 +471,11 @@ public class MachineBuilder<DEFINITION extends MachineDefinition, TYPE extends M
         definition.setRecipeTypes(recipeTypes);
         definition.setTier(tier);
         definition.setRecipeOutputLimits(recipeOutputLimits);
+        definition.setBeforeWorking(beforeWorking);
+        definition.setOnWorking(onWorking);
+        definition.setOnWaiting(onWaiting);
+        definition.setAfterWorking(afterWorking);
+        definition.setRegressWhenWaiting(regressWhenWaiting);
         definition.setTooltipBuilder((itemStack, components) -> {
             components.addAll(tooltips);
             if (tooltipBuilder != null) tooltipBuilder.accept(itemStack, components);
