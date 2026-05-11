@@ -2,6 +2,8 @@ package com.extfro.extfrocore.common.data;
 
 import com.extfro.extfrocore.ExtForCore;
 import com.extfro.extfrocore.api.capability.recipe.BasicRecipeCapability;
+import com.extfro.extfrocore.api.capability.recipe.FluidRecipeCapability;
+import com.extfro.extfrocore.api.capability.recipe.ItemRecipeCapability;
 import com.extfro.extfrocore.api.capability.recipe.RecipeCapability;
 import com.extfro.extfrocore.api.recipe.content.SerializerBoolean;
 import com.extfro.extfrocore.api.recipe.content.SerializerDouble;
@@ -22,6 +24,8 @@ public final class EFRecipeCapabilities {
             "double", 0xFFE0E0E0, false, 3, SerializerDouble.INSTANCE);
     public static final RecipeCapability<Boolean> BOOLEAN = new BasicRecipeCapability<>(
             "boolean", 0xFFE0E0E0, false, 4, SerializerBoolean.INSTANCE);
+    public static final ItemRecipeCapability ITEM = ItemRecipeCapability.CAP;
+    public static final FluidRecipeCapability FLUID = FluidRecipeCapability.CAP;
 
     private EFRecipeCapabilities() {}
 
@@ -31,6 +35,8 @@ public final class EFRecipeCapabilities {
         register(FLOAT);
         register(DOUBLE);
         register(BOOLEAN);
+        register(ITEM);
+        register(FLUID);
     }
 
     private static void register(RecipeCapability<?> capability) {

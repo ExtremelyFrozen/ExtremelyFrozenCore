@@ -1,8 +1,17 @@
 package com.extfro.extfrocore.api.recipe.lookup.ingredient;
 
 import com.extfro.extfrocore.api.capability.recipe.RecipeCapability;
+import com.extfro.extfrocore.api.recipe.lookup.ingredient.fluid.FluidStackMapIngredient;
+import com.extfro.extfrocore.api.recipe.lookup.ingredient.fluid.FluidTagMapIngredient;
+import com.extfro.extfrocore.api.recipe.lookup.ingredient.item.ItemStackMapIngredient;
+import com.extfro.extfrocore.api.recipe.lookup.ingredient.item.ItemTagMapIngredient;
 
 import net.minecraft.Util;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.Ingredient;
+import net.neoforged.neoforge.fluids.FluidStack;
+import net.neoforged.neoforge.fluids.crafting.SingleFluidIngredient;
+import net.neoforged.neoforge.fluids.crafting.TagFluidIngredient;
 
 import com.google.common.base.Preconditions;
 import org.jetbrains.annotations.NotNull;
@@ -24,6 +33,29 @@ public final class MapIngredientTypeManager {
     private static final Map<MapIngredientFunction<?>, Class<?>> INGREDIENT_TYPES = new ConcurrentHashMap<>(7);
 
     private MapIngredientTypeManager() {}
+
+    static {
+        registerMapIngredient(Ingredient.class, ingredient -> {
+            List<AbstractMapIngredient> list = new ArrayList<>();
+            list.addAll(ItemTagMapIngredient.from(ingredient));
+            list.addAll(ItemStackMapIngredient.from(ingredient));
+            return list;
+        });
+        registerMapIngredient(ItemStack.class, stack -> {
+            List<AbstractMapIngredient> list = new ArrayList<>();
+            list.addAll(ItemTagMapIngredient.from(stack));
+            list.addAll(ItemStackMapIngredient.from(stack));
+            return list;
+        });
+        registerMapIngredient(SingleFluidIngredient.class, FluidStackMapIngredient::from);
+        registerMapIngredient(TagFluidIngredient.class, FluidTagMapIngredient::from);
+        registerMapIngredient(FluidStack.class, stack -> {
+            List<AbstractMapIngredient> list = new ArrayList<>();
+            list.addAll(FluidTagMapIngredient.from(stack));
+            list.addAll(FluidStackMapIngredient.from(stack));
+            return list;
+        });
+    }
 
     public static <T> void registerMapIngredient(Class<T> ingredientClass,
                                                  MapIngredientFunction<T> function) {
