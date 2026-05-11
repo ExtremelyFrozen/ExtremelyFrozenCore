@@ -16,6 +16,7 @@ public final class EFXEIRegistration {
             return;
         }
         initialized = true;
+        XEIPages.init();
         registerJEI();
         registerEMI();
     }

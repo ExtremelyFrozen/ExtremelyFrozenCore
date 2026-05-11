@@ -56,4 +56,11 @@ public final class OreProcessingRegistry {
         registerDisplays(displays::add);
         return List.copyOf(displays);
     }
+
+    @Unmodifiable
+    public static List<OreProcessingDisplay> getDisplays(OreProcessingCategory category) {
+        return getDisplays().stream()
+                .filter(display -> display.category().equals(category))
+                .toList();
+    }
 }

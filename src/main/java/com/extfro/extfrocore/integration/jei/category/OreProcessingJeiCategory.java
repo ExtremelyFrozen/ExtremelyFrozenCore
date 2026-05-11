@@ -1,7 +1,7 @@
 package com.extfro.extfrocore.integration.jei.category;
 
 import com.extfro.extfrocore.integration.xei.oreprocessing.OreProcessingDisplay;
-import com.extfro.extfrocore.integration.xei.oreprocessing.OreProcessingRegistry;
+import com.extfro.extfrocore.integration.xei.oreprocessing.OreProcessingCategory;
 
 import net.minecraft.client.gui.GuiGraphics;
 
@@ -13,14 +13,16 @@ import mezz.jei.api.recipe.RecipeType;
 
 public final class OreProcessingJeiCategory extends AbstractXEIJeiCategory<OreProcessingDisplay> {
 
-    public OreProcessingJeiCategory(IGuiHelper guiHelper) {
-        super(guiHelper, OreProcessingRegistry.DEFAULT_CATEGORY.title(), OreProcessingRegistry.DEFAULT_CATEGORY.icon(),
-                OreProcessingRegistry.DEFAULT_CATEGORY.width(), OreProcessingRegistry.DEFAULT_CATEGORY.height());
+    private final OreProcessingCategory category;
+
+    public OreProcessingJeiCategory(IGuiHelper guiHelper, OreProcessingCategory category) {
+        super(guiHelper, category.title(), category.icon(), category.width(), category.height());
+        this.category = category;
     }
 
     @Override
     public RecipeType<OreProcessingDisplay> getRecipeType() {
-        return XEIJeiRecipeTypes.ORE_PROCESSING;
+        return XEIJeiRecipeTypes.oreProcessing(category);
     }
 
     @Override

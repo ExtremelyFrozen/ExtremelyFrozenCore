@@ -15,16 +15,18 @@ public final class XEIJeiCategories {
 
     public static void registerCategories(IRecipeCategoryRegistration registration) {
         var guiHelper = registration.getJeiHelpers().getGuiHelper();
-        registration.addRecipeCategories(
-                new OreVeinJeiCategory(guiHelper),
-                new OreProcessingJeiCategory(guiHelper),
-                new CircuitJeiCategory(guiHelper),
-                new MultiblockInfoJeiCategory(guiHelper));
+        registration.addRecipeCategories(new OreVeinJeiCategory(guiHelper));
+        for (var category : OreProcessingRegistry.getCategories()) {
+            registration.addRecipeCategories(new OreProcessingJeiCategory(guiHelper, category));
+        }
+        registration.addRecipeCategories(new CircuitJeiCategory(guiHelper), new MultiblockInfoJeiCategory(guiHelper));
     }
 
     public static void registerRecipes(IRecipeRegistration registration) {
         registration.addRecipes(XEIJeiRecipeTypes.ORE_VEIN, XEIOreVeinRegistry.getAllDisplays());
-        registration.addRecipes(XEIJeiRecipeTypes.ORE_PROCESSING, OreProcessingRegistry.getDisplays());
+        for (var category : OreProcessingRegistry.getCategories()) {
+            registration.addRecipes(XEIJeiRecipeTypes.oreProcessing(category), OreProcessingRegistry.getDisplays(category));
+        }
         registration.addRecipes(XEIJeiRecipeTypes.CIRCUIT, CircuitDisplayRegistry.getDisplays());
         registration.addRecipes(XEIJeiRecipeTypes.MULTIBLOCK_INFO, XEIMultiblockInfoRegistry.getAllDisplays());
     }
@@ -33,7 +35,7 @@ public final class XEIJeiCategories {
         for (var category : OreProcessingRegistry.getCategories()) {
             for (var catalyst : category.catalysts()) {
                 if (!catalyst.isEmpty()) {
-                    registration.addRecipeCatalyst(catalyst, XEIJeiRecipeTypes.ORE_PROCESSING);
+                    registration.addRecipeCatalyst(catalyst, XEIJeiRecipeTypes.oreProcessing(category));
                 }
             }
         }
