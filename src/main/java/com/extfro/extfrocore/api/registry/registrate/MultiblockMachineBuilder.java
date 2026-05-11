@@ -7,6 +7,7 @@ import com.extfro.extfrocore.api.machine.MetaMachine;
 import com.extfro.extfrocore.api.machine.MultiblockMachineDefinition;
 import com.extfro.extfrocore.api.machine.feature.multiblock.IMultiPart;
 import com.extfro.extfrocore.api.machine.multiblock.MultiblockControllerMachine;
+import com.extfro.extfrocore.api.machine.property.MachineModelProperties;
 import com.extfro.extfrocore.api.pattern.BlockPattern;
 import com.extfro.extfrocore.api.pattern.MultiblockShapeInfo;
 
@@ -17,7 +18,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ItemLike;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 
 import org.apache.commons.lang3.function.TriFunction;
 import org.jetbrains.annotations.Nullable;
@@ -57,7 +57,7 @@ public class MultiblockMachineBuilder<DEFINITION extends MultiblockMachineDefini
                 blockFactory, itemFactory, blockEntityFactory);
         allowExtendedFacing(true);
         allowCoverOnFront(true);
-        modelProperty(BlockStateProperties.POWERED, false);
+        modelProperty(MachineModelProperties.IS_FORMED, false);
     }
 
     public TYPE generator(boolean generator) {
@@ -121,7 +121,8 @@ public class MultiblockMachineBuilder<DEFINITION extends MultiblockMachineDefini
     public DEFINITION register() {
         DEFINITION definition = super.register();
         definition.setGenerator(generator);
-        definition.setPatternFactory(() -> pattern == null ? BlockPattern.EMPTY : pattern.apply(definition));
+        BlockPattern builtPattern = pattern == null ? BlockPattern.EMPTY : pattern.apply(definition);
+        definition.setPatternFactory(() -> builtPattern);
         definition.setShapes(() -> shapeInfos.stream()
                 .map(factory -> factory.apply(definition))
                 .flatMap(Collection::stream)

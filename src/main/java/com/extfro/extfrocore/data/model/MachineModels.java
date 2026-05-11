@@ -1,5 +1,6 @@
 package com.extfro.extfrocore.data.model;
 
+import com.extfro.extfrocore.api.machine.property.MachineModelProperties;
 import com.extfro.extfrocore.api.registry.registrate.MachineBuilder;
 import com.extfro.extfrocore.client.model.machine.overlays.WorkableOverlaySet;
 import com.extfro.extfrocore.client.model.machine.overlays.WorkableOverlayStatus;
@@ -30,12 +31,28 @@ public final class MachineModels {
     }
 
     public static MachineBuilder.ModelInitializer createOverlayCasingMachineModel(ResourceLocation casingTexture,
-                                                                                   ResourceLocation overlayModel) {
+                                                                                    ResourceLocation overlayModel) {
         return (context, provider, builder) -> {
             BlockModelBuilder model = provider.models().nested()
                     .parent(provider.models().getExistingFile(overlayModel))
                     .texture("all", casingTexture);
             builder.forAllStatesModels(state -> model);
+            builder.addReplaceableTextures("all");
+        };
+    }
+
+    public static MachineBuilder.ModelInitializer createFormedOverlayCasingMachineModel(ResourceLocation casingTexture,
+                                                                                         ResourceLocation overlayModel,
+                                                                                         ResourceLocation formedOverlayModel) {
+        return (context, provider, builder) -> {
+            BlockModelBuilder model = provider.models().nested()
+                    .parent(provider.models().getExistingFile(overlayModel))
+                    .texture("all", casingTexture);
+            BlockModelBuilder formedModel = provider.models().nested()
+                    .parent(provider.models().getExistingFile(formedOverlayModel))
+                    .texture("all", casingTexture);
+            builder.partialState().with(MachineModelProperties.IS_FORMED, false).setModel(model);
+            builder.partialState().with(MachineModelProperties.IS_FORMED, true).setModel(formedModel);
             builder.addReplaceableTextures("all");
         };
     }

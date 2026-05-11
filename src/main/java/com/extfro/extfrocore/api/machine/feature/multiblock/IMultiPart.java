@@ -1,5 +1,6 @@
 package com.extfro.extfrocore.api.machine.feature.multiblock;
 
+import com.extfro.extfrocore.api.machine.feature.IMachineFeature;
 import com.extfro.extfrocore.api.machine.multiblock.MultiblockControllerMachine;
 
 import net.minecraft.core.BlockPos;
@@ -11,7 +12,7 @@ import org.jetbrains.annotations.UnmodifiableView;
 
 import java.util.SortedSet;
 
-public interface IMultiPart {
+public interface IMultiPart extends IMachineFeature {
 
     default boolean canShared() {
         return true;
