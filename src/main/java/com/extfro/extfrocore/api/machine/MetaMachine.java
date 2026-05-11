@@ -4,6 +4,7 @@ import com.extfro.extfrocore.api.blockentity.BlockEntityCreationInfo;
 import com.extfro.extfrocore.api.blockentity.ITickSubscription;
 import com.extfro.extfrocore.api.cover.CoverDefinition;
 import com.extfro.extfrocore.api.data.RotationState;
+import com.extfro.extfrocore.api.machine.feature.IMachineFeature;
 import com.extfro.extfrocore.api.sync_system.ManagedSyncBlockEntity;
 import com.extfro.extfrocore.api.sync_system.annotations.RerenderOnChanged;
 import com.extfro.extfrocore.api.sync_system.annotations.SaveField;
@@ -31,7 +32,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 
-public abstract class MetaMachine extends ManagedSyncBlockEntity implements ITickSubscription {
+public abstract class MetaMachine extends ManagedSyncBlockEntity implements ITickSubscription, IMachineFeature {
 
     @Getter
     private MachineRenderState renderState;
@@ -78,13 +79,15 @@ public abstract class MetaMachine extends ManagedSyncBlockEntity implements ITic
         onUnload();
     }
 
-    public void onMachinePlaced(@Nullable LivingEntity player, ItemStack stack) {}
+    public void onMachinePlaced(@Nullable LivingEntity player, ItemStack stack) {
+    }
 
     public void onMachineDestroyed() {
         coverContainer.dropAllCovers();
     }
 
-    public void onRotated(Direction oldFacing, Direction newFacing) {}
+    public void onRotated(Direction oldFacing, Direction newFacing) {
+    }
 
     public void modifyDrops(List<ItemStack> drops) {
         for (var cover : coverContainer.getCovers()) {
@@ -93,7 +96,8 @@ public abstract class MetaMachine extends ManagedSyncBlockEntity implements ITic
         }
     }
 
-    public void animateTick(net.minecraft.util.RandomSource random) {}
+    public void animateTick(net.minecraft.util.RandomSource random) {
+    }
 
     public void serverTick() {
         serverTicks.removeIf(subscription -> {
@@ -105,7 +109,8 @@ public abstract class MetaMachine extends ManagedSyncBlockEntity implements ITic
         });
     }
 
-    public void clientTick() {}
+    public void clientTick() {
+    }
 
     public final Pair<EFToolType, InteractionResult> onToolClick(ExtendedUseOnContext context) {
         Player player = context.getPlayer();
