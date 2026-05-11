@@ -12,6 +12,7 @@ import com.extfro.extfrocore.api.machine.multiblock.PartAbility;
 import com.extfro.extfrocore.api.recipe.MachineRecipeType;
 import com.extfro.extfrocore.api.registry.EFRegistries;
 import com.extfro.extfrocore.client.renderer.BlockEntityWithBERModelRenderer;
+import com.extfro.extfrocore.data.model.builder.MachineModelBuilder;
 
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -27,6 +28,7 @@ import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.Property;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import net.neoforged.neoforge.client.model.generators.BlockModelBuilder;
 
 import com.tterrag.registrate.builders.BlockBuilder;
 import com.tterrag.registrate.builders.ItemBuilder;
@@ -260,8 +262,8 @@ public class MachineBuilder<DEFINITION extends MachineDefinition, TYPE extends M
     }
 
     public TYPE simpleModel(ResourceLocation modelName) {
-        return model((context, provider) -> provider.simpleBlock(context.getEntry(),
-                provider.models().getExistingFile(modelName)));
+        return model((context, provider, builder) -> builder.forAllStatesModels(
+                state -> provider.models().getExistingFile(modelName)));
     }
 
     public TYPE defaultModel() {
@@ -363,7 +365,7 @@ public class MachineBuilder<DEFINITION extends MachineDefinition, TYPE extends M
                 .initialProperties(() -> Blocks.DISPENSER)
                 .properties(BlockBehaviour.Properties::noLootTable)
                 .blockstate(blockModel != null ? (ctx, provider) -> blockModel.accept((DataGenContext) ctx, provider) :
-                        (ctx, provider) -> model.configureModel((DataGenContext) ctx, provider))
+                        (ctx, provider) -> createMachineModel((DataGenContext) ctx, provider, model))
                 .properties(blockProp)
                 .onRegister(block -> Arrays.stream(abilities).forEach(ability -> ability.register(tier, block)));
         if (langValue != null) {
@@ -431,14 +433,32 @@ public class MachineBuilder<DEFINITION extends MachineDefinition, TYPE extends M
     @FunctionalInterface
     public interface ModelInitializer {
 
-        void configureModel(DataGenContext<Block, ? extends Block> context, RegistrateBlockstateProvider provider);
+        void configureModel(DataGenContext<Block, ? extends Block> context, RegistrateBlockstateProvider provider,
+                            MachineModelBuilder<BlockModelBuilder> builder);
 
         default ModelInitializer andThen(ModelInitializer after) {
             Objects.requireNonNull(after);
-            return (ctx, provider) -> {
-                configureModel(ctx, provider);
-                after.configureModel(ctx, provider);
+            return (ctx, provider, builder) -> {
+                configureModel(ctx, provider, builder);
+                after.configureModel(ctx, provider, builder);
             };
         }
+    }
+
+    private static void createMachineModel(DataGenContext<Block, ? extends Block> context,
+                                           RegistrateBlockstateProvider provider,
+                                           ModelInitializer modelInitializer) {
+        if (!(context.getEntry() instanceof MetaMachineBlock machineBlock)) {
+            throw new IllegalArgumentException("passed block must be a machine block, is " +
+                    context.getEntry().getClass().getName());
+        }
+        MachineDefinition definition = machineBlock.getDefinition();
+        String modelLocation = context.getId().withPrefix("block/machine/").toString();
+        MachineModelBuilder<BlockModelBuilder> builder = provider.models().getBuilder(modelLocation)
+                .customLoader(MachineModelBuilder.begin(definition));
+        modelInitializer.configureModel(context, provider, builder);
+        BlockModelBuilder model = builder.end();
+        model.parent(provider.models().getExistingFile(provider.mcLoc("block/block")));
+        provider.simpleBlock(context.getEntry(), model);
     }
 }
