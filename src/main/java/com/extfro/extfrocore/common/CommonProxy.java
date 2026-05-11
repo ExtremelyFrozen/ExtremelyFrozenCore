@@ -4,6 +4,8 @@ import com.extfro.extfrocore.ExtForCore;
 import com.extfro.extfrocore.api.sync_system.SyncedComponents;
 import com.extfro.extfrocore.api.sync_system.network.ClientBlockEntitySyncPayload;
 import com.extfro.extfrocore.api.sync_system.network.ServerBlockEntitySyncPayload;
+import com.extfro.extfrocore.common.material.EFMaterialRegistration;
+import com.extfro.extfrocore.common.registry.EFRegistration;
 
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
@@ -15,6 +17,8 @@ public class CommonProxy {
 
     public static void init(final IEventBus modBus) {
         CommonProxy.modBus = modBus;
+        EFMaterialRegistration.init(modBus);
+        EFRegistration.REGISTRATE.registerRegistrate(modBus);
         SyncedComponents.COMPONENTS.register(modBus);
         modBus.addListener(CommonProxy::registerPayloadHandlers);
     }

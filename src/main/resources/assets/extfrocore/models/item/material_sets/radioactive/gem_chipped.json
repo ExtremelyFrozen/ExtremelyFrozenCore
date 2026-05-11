@@ -1,0 +1,6 @@
+{
+	"parent": "extfrocore:item/material_sets/dull/gem_chipped",
+	"textures": {
+		"layer1": "extfrocore:item/material_sets/radioactive/gem_chipped_secondary"
+	}
+}

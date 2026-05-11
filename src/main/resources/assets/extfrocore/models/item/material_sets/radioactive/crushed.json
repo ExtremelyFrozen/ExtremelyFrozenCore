@@ -1,0 +1,6 @@
+{
+	"parent": "extfrocore:item/material_sets/dull/crushed",
+	"textures": {
+		"layer1": "extfrocore:item/material_sets/radioactive/crushed_secondary"
+	}
+}

@@ -1,0 +1,9 @@
+{
+	"parent": "extfrocore:item/material_sets/bright/ingot",
+	"textures": {
+		"layer0": "extfrocore:item/material_sets/bright/ingot",
+		"layer1": "extfrocore:item/material_sets/bright/ingot_secondary",
+		"layer2": "extfrocore:item/material_sets/bright/ingot_overlay",
+		"layer3": "extfrocore:item/material_sets/bright/ingot_hot_overlay"
+	}
+}

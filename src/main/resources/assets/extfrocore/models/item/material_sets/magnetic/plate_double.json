@@ -1,0 +1,6 @@
+{
+	"parent": "extfrocore:item/material_sets/metallic/plate_double",
+	"textures": {
+		"layer3": "extfrocore:item/material_sets/magnetic/magnetic_overlay"
+	}
+}

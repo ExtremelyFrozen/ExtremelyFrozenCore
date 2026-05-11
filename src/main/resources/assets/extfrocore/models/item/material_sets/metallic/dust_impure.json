@@ -1,0 +1,7 @@
+{
+	"parent": "extfrocore:item/material_sets/dull/dust_impure",
+	"textures": {
+		"layer0": "extfrocore:item/material_sets/metallic/dust",
+		"layer1": "extfrocore:item/material_sets/metallic/dust_secondary"
+	}
+}

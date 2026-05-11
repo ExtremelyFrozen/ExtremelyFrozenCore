@@ -11,7 +11,7 @@ public class FormattingUtil {
      *
      *         <pre>
      *         <br>{@code "maragingSteel300" -> "maraging_steel_300"}
-     *         <br>{@code "gtceu:maraging_steel_300" -> "gtceu:maraging_steel_300"}
+     *         <br>{@code "extfrocore:example_entry" -> "extfrocore:example_entry"}
      *         <br>{@code "maragingSteel_300" -> "maraging_steel_300"}
      *         <br>{@code "maragingSTEEL_300" -> "maraging_steel_300"}
      *         <br>{@code "MARAGING_STEEL_300" -> "maraging_steel_300"}
@@ -45,5 +45,41 @@ public class FormattingUtil {
             if (Character.isUpperCase(ch)) return true;
         }
         return false;
+    }
+
+    public static String lowerUnderscoreToUpperCamel(String string) {
+        StringBuilder result = new StringBuilder(string.length());
+        boolean upper = true;
+        for (int i = 0; i < string.length(); i++) {
+            char ch = string.charAt(i);
+            if (ch == '_' || ch == '-' || ch == ' ') {
+                upper = true;
+                continue;
+            }
+            result.append(upper ? Character.toUpperCase(ch) : ch);
+            upper = false;
+        }
+        return result.toString();
+    }
+
+    public static String toSmallDownNumbers(String string) {
+        return translateNumbers(string, "₀₁₂₃₄₅₆₇₈₉");
+    }
+
+    public static String toSmallUpNumbers(String string) {
+        return translateNumbers(string, "⁰¹²³⁴⁵⁶⁷⁸⁹");
+    }
+
+    private static String translateNumbers(String string, String numbers) {
+        StringBuilder result = new StringBuilder(string.length());
+        for (int i = 0; i < string.length(); i++) {
+            char ch = string.charAt(i);
+            if (ch >= '0' && ch <= '9') {
+                result.append(numbers.charAt(ch - '0'));
+            } else {
+                result.append(ch);
+            }
+        }
+        return result.toString();
     }
 }

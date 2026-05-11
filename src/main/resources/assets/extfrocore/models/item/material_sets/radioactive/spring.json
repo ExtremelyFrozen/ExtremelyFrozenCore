@@ -1,0 +1,6 @@
+{
+	"parent": "extfrocore:item/material_sets/dull/spring",
+	"textures": {
+		"layer1": "extfrocore:item/material_sets/radioactive/spring_secondary"
+	}
+}

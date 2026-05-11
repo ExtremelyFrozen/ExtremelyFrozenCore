@@ -1,0 +1,9 @@
+{
+	"parent": "extfrocore:item/material_sets/shiny/ingot",
+	"textures": {
+		"layer0": "extfrocore:item/material_sets/shiny/ingot",
+		"layer1": "extfrocore:item/material_sets/shiny/ingot_secondary",
+		"layer2": "extfrocore:item/material_sets/shiny/ingot_overlay",
+		"layer3": "extfrocore:item/material_sets/shiny/ingot_hot_overlay"
+	}
+}

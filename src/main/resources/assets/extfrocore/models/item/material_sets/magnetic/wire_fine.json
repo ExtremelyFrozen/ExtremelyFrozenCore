@@ -1,0 +1,6 @@
+{
+	"parent": "extfrocore:item/material_sets/dull/wire_fine",
+	"textures": {
+		"layer2": "extfrocore:item/material_sets/magnetic/wire_fine_overlay"
+	}
+}

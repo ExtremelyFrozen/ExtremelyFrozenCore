@@ -1,0 +1,24 @@
+{
+	"parent": "block/block",
+	"loader": "neoforge:composite",
+	"textures": {
+		"particle": "extfrocore:block/material_sets/dull/frame"
+	},
+	"children": {
+		"base": {
+			"parent": "extfrocore:block/cube/tinted/all_0",
+			"render_type": "cutout",
+			"textures": {
+				"all": "extfrocore:block/material_sets/dull/frame"
+			}
+		},
+		"secondary": {
+			"parent": "extfrocore:block/cube/tinted/all",
+			"render_type": "translucent",
+			"textures": {
+				"all": "extfrocore:block/material_sets/dull/frame_secondary"
+			}
+		}
+	},
+	"item_render_order": ["base", "secondary"]
+}

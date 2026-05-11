@@ -1,0 +1,6 @@
+{
+	"parent": "extfrocore:item/material_sets/dull/wire_fine",
+	"textures": {
+		"layer1": "extfrocore:item/material_sets/radioactive/wire_fine_secondary"
+	}
+}

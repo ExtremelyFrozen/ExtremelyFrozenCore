@@ -1,0 +1,10 @@
+{
+	"ctm": {
+		"ctm_version": 1,
+		"layer": "BLOOM",
+		"extfrocore": true,
+		"extra": {
+			"light": 15
+		}
+	}
+}

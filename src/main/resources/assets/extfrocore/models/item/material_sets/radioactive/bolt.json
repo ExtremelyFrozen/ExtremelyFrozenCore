@@ -1,0 +1,6 @@
+{
+	"parent": "extfrocore:item/material_sets/metallic/bolt",
+	"textures": {
+		"layer1": "extfrocore:item/material_sets/radioactive/bolt_secondary"
+	}
+}
