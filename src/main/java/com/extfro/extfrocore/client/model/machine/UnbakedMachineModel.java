@@ -31,16 +31,22 @@ public class UnbakedMachineModel implements IUnbakedGeometry<UnbakedMachineModel
     private final Map<MachineRenderState, UnbakedModel> models;
     private final @Nullable MultiPartUnbakedModel multiPart;
     private final List<DynamicMachineRender<?, ?>> dynamicRenders;
+    private final java.util.Set<String> replaceableTextures;
+    private final Map<String, ResourceLocation> textureOverrides;
     private final @Nullable ResourceLocation particle;
 
     public UnbakedMachineModel(MachineDefinition definition, Map<MachineRenderState, UnbakedModel> models,
                                @Nullable MultiPartUnbakedModel multiPart,
                                List<DynamicMachineRender<?, ?>> dynamicRenders,
+                               java.util.Set<String> replaceableTextures,
+                               Map<String, ResourceLocation> textureOverrides,
                                @Nullable ResourceLocation particle) {
         this.definition = definition;
         this.models = models;
         this.multiPart = multiPart;
         this.dynamicRenders = dynamicRenders;
+        this.replaceableTextures = replaceableTextures;
+        this.textureOverrides = textureOverrides;
         this.particle = particle;
     }
 
@@ -66,10 +72,17 @@ public class UnbakedMachineModel implements IUnbakedGeometry<UnbakedMachineModel
                 unbaked.bake(baker, spriteGetter, modelState)));
         MultiPartBakedModel bakedMultiPart = multiPart == null ? null :
                 multiPart.bake(baker, spriteGetter, modelState);
+        Map<String, TextureAtlasSprite> bakedTextureOverrides = new java.util.HashMap<>();
+        for (Map.Entry<String, ResourceLocation> entry : textureOverrides.entrySet()) {
+            bakedTextureOverrides.put(entry.getKey(),
+                    spriteGetter.apply(new Material(TextureAtlas.LOCATION_BLOCKS, entry.getValue())));
+        }
 
         MachineModel model = new MachineModel(definition, bakedModels, bakedMultiPart, dynamicRenders,
                 context.getTransforms(), context.getRootTransform(), modelState, context.isGui3d(),
                 context.useBlockLight(), context.useAmbientOcclusion());
+        model.setReplaceableTextures(replaceableTextures);
+        model.setTextureOverrides(bakedTextureOverrides);
         if (particle != null) {
             model.setParticleIcon(spriteGetter.apply(new Material(TextureAtlas.LOCATION_BLOCKS, particle)));
         } else if (context.hasMaterial("particle")) {

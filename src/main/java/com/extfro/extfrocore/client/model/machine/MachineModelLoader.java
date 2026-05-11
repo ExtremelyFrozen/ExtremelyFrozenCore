@@ -48,12 +48,14 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -116,6 +118,25 @@ public class MachineModelLoader implements IGeometryLoader<UnbakedMachineModel> 
             }
         }
 
+        Set<String> replaceableTextures = new HashSet<>();
+        JsonArray replaceableTextureJson = GsonHelper.getAsJsonArray(json, "replaceable_textures", null);
+        if (replaceableTextureJson != null) {
+            for (int i = 0; i < replaceableTextureJson.size(); i++) {
+                String texture = GsonHelper.convertToString(replaceableTextureJson.get(i),
+                        "replaceable_textures[%s]".formatted(i));
+                replaceableTextures.add(texture);
+            }
+        }
+
+        Map<String, ResourceLocation> textureOverrides = new HashMap<>();
+        JsonObject overrideJson = GsonHelper.getAsJsonObject(json, "texture_overrides", null);
+        if (overrideJson != null) {
+            for (Map.Entry<String, JsonElement> entry : overrideJson.entrySet()) {
+                String value = GsonHelper.convertToString(entry.getValue(), entry.getKey());
+                textureOverrides.put(entry.getKey(), ResourceLocation.parse(value));
+            }
+        }
+
         StateDefinition<MachineDefinition, MachineRenderState> stateDefinition = definition.getStateDefinition();
         ImmutableList<MachineRenderState> possibleStates = stateDefinition.getPossibleStates();
         Map<MachineRenderState, UnbakedModel> statesToModels = new IdentityHashMap<>();
@@ -153,7 +174,8 @@ public class MachineModelLoader implements IGeometryLoader<UnbakedMachineModel> 
 
         ResourceLocation particle = json.has("particle") ?
                 ResourceLocation.parse(GsonHelper.getAsString(json, "particle")) : null;
-        return new UnbakedMachineModel(definition, statesToModels, multiPart, dynamicRenders, particle);
+        return new UnbakedMachineModel(definition, statesToModels, multiPart, dynamicRenders, replaceableTextures,
+                textureOverrides, particle);
     }
 
     protected static void resolveStateModels(UnbakedMachineModel model,

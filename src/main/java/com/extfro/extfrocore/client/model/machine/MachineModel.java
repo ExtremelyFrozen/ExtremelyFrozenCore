@@ -6,10 +6,12 @@ import com.extfro.extfrocore.api.machine.MetaMachine;
 import com.extfro.extfrocore.client.model.BaseBakedModel;
 import com.extfro.extfrocore.client.model.EFModelProperties;
 import com.extfro.extfrocore.client.model.IBlockEntityRendererBakedModel;
+import com.extfro.extfrocore.client.model.TextureOverrideModel;
 import com.extfro.extfrocore.client.model.machine.multipart.MultiPartBakedModel;
 import com.extfro.extfrocore.client.renderer.cover.ICoverableRenderer;
 import com.extfro.extfrocore.client.renderer.machine.DynamicMachineRender;
 
+import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
@@ -44,12 +46,23 @@ import lombok.experimental.Accessors;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.IdentityHashMap;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public final class MachineModel extends BaseBakedModel implements ICoverableRenderer,
                                 IBlockEntityRendererBakedModel<BlockEntity> {
+
+    public static final Map<String, List<String>> TEXTURE_REMAPS = Util.make(new HashMap<>(), map -> {
+        List<String> all = List.of("all");
+        map.put("side", all);
+        map.put("top", all);
+        map.put("bottom", all);
+        map.put("all", List.of("side", "top", "bottom"));
+    });
 
     @Getter
     private final MachineDefinition definition;
@@ -70,6 +83,10 @@ public final class MachineModel extends BaseBakedModel implements ICoverableRend
     private final boolean useAmbientOcclusion;
     @Setter
     private TextureAtlasSprite particleIcon;
+    @Setter
+    private Set<String> replaceableTextures = Set.of();
+    @Setter
+    private Map<String, TextureAtlasSprite> textureOverrides = Map.of();
 
     public MachineModel(MachineDefinition definition, Map<MachineRenderState, BakedModel> modelsByState,
                         @Nullable MultiPartBakedModel multiPart,
@@ -159,10 +176,21 @@ public final class MachineModel extends BaseBakedModel implements ICoverableRend
         for (DynamicMachineRender render : dynamicRenders) {
             quads.addAll(render.getRenderQuads(machine, level, pos, state, side, rand, modelData, renderType));
         }
+        if (!textureOverrides.isEmpty()) {
+            quads = TextureOverrideModel.retextureQuads(quads, textureOverrides);
+        }
         if (machine != null) {
             renderCovers(quads, machine.getCoverContainer(), pos, level, side, rand, modelData, renderType);
         }
         return quads;
+    }
+
+    public List<String> remapReplaceableTextures(String key) {
+        if (replaceableTextures.contains(key)) {
+            return Collections.singletonList(key);
+        }
+        List<String> remapped = TEXTURE_REMAPS.get(key);
+        return remapped == null ? Collections.emptyList() : remapped;
     }
 
     @Override

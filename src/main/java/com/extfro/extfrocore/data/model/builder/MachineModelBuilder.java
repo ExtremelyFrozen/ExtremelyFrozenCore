@@ -39,6 +39,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.SortedSet;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -60,6 +61,10 @@ public class MachineModelBuilder<T extends ModelBuilder<T>> extends CustomLoader
     @Getter
     private final List<PartBuilder> parts = new ArrayList<>();
     private final Set<MachineRenderState> coveredStates = new HashSet<>();
+    @Getter
+    private final List<String> replaceableTextures = new ArrayList<>();
+    @Getter
+    private final SortedMap<String, ResourceLocation> textureOverrides = new TreeMap<>();
 
     protected MachineModelBuilder(T parent, ExistingFileHelper existingFileHelper, MachineDefinition owner) {
         super(MachineModelLoader.ID, parent, existingFileHelper, true);
@@ -101,6 +106,20 @@ public class MachineModelBuilder<T extends ModelBuilder<T>> extends CustomLoader
                 dynamicRenderJson.add(DynamicMachineRender.CODEC.encodeStart(JsonOps.INSTANCE, render).getOrThrow());
             }
             json.add("dynamic_renders", dynamicRenderJson);
+        }
+        if (!replaceableTextures.isEmpty()) {
+            JsonArray replaceableTextureJson = new JsonArray();
+            for (String texture : replaceableTextures) {
+                replaceableTextureJson.add(texture);
+            }
+            json.add("replaceable_textures", replaceableTextureJson);
+        }
+        if (!textureOverrides.isEmpty()) {
+            JsonObject overrideJson = new JsonObject();
+            for (Map.Entry<String, ResourceLocation> entry : textureOverrides.entrySet()) {
+                overrideJson.addProperty(entry.getKey(), entry.getValue().toString());
+            }
+            json.add("texture_overrides", overrideJson);
         }
         return json;
     }
@@ -177,6 +196,19 @@ public class MachineModelBuilder<T extends ModelBuilder<T>> extends CustomLoader
     public MachineModelBuilder<T> addDynamicRenderer(Supplier<DynamicMachineRender<?, ?>> render) {
         Preconditions.checkNotNull(render, "render must not be null");
         dynamicRenders.add(render.get());
+        return this;
+    }
+
+    public MachineModelBuilder<T> addReplaceableTextures(String... textureNames) {
+        Preconditions.checkNotNull(textureNames, "textureNames must not be null");
+        replaceableTextures.addAll(Arrays.asList(textureNames));
+        return this;
+    }
+
+    public MachineModelBuilder<T> addTextureOverride(String texture, ResourceLocation replacement) {
+        Preconditions.checkNotNull(texture, "texture must not be null");
+        Preconditions.checkNotNull(replacement, "replacement must not be null");
+        textureOverrides.put(texture, replacement);
         return this;
     }
 
