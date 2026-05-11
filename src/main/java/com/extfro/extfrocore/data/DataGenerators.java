@@ -16,29 +16,25 @@ import java.util.Set;
 @EventBusSubscriber(modid = ExtForCore.MOD_ID)
 public final class DataGenerators {
 
-    static {
-        EFDatagen.init();
-    }
-
     private DataGenerators() {}
 
     @SubscribeEvent
     public static void gatherData(GatherDataEvent event) {
-        EFDatagen.init();
-
         DataGenerator generator = event.getGenerator();
         PackOutput packOutput = generator.getPackOutput();
+        var registries = event.getLookupProvider();
 
         if (event.includeClient()) {
-            event.addProvider(new EFSoundEntryBuilder.SoundEntryProvider(
+            generator.addProvider(true, new EFSoundEntryBuilder.SoundEntryProvider(
                     packOutput, ExtForCore.MOD_ID, EFRegistration.REGISTRATE.getSoundEntries()));
         }
         if (event.includeServer() && !EFDataPackRegistries.isEmpty()) {
-            event.addProvider(new DatapackBuiltinEntriesProvider(
+            var set = Set.of(ExtForCore.MOD_ID);
+            generator.addProvider(true, new DatapackBuiltinEntriesProvider(
                     packOutput,
-                    event.getLookupProvider(),
+                    registries,
                     EFDataPackRegistries.createBuilder(),
-                    Set.of(ExtForCore.MOD_ID)));
+                    set));
         }
     }
 }

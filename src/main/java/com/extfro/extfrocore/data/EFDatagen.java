@@ -10,17 +10,25 @@ import com.tterrag.registrate.providers.ProviderType;
 
 public final class EFDatagen {
 
-    private static boolean initialized;
+    private static boolean preInitialized;
+    private static boolean postInitialized;
 
     private EFDatagen() {}
 
-    public static void init() {
-        if (initialized) {
+    public static void initPre() {
+        if (preInitialized) {
             return;
         }
-        initialized = true;
+        preInitialized = true;
 
         DataProvider.INDENT_WIDTH.set(4);
+    }
+
+    public static void initPost() {
+        if (postInitialized) {
+            return;
+        }
+        postInitialized = true;
 
         EFRegistration.REGISTRATE.addDataGenerator(ProviderType.LANG, EFLangHandler::init);
         EFRegistration.REGISTRATE.addDataGenerator(ProviderType.GENERIC_CLIENT,

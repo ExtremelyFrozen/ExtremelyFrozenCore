@@ -10,6 +10,7 @@ import com.extfro.extfrocore.common.data.EFRecipeCapabilities;
 import com.extfro.extfrocore.common.data.EFRecipeTypes;
 import com.extfro.extfrocore.common.material.EFMaterialRegistration;
 import com.extfro.extfrocore.common.registry.EFRegistration;
+import com.extfro.extfrocore.data.EFDatagen;
 
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.capabilities.Capabilities;
@@ -23,11 +24,13 @@ public class CommonProxy {
 
     public static void init(final IEventBus modBus) {
         CommonProxy.modBus = modBus;
+        EFDatagen.initPre();
         EFRegistries.init(modBus);
         EFRecipeCapabilities.init();
         EFRecipeTypes.init();
         EFMaterialRegistration.init(modBus);
         EFRegistration.REGISTRATE.registerRegistrate(modBus);
+        EFDatagen.initPost();
         SyncedComponents.COMPONENTS.register(modBus);
         modBus.addListener(EFRegistries::registerRegistries);
         modBus.addListener(EFRegistries::registerDataPackRegistries);
