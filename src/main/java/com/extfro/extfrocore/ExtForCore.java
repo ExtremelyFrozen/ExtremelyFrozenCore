@@ -159,12 +159,11 @@ public class ExtForCore {
     public static class Mods {
 
         public static boolean isAnyRecipeViewerLoaded() {
-            return isModLoaded(EFValues.MODID_EMI) || isModLoaded(EFValues.MODID_JEI) ||
-                    isModLoaded(EFValues.MODID_REI);
+            return isModLoaded(EFValues.MODID_EMI) || isModLoaded(EFValues.MODID_JEI);
         }
 
         public static boolean isJEILoaded() {
-            return !(isModLoaded(EFValues.MODID_EMI) || isModLoaded(EFValues.MODID_REI)) &&
+            return !isModLoaded(EFValues.MODID_EMI) &&
                     isModLoaded(EFValues.MODID_JEI);
         }
 
