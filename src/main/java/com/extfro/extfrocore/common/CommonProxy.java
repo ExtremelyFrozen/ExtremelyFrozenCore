@@ -9,14 +9,19 @@ import com.extfro.extfrocore.api.sync_system.network.ServerBlockEntitySyncPayloa
 import com.extfro.extfrocore.common.data.EFRecipeCapabilities;
 import com.extfro.extfrocore.common.data.EFRecipeTypes;
 import com.extfro.extfrocore.common.material.EFMaterialRegistration;
+import com.extfro.extfrocore.common.network.KeyDownPayload;
 import com.extfro.extfrocore.common.registry.EFRegistration;
 import com.extfro.extfrocore.data.EFDatagen;
+import com.extfro.extfrocore.utils.input.SyncedKeyMappings;
 
 import net.neoforged.bus.api.IEventBus;
+import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
+import net.neoforged.neoforge.registries.DataPackRegistryEvent;
+import net.neoforged.neoforge.registries.NewRegistryEvent;
 
 public class CommonProxy {
 
@@ -24,6 +29,7 @@ public class CommonProxy {
 
     public static void init(final IEventBus modBus) {
         CommonProxy.modBus = modBus;
+        modBus.register(CommonProxy.class);
         EFDatagen.initPre();
         EFRegistries.init(modBus);
         EFRecipeCapabilities.init();
@@ -32,13 +38,21 @@ public class CommonProxy {
         EFRegistration.REGISTRATE.registerRegistrate(modBus);
         EFDatagen.initPost();
         SyncedComponents.COMPONENTS.register(modBus);
-        modBus.addListener(EFRegistries::registerRegistries);
-        modBus.addListener(EFRegistries::registerDataPackRegistries);
-        modBus.addListener(CommonProxy::registerCapabilities);
-        modBus.addListener(CommonProxy::registerPayloadHandlers);
+        SyncedKeyMappings.init();
     }
 
-    private static void registerCapabilities(RegisterCapabilitiesEvent event) {
+    @SubscribeEvent
+    public static void registerRegistries(NewRegistryEvent event) {
+        EFRegistries.registerRegistries(event);
+    }
+
+    @SubscribeEvent
+    public static void registerDataPackRegistries(DataPackRegistryEvent.NewRegistry event) {
+        EFRegistries.registerDataPackRegistries(event);
+    }
+
+    @SubscribeEvent
+    public static void registerCapabilities(RegisterCapabilitiesEvent event) {
         for (var definition : EFRegistries.MACHINES) {
             if (event.isBlockRegistered(EFBlockCapabilities.COVERABLE, definition.getBlock())) {
                 continue;
@@ -58,11 +72,13 @@ public class CommonProxy {
         }
     }
 
-    private static void registerPayloadHandlers(RegisterPayloadHandlersEvent event) {
+    @SubscribeEvent
+    public static void registerPayloadHandlers(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar(ExtForCore.MOD_ID);
         registrar.playToClient(ServerBlockEntitySyncPayload.TYPE, ServerBlockEntitySyncPayload.CODEC,
                 ServerBlockEntitySyncPayload::execute);
         registrar.playToServer(ClientBlockEntitySyncPayload.TYPE, ClientBlockEntitySyncPayload.CODEC,
                 ClientBlockEntitySyncPayload::execute);
+        registrar.playToServer(KeyDownPayload.TYPE, KeyDownPayload.CODEC, KeyDownPayload::execute);
     }
 }
