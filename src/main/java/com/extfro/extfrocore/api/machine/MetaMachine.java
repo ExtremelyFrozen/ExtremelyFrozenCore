@@ -21,6 +21,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.neoforged.neoforge.items.IItemHandlerModifiable;
@@ -308,7 +309,7 @@ public abstract class MetaMachine extends ManagedSyncBlockEntity implements ITic
     }
 
     @Nullable
-    public static MetaMachine getMachine(@Nullable Level level, BlockPos pos) {
+    public static MetaMachine getMachine(@Nullable BlockGetter level, BlockPos pos) {
         if (level == null) return null;
         BlockEntity blockEntity = level.getBlockEntity(pos);
         return blockEntity instanceof MetaMachine machine ? machine : null;
