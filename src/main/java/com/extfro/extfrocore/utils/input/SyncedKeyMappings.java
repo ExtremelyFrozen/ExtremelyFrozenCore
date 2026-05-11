@@ -28,6 +28,5 @@ public final class SyncedKeyMappings {
         ModLoader.postEvent(new SyncedKeyMappingEvent());
     }
 
-    private SyncedKeyMappings() {
-    }
+    private SyncedKeyMappings() {}
 }
