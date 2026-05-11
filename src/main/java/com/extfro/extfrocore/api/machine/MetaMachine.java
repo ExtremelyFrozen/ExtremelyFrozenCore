@@ -111,6 +111,7 @@ public abstract class MetaMachine extends ManagedSyncBlockEntity implements ITic
     }
 
     public void clientTick() {
+        pushClientChangesToServer();
     }
 
     public final Pair<EFToolType, InteractionResult> onToolClick(ExtendedUseOnContext context) {
