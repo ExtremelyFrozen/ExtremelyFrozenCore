@@ -2,15 +2,16 @@ package com.extfro.extfrocore.api.sync_system.holder;
 
 import com.extfro.extfrocore.ExtForCore;
 import com.extfro.extfrocore.api.sync_system.ISyncManaged;
+import com.extfro.extfrocore.api.sync_system.SyncTagMap;
 import com.extfro.extfrocore.api.sync_system.SyncedComponents;
 import com.extfro.extfrocore.api.sync_system.meta.ClassSyncData;
 import com.extfro.extfrocore.api.sync_system.meta.FieldSyncData;
 
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.RegistryAccess;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtAccounter;
 import net.minecraft.nbt.NbtOps;
+import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.world.item.ItemStack;
@@ -27,11 +28,13 @@ import java.util.Set;
 
 public class SyncDataHolder {
 
+    private static final String NULL_SENTINEL = "__extfrocore_sync_null__";
+
     private final ClassSyncData syncData;
     private final ISyncManaged holder;
 
     private final Map<FieldSyncData, Object> cachedValues = new Reference2ReferenceOpenHashMap<>();
-    private CompoundTag pendingClientChanges = null;
+    private SyncTagMap pendingClientChanges = null;
     private boolean fullSyncPending = true;
 
     public SyncDataHolder(ISyncManaged o) {
@@ -50,7 +53,7 @@ public class SyncDataHolder {
     }
 
     public boolean scanAndMarkChanges(HolderLookup.Provider registries) {
-        CompoundTag changes = new CompoundTag();
+        SyncTagMap changes = SyncTagMap.empty();
         boolean hasChanges = fullSyncPending;
 
         for (FieldSyncData field : syncData.getClientSyncFields()) {
@@ -72,15 +75,15 @@ public class SyncDataHolder {
         return hasChanges;
     }
 
-    public CompoundTag getPendingChanges() {
-        CompoundTag changes = pendingClientChanges;
+    public SyncTagMap getPendingChanges() {
+        SyncTagMap changes = pendingClientChanges;
         pendingClientChanges = null;
-        return changes != null ? changes : new CompoundTag();
+        return changes != null ? changes : SyncTagMap.empty();
     }
 
     public byte[] collectClientNetworkChanges(RegistryAccess registries, boolean force) {
         if (force) {
-            CompoundTag forcedChanges = new CompoundTag();
+            SyncTagMap forcedChanges = SyncTagMap.empty();
             for (FieldSyncData field : syncData.getClientSyncFields()) {
                 Object currentValue = field.handle.get(holder);
                 forcedChanges.put(field.nbtSaveKey, encodeField(field, currentValue, registries));
@@ -90,7 +93,7 @@ public class SyncDataHolder {
             fullSyncPending = false;
         }
 
-        CompoundTag pendingChanges = getPendingChanges();
+        SyncTagMap pendingChanges = getPendingChanges();
         if (pendingChanges.isEmpty()) {
             return new byte[0];
         }
@@ -115,8 +118,8 @@ public class SyncDataHolder {
         }
     }
 
-    public CompoundTag collectServerChanges(HolderLookup.Provider registries) {
-        CompoundTag changes = new CompoundTag();
+    public SyncTagMap collectServerChanges(HolderLookup.Provider registries) {
+        SyncTagMap changes = SyncTagMap.empty();
         for (FieldSyncData field : syncData.getServerUpdateFields()) {
             Object currentValue = field.handle.get(holder);
             Object previousValue = cachedValues.get(field);
@@ -156,8 +159,8 @@ public class SyncDataHolder {
         }
     }
 
-    public CompoundTag serializeToSaveNBT(HolderLookup.Provider registries) {
-        CompoundTag tag = new CompoundTag();
+    public SyncTagMap serializeToSaveData(HolderLookup.Provider registries) {
+        SyncTagMap tag = SyncTagMap.empty();
         for (var field : syncData.getWorldSaveFields()) {
             Object value = field.handle.get(holder);
             Tag serialized = encodeField(field, value, registries);
@@ -166,8 +169,8 @@ public class SyncDataHolder {
         return tag;
     }
 
-    public CompoundTag serializeToItemNBT(HolderLookup.Provider registries) {
-        CompoundTag tag = new CompoundTag();
+    public SyncTagMap serializeToItemData(HolderLookup.Provider registries) {
+        SyncTagMap tag = SyncTagMap.empty();
         for (var field : syncData.getItemSaveFields()) {
             Object value = field.handle.get(holder);
             Tag serialized = encodeField(field, value, registries);
@@ -176,8 +179,8 @@ public class SyncDataHolder {
         return tag;
     }
 
-    public CompoundTag serializeFullClientSyncNBT(HolderLookup.Provider registries) {
-        CompoundTag tag = new CompoundTag();
+    public SyncTagMap serializeFullClientSyncData(HolderLookup.Provider registries) {
+        SyncTagMap tag = SyncTagMap.empty();
         for (var field : syncData.getClientSyncFields()) {
             Object value = field.handle.get(holder);
             Tag serialized = encodeField(field, value, registries);
@@ -188,7 +191,7 @@ public class SyncDataHolder {
         return tag;
     }
 
-    public void deserializeNBT(HolderLookup.Provider registries, CompoundTag tag, boolean readingClientFields) {
+    public void deserializeData(HolderLookup.Provider registries, SyncTagMap tag, boolean readingClientFields) {
         Set<FieldSyncData> fields = readingClientFields ? syncData.getClientSyncFields() :
                 syncData.getWorldSaveFields();
 
@@ -218,7 +221,7 @@ public class SyncDataHolder {
         }
     }
 
-    public void deserializeItemNBT(HolderLookup.Provider registries, CompoundTag tag) {
+    public void deserializeItemData(HolderLookup.Provider registries, SyncTagMap tag) {
         for (var field : syncData.getItemSaveFields()) {
             Tag savedValue = tag.get(field.itemNbtKey);
             if (savedValue != null) {
@@ -230,7 +233,7 @@ public class SyncDataHolder {
         }
     }
 
-    public void applyServerUpdate(HolderLookup.Provider registries, CompoundTag tag) {
+    public void applyServerUpdate(HolderLookup.Provider registries, SyncTagMap tag) {
         for (var field : syncData.getServerUpdateFields()) {
             Tag value = tag.get(field.fieldName);
             if (value != null) {
@@ -309,24 +312,22 @@ public class SyncDataHolder {
     }
 
     public void applyToItemStack(ItemStack stack, HolderLookup.Provider registries) {
-        CompoundTag data = serializeToItemNBT(registries);
+        SyncTagMap data = serializeToItemData(registries);
         if (!data.isEmpty()) {
             stack.set(SyncedComponents.BLOCK_ITEM_DATA.get(), data);
         }
     }
 
     public void loadFromItemStack(ItemStack stack, HolderLookup.Provider registries) {
-        CompoundTag data = stack.get(SyncedComponents.BLOCK_ITEM_DATA.get());
+        SyncTagMap data = stack.get(SyncedComponents.BLOCK_ITEM_DATA.get());
         if (data != null) {
-            deserializeItemNBT(registries, data);
+            deserializeItemData(registries, data);
         }
     }
 
     private Tag encodeField(FieldSyncData field, Object value, HolderLookup.Provider registries) {
         if (value == null) {
-            var nullTag = new CompoundTag();
-            nullTag.putBoolean("null", true);
-            return nullTag;
+            return StringTag.valueOf(NULL_SENTINEL);
         }
         if (field.codec != null) {
             Codec<Object> codec = field.codec;
@@ -334,17 +335,17 @@ public class SyncDataHolder {
             return result.getOrThrow();
         }
         if (field.isSyncManaged && value instanceof ISyncManaged syncObj) {
-            return syncObj.getSyncDataHolder().serializeToSaveNBT(registries);
+            return syncObj.getSyncDataHolder().serializeToSaveData(registries).toTag();
         }
         ExtForCore.LOGGER.error("Sync: No codec for field {} in {}", field.fieldName, holder.getClass());
-        return new CompoundTag();
+        return SyncTagMap.emptyContainer();
     }
 
     private Object decodeField(FieldSyncData field, Tag tag, Object currentValue, HolderLookup.Provider registries) {
-        if (tag instanceof CompoundTag compound && compound.getBoolean("null")) {
+        if (tag instanceof StringTag stringTag && NULL_SENTINEL.equals(stringTag.getAsString())) {
             return null;
         }
-        if (tag instanceof CompoundTag compound && compound.isEmpty()) {
+        if (SyncTagMap.isEmptyContainer(tag)) {
             return currentValue;
         }
         if (field.codec != null) {
@@ -352,10 +353,13 @@ public class SyncDataHolder {
             DataResult<Object> result = codec.parse(registries.createSerializationContext(NbtOps.INSTANCE), tag);
             return result.getOrThrow();
         }
-        if (field.isSyncManaged && tag instanceof CompoundTag compound) {
+        if (field.isSyncManaged) {
             if (currentValue instanceof ISyncManaged syncObj) {
-                syncObj.getSyncDataHolder().deserializeNBT(registries, compound, false);
-                return currentValue;
+                SyncTagMap nestedData = SyncTagMap.tryRead(tag);
+                if (nestedData != null) {
+                    syncObj.getSyncDataHolder().deserializeData(registries, nestedData, false);
+                    return currentValue;
+                }
             }
         }
         ExtForCore.LOGGER.error("Sync: No codec for field {} in {}", field.fieldName, holder.getClass());
