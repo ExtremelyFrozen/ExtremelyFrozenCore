@@ -18,6 +18,7 @@ import net.neoforged.neoforge.data.loading.DatagenModLoader;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
 
 import com.mojang.serialization.Codec;
+import dev.emi.emi.config.EmiConfig;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.ApiStatus;
@@ -167,16 +168,8 @@ public class ExtForCore {
                     isModLoaded(EFValues.MODID_JEI);
         }
 
-        public static boolean isREILoaded() {
-            return isModLoaded(EFValues.MODID_REI) && (!isClientSide()
-            // || REIRuntime.getInstance().isOverlayVisible()
-            );
-        }
-
         public static boolean isEMILoaded() {
-            return isModLoaded(EFValues.MODID_EMI) && (!isClientSide()
-            // || EmiConfig.enabled
-            );
+            return isModLoaded(EFValues.MODID_EMI) && (!isClientSide() || EmiConfig.enabled);
         }
 
         public static boolean isKubeJSLoaded() {
