@@ -12,9 +12,11 @@ import com.extfro.extfrocore.api.machine.multiblock.PartAbility;
 import com.extfro.extfrocore.api.recipe.MachineRecipeType;
 import com.extfro.extfrocore.api.registry.EFRegistries;
 import com.extfro.extfrocore.client.renderer.BlockEntityWithBERModelRenderer;
+import com.extfro.extfrocore.client.renderer.ItemWithBERModelRenderer;
 import com.extfro.extfrocore.data.model.builder.MachineModelBuilder;
 
 import net.minecraft.network.chat.Component;
+import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -29,6 +31,7 @@ import net.minecraft.world.level.block.state.properties.Property;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.neoforged.neoforge.client.model.generators.BlockModelBuilder;
+import net.neoforged.neoforge.client.extensions.common.IClientItemExtensions;
 
 import com.tterrag.registrate.builders.BlockBuilder;
 import com.tterrag.registrate.builders.ItemBuilder;
@@ -382,6 +385,13 @@ public class MachineBuilder<DEFINITION extends MachineDefinition, TYPE extends M
                 .setData(ProviderType.LANG, NonNullBiConsumer.noop())
                 .model((ctx, provider) -> provider.withExistingParent(ctx.getName(),
                         registrate.makeResourceLocation("block/machine/" + ctx.getName())))
+                .clientExtension(() -> () -> new IClientItemExtensions() {
+
+                    @Override
+                    public BlockEntityWithoutLevelRenderer getCustomRenderer() {
+                        return ItemWithBERModelRenderer.INSTANCE;
+                    }
+                })
                 .color(() -> () -> itemColor::apply)
                 .properties(itemProp);
         if (this.itemBuilder != null) {
