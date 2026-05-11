@@ -10,7 +10,6 @@ import com.extfro.extfrocore.integration.xei.oreprocessing.OreProcessingRegistry
 import com.extfro.extfrocore.integration.xei.orevein.XEIOreVeinDisplay;
 import com.extfro.extfrocore.integration.xei.orevein.XEIOreVeinRegistry;
 import com.extfro.extfrocore.integration.xei.page.XEIPageDefinition;
-import com.extfro.extfrocore.integration.xei.page.XEIPageRegistry;
 
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
@@ -67,10 +66,6 @@ public final class XEIPages {
             .build();
 
     private XEIPages() {}
-
-    public static void init() {
-        XEIPageRegistry.registerPageDefinitions(XEIPages::getBuiltinPages);
-    }
 
     public static List<XEIPageDefinition<?>> getBuiltinPages() {
         List<XEIPageDefinition<?>> pages = new ArrayList<>();

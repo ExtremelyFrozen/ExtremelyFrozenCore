@@ -1,7 +1,7 @@
 package com.extfro.extfrocore.integration.jei;
 
 import com.extfro.extfrocore.ExtForCore;
-import com.extfro.extfrocore.integration.xei.EFXEIRegistration;
+import com.extfro.extfrocore.integration.jei.category.XEIJeiCategories;
 
 import net.minecraft.resources.ResourceLocation;
 
@@ -23,24 +23,21 @@ public class EFJEIPlugin implements IModPlugin {
     @Override
     public void registerCategories(@NotNull IRecipeCategoryRegistration registration) {
         if (ExtForCore.Mods.isJEILoaded()) {
-            EFXEIRegistration.init();
-            JEIRegistrars.registerCategories(registration);
+            XEIJeiCategories.registerCategories(registration);
         }
     }
 
     @Override
     public void registerRecipes(@NotNull IRecipeRegistration registration) {
         if (ExtForCore.Mods.isJEILoaded()) {
-            EFXEIRegistration.init();
-            JEIRegistrars.registerRecipes(registration);
+            XEIJeiCategories.registerRecipes(registration);
         }
     }
 
     @Override
     public void registerRecipeCatalysts(@NotNull IRecipeCatalystRegistration registration) {
         if (ExtForCore.Mods.isJEILoaded()) {
-            EFXEIRegistration.init();
-            JEIRegistrars.registerRecipeCatalysts(registration);
+            XEIJeiCategories.registerRecipeCatalysts(registration);
         }
     }
 }

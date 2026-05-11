@@ -1,7 +1,7 @@
 package com.extfro.extfrocore.integration.emi;
 
 import com.extfro.extfrocore.ExtForCore;
-import com.extfro.extfrocore.integration.xei.EFXEIRegistration;
+import com.extfro.extfrocore.integration.emi.category.EmiXEIRegistrars;
 
 import dev.emi.emi.api.EmiEntrypoint;
 import dev.emi.emi.api.EmiPlugin;
@@ -13,8 +13,7 @@ public class EFEMIPlugin implements EmiPlugin {
     @Override
     public void register(EmiRegistry registry) {
         if (ExtForCore.Mods.isEMILoaded()) {
-            EFXEIRegistration.init();
-            EMIRegistrars.register(registry);
+            EmiXEIRegistrars.register(registry);
         }
     }
 }
