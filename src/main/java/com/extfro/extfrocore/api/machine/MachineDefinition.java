@@ -7,6 +7,7 @@ import com.extfro.extfrocore.api.item.MetaMachineItem;
 import com.extfro.extfrocore.api.machine.feature.IRecipeLogicMachine;
 import com.extfro.extfrocore.api.recipe.MachineRecipeType;
 import com.extfro.extfrocore.api.recipe.MachineRecipe;
+import com.extfro.extfrocore.api.recipe.modifier.RecipeModifier;
 import com.extfro.extfrocore.api.registry.registrate.EFDefinitionHolder;
 
 import net.minecraft.core.Direction;
@@ -96,6 +97,9 @@ public class MachineDefinition implements Supplier<MetaMachineBlock>,
     @Getter
     @Setter
     private Reference2IntMap<RecipeCapability<?>> recipeOutputLimits = new Reference2IntOpenHashMap<>();
+    @Getter
+    @Setter
+    private RecipeModifier recipeModifier = RecipeModifier.NO_MODIFIER;
     @Getter
     @Setter
     private BiPredicate<IRecipeLogicMachine, MachineRecipe> beforeWorking = (machine, recipe) -> true;

@@ -13,6 +13,8 @@ import com.extfro.extfrocore.api.machine.multiblock.PartAbility;
 import com.extfro.extfrocore.api.machine.property.MachineModelProperties;
 import com.extfro.extfrocore.api.recipe.MachineRecipe;
 import com.extfro.extfrocore.api.recipe.MachineRecipeType;
+import com.extfro.extfrocore.api.recipe.modifier.RecipeModifier;
+import com.extfro.extfrocore.api.recipe.modifier.RecipeModifierList;
 import com.extfro.extfrocore.api.registry.EFRegistries;
 import com.extfro.extfrocore.client.renderer.BlockEntityWithBERModelRenderer;
 import com.extfro.extfrocore.client.renderer.ItemWithBERModelRenderer;
@@ -58,6 +60,7 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.ArrayList;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
@@ -110,6 +113,7 @@ public class MachineBuilder<DEFINITION extends MachineDefinition, TYPE extends M
     private Supplier<BlockState> appearance;
     @Nullable
     private String langValue;
+    private final List<RecipeModifier> recipeModifiers = new ArrayList<>();
     private BiPredicate<IRecipeLogicMachine, MachineRecipe> beforeWorking = (machine, recipe) -> true;
     private Predicate<IRecipeLogicMachine> onWorking = machine -> true;
     private Consumer<IRecipeLogicMachine> onWaiting = machine -> {};
@@ -239,6 +243,11 @@ public class MachineBuilder<DEFINITION extends MachineDefinition, TYPE extends M
 
     public TYPE beforeWorking(BiPredicate<IRecipeLogicMachine, MachineRecipe> beforeWorking) {
         this.beforeWorking = beforeWorking;
+        return getThis();
+    }
+
+    public TYPE recipeModifier(RecipeModifier recipeModifier) {
+        this.recipeModifiers.add(recipeModifier);
         return getThis();
     }
 
@@ -471,6 +480,8 @@ public class MachineBuilder<DEFINITION extends MachineDefinition, TYPE extends M
         definition.setRecipeTypes(recipeTypes);
         definition.setTier(tier);
         definition.setRecipeOutputLimits(recipeOutputLimits);
+        definition.setRecipeModifier(recipeModifiers.isEmpty() ? RecipeModifier.NO_MODIFIER :
+                new RecipeModifierList(recipeModifiers.toArray(RecipeModifier[]::new)));
         definition.setBeforeWorking(beforeWorking);
         definition.setOnWorking(onWorking);
         definition.setOnWaiting(onWaiting);

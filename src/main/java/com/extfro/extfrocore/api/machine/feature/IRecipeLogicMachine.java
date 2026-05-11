@@ -6,6 +6,7 @@ import com.extfro.extfrocore.api.machine.trait.RecipeLogic;
 import com.extfro.extfrocore.api.recipe.MachineRecipe;
 import com.extfro.extfrocore.api.recipe.MachineRecipeType;
 import com.extfro.extfrocore.api.recipe.RecipeHelper;
+import com.extfro.extfrocore.api.recipe.modifier.ModifierFunction;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -28,7 +29,15 @@ public interface IRecipeLogicMachine extends IRecipeCapabilityHolder, IMachineFe
     RecipeLogic getRecipeLogic();
 
     default MachineRecipe fullModifyRecipe(MachineRecipe recipe) {
-        return doModifyRecipe(RecipeHelper.trimRecipeOutputs(recipe, self().getDefinition().getRecipeOutputLimits()));
+        MachineRecipe trimmed = RecipeHelper.trimRecipeOutputs(recipe, self().getDefinition().getRecipeOutputLimits());
+        MachineRecipe modified = doModifyRecipe(trimmed);
+        if (modified == null) return null;
+        ModifierFunction modifier = self().getDefinition().getRecipeModifier().getModifier(self(), modified);
+        MachineRecipe result = modifier.apply(modified);
+        if (result == null) {
+            RecipeLogic.putFailureReason(getRecipeLogic(), recipe, modifier.getFailReason());
+        }
+        return result;
     }
 
     @Nullable
