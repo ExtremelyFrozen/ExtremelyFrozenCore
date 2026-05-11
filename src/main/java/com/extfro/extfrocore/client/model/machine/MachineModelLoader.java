@@ -9,6 +9,7 @@ import com.extfro.extfrocore.client.model.machine.multipart.MultiPartSelector;
 import com.extfro.extfrocore.client.model.machine.multipart.MultiPartUnbakedModel;
 import com.extfro.extfrocore.client.model.machine.variant.MultiVariantModel;
 import com.extfro.extfrocore.client.model.machine.variant.VariantState;
+import com.extfro.extfrocore.client.renderer.machine.DynamicMachineRender;
 
 import net.minecraft.client.renderer.block.BlockModelShaper;
 import net.minecraft.client.renderer.block.model.BlockElement;
@@ -41,13 +42,16 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.mojang.datafixers.util.Either;
 import com.mojang.math.Transformation;
+import com.mojang.serialization.JsonOps;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
@@ -104,6 +108,14 @@ public class MachineModelLoader implements IGeometryLoader<UnbakedMachineModel> 
                     .formatted(machineId));
         }
 
+        List<DynamicMachineRender<?, ?>> dynamicRenders = new ArrayList<>();
+        JsonArray dynamicRendersJson = GsonHelper.getAsJsonArray(json, "dynamic_renders", null);
+        if (dynamicRendersJson != null) {
+            for (JsonElement entry : dynamicRendersJson) {
+                dynamicRenders.add(DynamicMachineRender.CODEC.parse(JsonOps.INSTANCE, entry).getOrThrow());
+            }
+        }
+
         StateDefinition<MachineDefinition, MachineRenderState> stateDefinition = definition.getStateDefinition();
         ImmutableList<MachineRenderState> possibleStates = stateDefinition.getPossibleStates();
         Map<MachineRenderState, UnbakedModel> statesToModels = new IdentityHashMap<>();
@@ -141,7 +153,7 @@ public class MachineModelLoader implements IGeometryLoader<UnbakedMachineModel> 
 
         ResourceLocation particle = json.has("particle") ?
                 ResourceLocation.parse(GsonHelper.getAsString(json, "particle")) : null;
-        return new UnbakedMachineModel(definition, statesToModels, multiPart, particle);
+        return new UnbakedMachineModel(definition, statesToModels, multiPart, dynamicRenders, particle);
     }
 
     protected static void resolveStateModels(UnbakedMachineModel model,

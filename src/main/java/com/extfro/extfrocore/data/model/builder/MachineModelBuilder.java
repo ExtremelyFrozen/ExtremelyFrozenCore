@@ -3,6 +3,7 @@ package com.extfro.extfrocore.data.model.builder;
 import com.extfro.extfrocore.api.machine.MachineDefinition;
 import com.extfro.extfrocore.api.machine.MachineRenderState;
 import com.extfro.extfrocore.client.model.machine.MachineModelLoader;
+import com.extfro.extfrocore.client.renderer.machine.DynamicMachineRender;
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.state.StateDefinition;
@@ -21,6 +22,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
+import com.mojang.serialization.JsonOps;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -41,6 +43,7 @@ import java.util.TreeSet;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 public class MachineModelBuilder<T extends ModelBuilder<T>> extends CustomLoaderBuilder<T> {
 
@@ -51,6 +54,7 @@ public class MachineModelBuilder<T extends ModelBuilder<T>> extends CustomLoader
 
     @Getter
     private final MachineDefinition owner;
+    private final List<DynamicMachineRender<?, ?>> dynamicRenders = new ArrayList<>();
     @Getter
     private final Map<PartialState<T>, ModelFile> models = new LinkedHashMap<>();
     @Getter
@@ -90,6 +94,13 @@ public class MachineModelBuilder<T extends ModelBuilder<T>> extends CustomLoader
                     .sorted(Map.Entry.comparingByKey(PartialState.comparingByProperties()))
                     .forEach(entry -> variants.add(entry.getKey().toString(), modelToJson(entry.getValue())));
             json.add("variants", variants);
+        }
+        if (!dynamicRenders.isEmpty()) {
+            JsonArray dynamicRenderJson = new JsonArray();
+            for (DynamicMachineRender<?, ?> render : dynamicRenders) {
+                dynamicRenderJson.add(DynamicMachineRender.CODEC.encodeStart(JsonOps.INSTANCE, render).getOrThrow());
+            }
+            json.add("dynamic_renders", dynamicRenderJson);
         }
         return json;
     }
@@ -161,6 +172,12 @@ public class MachineModelBuilder<T extends ModelBuilder<T>> extends CustomLoader
 
     public PartialState<T> partialState() {
         return new PartialState<>(owner, this);
+    }
+
+    public MachineModelBuilder<T> addDynamicRenderer(Supplier<DynamicMachineRender<?, ?>> render) {
+        Preconditions.checkNotNull(render, "render must not be null");
+        dynamicRenders.add(render.get());
+        return this;
     }
 
     public PartBuilder part(ModelFile model) {

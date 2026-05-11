@@ -8,6 +8,7 @@ import com.extfro.extfrocore.client.model.EFModelProperties;
 import com.extfro.extfrocore.client.model.IBlockEntityRendererBakedModel;
 import com.extfro.extfrocore.client.model.machine.multipart.MultiPartBakedModel;
 import com.extfro.extfrocore.client.renderer.cover.ICoverableRenderer;
+import com.extfro.extfrocore.client.renderer.machine.DynamicMachineRender;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -54,6 +55,8 @@ public final class MachineModel extends BaseBakedModel implements ICoverableRend
     private final MachineDefinition definition;
     private final Map<MachineRenderState, BakedModel> modelsByState;
     private final @Nullable MultiPartBakedModel multiPart;
+    @Getter
+    private final List<DynamicMachineRender<?, ?>> dynamicRenders;
     private final ItemTransforms transforms;
     private final Transformation rootTransform;
     private final ModelState modelState;
@@ -70,17 +73,22 @@ public final class MachineModel extends BaseBakedModel implements ICoverableRend
 
     public MachineModel(MachineDefinition definition, Map<MachineRenderState, BakedModel> modelsByState,
                         @Nullable MultiPartBakedModel multiPart,
+                        List<DynamicMachineRender<?, ?>> dynamicRenders,
                         ItemTransforms transforms, Transformation rootTransform, ModelState modelState,
                         boolean isGui3d, boolean usesBlockLight, boolean useAmbientOcclusion) {
         this.definition = definition;
         this.modelsByState = new IdentityHashMap<>(modelsByState);
         this.multiPart = multiPart;
+        this.dynamicRenders = dynamicRenders;
         this.transforms = transforms;
         this.rootTransform = rootTransform;
         this.modelState = modelState;
         this.isGui3d = isGui3d;
         this.usesBlockLight = usesBlockLight;
         this.useAmbientOcclusion = useAmbientOcclusion;
+        for (DynamicMachineRender<?, ?> render : dynamicRenders) {
+            render.setParent(this);
+        }
     }
 
     @Override
@@ -148,6 +156,9 @@ public final class MachineModel extends BaseBakedModel implements ICoverableRend
         BlockAndTintGetter level = modelData.get(EFModelProperties.LEVEL);
         BlockPos pos = modelData.get(EFModelProperties.POS);
         MetaMachine machine = level == null || pos == null ? null : MetaMachine.getMachine(level, pos);
+        for (DynamicMachineRender render : dynamicRenders) {
+            quads.addAll(render.getRenderQuads(machine, level, pos, state, side, rand, modelData, renderType));
+        }
         if (machine != null) {
             renderCovers(quads, machine.getCoverContainer(), pos, level, side, rand, modelData, renderType);
         }
@@ -191,35 +202,77 @@ public final class MachineModel extends BaseBakedModel implements ICoverableRend
     @Override
     public void render(BlockEntity blockEntity, float partialTick, PoseStack poseStack, MultiBufferSource buffer,
                        int packedLight, int packedOverlay) {
-        if (blockEntity instanceof MetaMachine machine && machine.getDefinition() == definition) {
-            renderDynamicCovers(machine, partialTick, poseStack, buffer, packedLight, packedOverlay);
+        if (!(blockEntity instanceof MetaMachine machine) || machine.getDefinition() != definition) {
+            return;
+        }
+        renderDynamicCovers(machine, partialTick, poseStack, buffer, packedLight, packedOverlay);
+        if (dynamicRenders.isEmpty()) {
+            return;
+        }
+        Vec3 cameraPos = Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
+        for (DynamicMachineRender render : dynamicRenders) {
+            if (render.shouldRender(machine, cameraPos)) {
+                render.render(machine, partialTick, poseStack, buffer, packedLight, packedOverlay);
+            }
         }
     }
 
     @Override
     public void renderByItem(ItemStack stack, ItemDisplayContext displayContext, PoseStack poseStack,
                              MultiBufferSource buffer, int packedLight, int packedOverlay) {
+        for (DynamicMachineRender<?, ?> render : dynamicRenders) {
+            render.renderByItem(stack, displayContext, poseStack, buffer, packedLight, packedOverlay);
+        }
     }
 
     @Override
     public AABB getRenderBoundingBox(BlockEntity blockEntity) {
-        return IBlockEntityRendererBakedModel.super.getRenderBoundingBox(blockEntity);
+        AABB bounds = IBlockEntityRendererBakedModel.super.getRenderBoundingBox(blockEntity);
+        if (!(blockEntity instanceof MetaMachine machine) || machine.getDefinition() != definition) {
+            return bounds;
+        }
+        for (DynamicMachineRender render : dynamicRenders) {
+            bounds = bounds.minmax(render.getRenderBoundingBox(machine));
+        }
+        return bounds;
     }
 
     @Override
     public boolean shouldRenderOffScreen(BlockEntity blockEntity) {
+        if (!(blockEntity instanceof MetaMachine machine) || machine.getDefinition() != definition) {
+            return false;
+        }
+        for (DynamicMachineRender render : dynamicRenders) {
+            if (render.shouldRenderOffScreen(machine)) {
+                return true;
+            }
+        }
         return false;
     }
 
     @Override
     public boolean shouldRender(BlockEntity blockEntity, Vec3 cameraPos) {
-        return blockEntity instanceof MetaMachine machine && machine.getDefinition() == definition &&
-                machine.getCoverContainer().hasDynamicCovers();
+        if (!(blockEntity instanceof MetaMachine machine) || machine.getDefinition() != definition) {
+            return false;
+        }
+        if (machine.getCoverContainer().hasDynamicCovers()) {
+            return true;
+        }
+        for (DynamicMachineRender render : dynamicRenders) {
+            if (render.shouldRender(machine, cameraPos)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override
     public int getViewDistance() {
-        return 64;
+        int distance = 64;
+        for (DynamicMachineRender<?, ?> render : dynamicRenders) {
+            distance = Math.max(distance, render.getViewDistance());
+        }
+        return distance;
     }
 
     @Override
