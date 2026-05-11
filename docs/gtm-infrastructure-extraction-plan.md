@@ -651,13 +651,13 @@ Already extracted in this repository:
 - cover client renderer implementations: coverable renderer, simple plate renderer, IO renderer, text renderer
 - basic renderer interfaces and dynamic renderer hooks
 - redstone output aggregation from covers into block signal methods
+- item/fluid capability wrapping chain from machine handlers through attached covers
 - item-to-cover-definition install mapping
 - tick subscription and copyable config interfaces
 
 Remaining infrastructure gaps:
 
 - actual machine model/render integration so cover renderers are invoked
-- capability wrapping chain for item/fluid handlers instead of only null/default hooks
 - real cover GUI opener registration for the final UI framework; current `CoverUIFactory` is the neutral extension point
 - smart item filter only if generic recipe/machine lookup is available without concrete content coupling
 - facade recipe infrastructure only if the generic facade path is needed; do not migrate concrete facade cover content

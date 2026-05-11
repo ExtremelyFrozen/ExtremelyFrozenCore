@@ -260,11 +260,31 @@ public abstract class MetaMachine extends ManagedSyncBlockEntity implements ITic
 
     @Nullable
     public IItemHandlerModifiable getItemHandlerCap(@Nullable Direction side, boolean useCoverCapability) {
+        IItemHandlerModifiable handler = getRawItemHandlerCap(side);
+        if (handler == null || !useCoverCapability || side == null) {
+            return handler;
+        }
+        var cover = coverContainer.getCoverAtSide(side);
+        return cover == null ? handler : cover.getItemHandlerCap(handler);
+    }
+
+    @Nullable
+    protected IItemHandlerModifiable getRawItemHandlerCap(@Nullable Direction side) {
         return null;
     }
 
     @Nullable
     public IFluidHandlerModifiable getFluidHandlerCap(@Nullable Direction side, boolean useCoverCapability) {
+        IFluidHandlerModifiable handler = getRawFluidHandlerCap(side);
+        if (handler == null || !useCoverCapability || side == null) {
+            return handler;
+        }
+        var cover = coverContainer.getCoverAtSide(side);
+        return cover == null ? handler : cover.getFluidHandlerCap(handler);
+    }
+
+    @Nullable
+    protected IFluidHandlerModifiable getRawFluidHandlerCap(@Nullable Direction side) {
         return null;
     }
 

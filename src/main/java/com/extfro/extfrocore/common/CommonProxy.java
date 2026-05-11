@@ -12,6 +12,7 @@ import com.extfro.extfrocore.common.material.EFMaterialRegistration;
 import com.extfro.extfrocore.common.registry.EFRegistration;
 
 import net.neoforged.bus.api.IEventBus;
+import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
@@ -42,6 +43,14 @@ public class CommonProxy {
             event.registerBlock(EFBlockCapabilities.COVERABLE,
                     (level, pos, state, blockEntity, side) -> blockEntity instanceof com.extfro.extfrocore.api.machine.MetaMachine machine ?
                             machine.getCoverContainer() : null,
+                    definition.getBlock());
+            event.registerBlock(Capabilities.ItemHandler.BLOCK,
+                    (level, pos, state, blockEntity, side) -> blockEntity instanceof com.extfro.extfrocore.api.machine.MetaMachine machine ?
+                            machine.getItemHandlerCap(side, true) : null,
+                    definition.getBlock());
+            event.registerBlock(Capabilities.FluidHandler.BLOCK,
+                    (level, pos, state, blockEntity, side) -> blockEntity instanceof com.extfro.extfrocore.api.machine.MetaMachine machine ?
+                            machine.getFluidHandlerCap(side, true) : null,
                     definition.getBlock());
         }
     }
