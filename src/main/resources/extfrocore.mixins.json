@@ -4,7 +4,12 @@
 	"package": "com.extfro.extfrocore.mixin",
 	"compatibilityLevel": "JAVA_21",
 	"mixins": ["RecipeManagerMixin"],
-	"client": ["client.ModelManagerMixin"],
+	"client": [
+		"client.BakedQuadMixin",
+		"client.BlockModelMixin",
+		"client.FaceBakeryMixin",
+		"client.ModelManagerMixin"
+	],
 	"injectors": {
 		"defaultRequire": 1
 	},
