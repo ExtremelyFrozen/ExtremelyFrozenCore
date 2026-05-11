@@ -654,7 +654,8 @@ Already extracted in this repository:
 - item/fluid capability wrapping chain from machine handlers through attached covers
 - item-to-cover-definition install mapping
 - tick subscription and copyable config interfaces
-- dynamic cover block entity renderer registration for registered machine block entity types
+- GTM-style block entity renderer bridge and `MachineBuilder.hasBER(...)` registration path
+- dynamic cover rendering through the generic machine block entity renderer bridge
 
 Remaining infrastructure gaps:
 
@@ -676,6 +677,7 @@ Current implementation order:
 2. Migrate `api.cover.filter` in parallel. Done.
 3. Migrate `client.renderer.cover` generic pieces in parallel. Done.
 4. Add main-thread tool/UI hook surface and `MetaMachineBlock` interaction dispatch. Done.
-5. Integrate redstone/capability/render hooks that are required for compile-safe behavior. Partially done; dynamic cover
-   block entity rendering is registered, while baked model integration still needs the machine model system.
+5. Integrate redstone/capability/render hooks that are required for compile-safe behavior. Partially done; the generic
+   BER bridge is registered from `MachineBuilder`, while baked machine model integration still needs the machine model
+   system.
 6. Run `compileJava`, stale-name scan, and `CompoundTag` scan for new public cover code.

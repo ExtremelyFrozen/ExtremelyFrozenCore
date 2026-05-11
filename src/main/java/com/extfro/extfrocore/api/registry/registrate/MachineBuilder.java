@@ -11,6 +11,7 @@ import com.extfro.extfrocore.api.machine.MetaMachine;
 import com.extfro.extfrocore.api.machine.multiblock.PartAbility;
 import com.extfro.extfrocore.api.recipe.MachineRecipeType;
 import com.extfro.extfrocore.api.registry.EFRegistries;
+import com.extfro.extfrocore.client.renderer.BlockEntityWithBERModelRenderer;
 
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -72,6 +73,7 @@ public class MachineBuilder<DEFINITION extends MachineDefinition, TYPE extends M
     private VoxelShape shape = Shapes.block();
     private RotationState rotationState = RotationState.NON_Y_AXIS;
     private boolean allowExtendedFacing;
+    private boolean hasBER = true;
     private boolean renderMultiblockWorldPreview = true;
     private boolean renderMultiblockXEIPreview = true;
     private NonNullUnaryOperator<BlockBehaviour.Properties> blockProp = properties -> properties;
@@ -134,6 +136,11 @@ public class MachineBuilder<DEFINITION extends MachineDefinition, TYPE extends M
 
     public TYPE allowExtendedFacing(boolean allowExtendedFacing) {
         this.allowExtendedFacing = allowExtendedFacing;
+        return getThis();
+    }
+
+    public TYPE hasBER(boolean hasBER) {
+        this.hasBER = hasBER;
         return getThis();
     }
 
@@ -380,11 +387,14 @@ public class MachineBuilder<DEFINITION extends MachineDefinition, TYPE extends M
         }
         var item = itemBuilder.register();
 
-        var blockEntity = registrate
+        var blockEntityBuilder = registrate
                 .<MetaMachine>blockEntity((type, pos, state) -> blockEntityFactory.apply(new BlockEntityCreationInfo(type, pos, state)))
                 .onRegister(onBlockEntityRegister)
-                .validBlock(block)
-                .register();
+                .validBlock(block);
+        if (hasBER) {
+            blockEntityBuilder = blockEntityBuilder.renderer(() -> BlockEntityWithBERModelRenderer::new);
+        }
+        var blockEntity = blockEntityBuilder.register();
 
         definition.setBlock(block);
         definition.setItem(item);
