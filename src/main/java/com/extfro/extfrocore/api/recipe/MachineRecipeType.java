@@ -4,6 +4,8 @@ import com.extfro.extfrocore.api.capability.recipe.IO;
 import com.extfro.extfrocore.api.capability.recipe.RecipeCapability;
 import com.extfro.extfrocore.api.recipe.category.RecipeCategory;
 import com.extfro.extfrocore.api.recipe.chance.boost.ChanceBoostFunction;
+import com.extfro.extfrocore.api.recipe.lookup.RecipeAdditionHandler;
+import com.extfro.extfrocore.api.recipe.lookup.RecipeDB;
 
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -59,6 +61,9 @@ public class MachineRecipeType implements RecipeType<MachineRecipe> {
     private final RecipeCategory category;
     @Getter
     private final Map<RecipeCategory, Set<MachineRecipe>> categoryMap = new Object2ObjectOpenHashMap<>();
+    @Getter
+    private final RecipeDB lookup = new RecipeDB();
+    private final RecipeAdditionHandler additionHandler = new RecipeAdditionHandler(lookup);
     @Getter
     private final List<ICustomRecipeLogic> customRecipeLogicRunners = new java.util.ArrayList<>();
     @Getter
@@ -116,6 +121,24 @@ public class MachineRecipeType implements RecipeType<MachineRecipe> {
         categoryMap.computeIfAbsent(category, key -> new ObjectLinkedOpenHashSet<>()).add(recipe);
     }
 
+    public void clearRecipes() {
+        categoryMap.clear();
+        lookup.clear();
+    }
+
+    public void beginStagingRecipes() {
+        categoryMap.clear();
+        additionHandler.beginStaging();
+    }
+
+    public void addStagingRecipe(MachineRecipe recipe) {
+        additionHandler.addStaging(recipe);
+    }
+
+    public void completeStagingRecipes() {
+        additionHandler.completeStaging();
+    }
+
     public Set<RecipeCategory> getCategories() {
         return Collections.unmodifiableSet(categoryMap.keySet());
     }
@@ -125,6 +148,19 @@ public class MachineRecipeType implements RecipeType<MachineRecipe> {
     }
 
     public Iterator<MachineRecipe> searchRecipe(RecipeLogicContext context, Predicate<MachineRecipe> canHandle) {
+        if (context instanceof com.extfro.extfrocore.api.capability.recipe.IRecipeCapabilityHolder holder) {
+            RecipeDB.RecipeIterator iterator = lookup.iterator(holder,
+                    recipe -> recipe.conditions.size() >= minRecipeConditions && canHandle.test(recipe));
+            if (iterator != null) {
+                return iterator;
+            }
+        } else if (context.machine() instanceof com.extfro.extfrocore.api.capability.recipe.IRecipeCapabilityHolder holder) {
+            RecipeDB.RecipeIterator iterator = lookup.iterator(holder,
+                    recipe -> recipe.conditions.size() >= minRecipeConditions && canHandle.test(recipe));
+            if (iterator != null) {
+                return iterator;
+            }
+        }
         List<MachineRecipe> matches = categoryMap.values().stream()
                 .flatMap(Set::stream)
                 .filter(recipe -> recipe.conditions.size() >= minRecipeConditions)

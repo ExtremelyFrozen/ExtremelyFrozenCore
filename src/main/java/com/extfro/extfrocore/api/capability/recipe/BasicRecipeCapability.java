@@ -11,6 +11,11 @@ public class BasicRecipeCapability<T> extends RecipeCapability<T> {
     }
 
     @Override
+    public boolean isRecipeSearchFilter() {
+        return true;
+    }
+
+    @Override
     public T copyWithModifier(T content, ContentModifier modifier) {
         return switch (content) {
             case Integer value -> serializer.contentClass().cast(modifier.apply(value));

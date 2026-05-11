@@ -4,6 +4,8 @@ import com.extfro.extfrocore.ExtForCore;
 import com.extfro.extfrocore.api.recipe.content.Content;
 import com.extfro.extfrocore.api.recipe.content.ContentModifier;
 import com.extfro.extfrocore.api.recipe.content.IContentSerializer;
+import com.extfro.extfrocore.api.recipe.lookup.ingredient.AbstractMapIngredient;
+import com.extfro.extfrocore.api.recipe.lookup.ingredient.CustomMapIngredient;
 import com.extfro.extfrocore.api.registry.EFRegistries;
 import com.extfro.extfrocore.utils.codec.DispatchedMapCodec;
 
@@ -118,6 +120,10 @@ public abstract class RecipeCapability<T> {
 
     public List<Object> compressIngredients(@Unmodifiable Collection<Object> ingredients) {
         return new ArrayList<>(ingredients);
+    }
+
+    public List<AbstractMapIngredient> getDefaultMapIngredient(Object object) {
+        return List.of(new CustomMapIngredient(of(object)));
     }
 
     public int limitMaxParallelByOutput(IRecipeCapabilityHolder holder,

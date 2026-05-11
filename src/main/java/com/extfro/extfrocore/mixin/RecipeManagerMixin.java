@@ -34,7 +34,7 @@ public abstract class RecipeManagerMixin {
                                                 ProfilerFiller profiler, CallbackInfo ci) {
         for (RecipeType<?> recipeType : BuiltInRegistries.RECIPE_TYPE) {
             if (recipeType instanceof MachineRecipeType machineRecipeType) {
-                machineRecipeType.getCategoryMap().clear();
+                machineRecipeType.beginStagingRecipes();
                 var proxyRecipes = machineRecipeType.getProxyRecipes();
                 if (this.byType.containsKey(machineRecipeType)) {
                     Stream.concat(this.byType.get(machineRecipeType).stream(),
@@ -43,14 +43,15 @@ public abstract class RecipeManagerMixin {
                             .forEach(holder -> {
                                 MachineRecipe recipe = (MachineRecipe) holder.value();
                                 recipe.setId(holder.id());
-                                recipe.recipeCategory.addRecipe(recipe);
+                                machineRecipeType.addStagingRecipe(recipe);
                             });
                 } else if (!proxyRecipes.isEmpty()) {
                     proxyRecipes.values().stream()
                             .flatMap(java.util.List::stream)
                             .map(RecipeHolder::value)
-                            .forEach(recipe -> recipe.recipeCategory.addRecipe(recipe));
+                            .forEach(machineRecipeType::addStagingRecipe);
                 }
+                machineRecipeType.completeStagingRecipes();
             }
         }
     }
