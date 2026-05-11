@@ -1,7 +1,6 @@
 package com.extfro.extfrocore.api.sync_system.meta;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.ComponentSerialization;
 import net.minecraft.resources.ResourceLocation;
@@ -177,8 +176,6 @@ public class FieldCodecs {
 
         register(String.class, Codec.STRING);
         register(UUID.class, Codec.STRING.xmap(UUID::fromString, UUID::toString));
-        register(CompoundTag.class, CompoundTag.CODEC);
-
         register(int[].class, Codec.INT_STREAM.xmap(IntStream::toArray, Arrays::stream));
         register(long[].class, Codec.LONG_STREAM.xmap(LongStream::toArray, Arrays::stream));
         register(byte[].class, Codec.list(Codec.BYTE).xmap(

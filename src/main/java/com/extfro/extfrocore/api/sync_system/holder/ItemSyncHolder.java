@@ -1,10 +1,10 @@
 package com.extfro.extfrocore.api.sync_system.holder;
 
 import com.extfro.extfrocore.api.sync_system.ISyncManaged;
+import com.extfro.extfrocore.api.sync_system.SyncTagMap;
 import com.extfro.extfrocore.api.sync_system.SyncedComponents;
 
 import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
 
 import lombok.Getter;
@@ -31,7 +31,7 @@ public final class ItemSyncHolder implements ISyncManaged {
         if (clientSide) {
             var data = stack.get(SyncedComponents.BLOCK_ITEM_DATA.get());
             if (data != null) {
-                syncDataHolder.deserializeNBT(registries, data, true);
+                syncDataHolder.deserializeData(registries, data, true);
             }
         }
     }
@@ -41,7 +41,7 @@ public final class ItemSyncHolder implements ISyncManaged {
     }
 
     public void flushToStack(ItemStack stack, HolderLookup.Provider registries) {
-        CompoundTag pending = syncDataHolder.getPendingChanges();
+        SyncTagMap pending = syncDataHolder.getPendingChanges();
         if (!pending.isEmpty()) {
             var existing = stack.get(SyncedComponents.BLOCK_ITEM_DATA.get());
             stack.set(SyncedComponents.BLOCK_ITEM_DATA.get(),
@@ -49,7 +49,7 @@ public final class ItemSyncHolder implements ISyncManaged {
         }
     }
 
-    public void applyServerUpdate(HolderLookup.Provider registries, CompoundTag tag) {
+    public void applyServerUpdate(HolderLookup.Provider registries, SyncTagMap tag) {
         syncDataHolder.applyServerUpdate(registries, tag);
     }
 

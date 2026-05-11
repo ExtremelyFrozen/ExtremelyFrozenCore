@@ -53,8 +53,8 @@ public abstract class ManagedSyncBlockEntity extends BlockEntity implements ISyn
     @Override
     protected final void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
-        tag.merge(getSyncDataHolder().serializeToSaveNBT(registries));
-        tag.merge(getSyncDataHolder().serializeToItemNBT(registries));
+        tag.merge(getSyncDataHolder().serializeToSaveData(registries).toTag());
+        tag.merge(getSyncDataHolder().serializeToItemData(registries).toTag());
     }
 
     @Override
@@ -62,9 +62,10 @@ public abstract class ManagedSyncBlockEntity extends BlockEntity implements ISyn
     public void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
         boolean clientSide = getLevel() == null ? ExtForCore.isClientThread() : getLevel().isClientSide;
-        getSyncDataHolder().deserializeNBT(registries, tag, clientSide);
+        SyncTagMap data = SyncTagMap.fromTag(tag);
+        getSyncDataHolder().deserializeData(registries, data, clientSide);
         if (!clientSide) {
-            getSyncDataHolder().deserializeItemNBT(registries, tag);
+            getSyncDataHolder().deserializeItemData(registries, data);
         }
     }
 
@@ -73,7 +74,7 @@ public abstract class ManagedSyncBlockEntity extends BlockEntity implements ISyn
         super.collectImplicitComponents(components);
         var level = Objects.requireNonNull(getLevel());
         components.set(SyncedComponents.BLOCK_ITEM_DATA.get(),
-                getSyncDataHolder().serializeToItemNBT(level.registryAccess()));
+                getSyncDataHolder().serializeToItemData(level.registryAccess()));
     }
 
     @Override
@@ -81,20 +82,21 @@ public abstract class ManagedSyncBlockEntity extends BlockEntity implements ISyn
         super.applyImplicitComponents(components);
         var data = components.get(SyncedComponents.BLOCK_ITEM_DATA.get());
         if (data != null && getLevel() != null) {
-            getSyncDataHolder().deserializeItemNBT(getLevel().registryAccess(), data);
+            getSyncDataHolder().deserializeItemData(getLevel().registryAccess(), data);
         }
     }
 
     @Override
     public CompoundTag getUpdateTag(HolderLookup.Provider registries) {
         getSyncDataHolder().resyncAllFields();
-        return getSyncDataHolder().serializeFullClientSyncNBT(registries);
+        return getSyncDataHolder().serializeFullClientSyncData(registries).toTag();
     }
 
     @Override
     public @Nullable Packet<ClientGamePacketListener> getUpdatePacket() {
         return ClientboundBlockEntityDataPacket.create(this,
-                (blockEntity, registries) -> ((ManagedSyncBlockEntity) blockEntity).syncDataHolder.getPendingChanges());
+                (blockEntity, registries) -> ((ManagedSyncBlockEntity) blockEntity).syncDataHolder.getPendingChanges()
+                        .toTag());
     }
 
     @Override
