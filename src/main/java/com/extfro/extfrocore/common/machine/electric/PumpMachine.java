@@ -14,6 +14,7 @@ import com.extfro.extfrocore.api.machine.trait.NotifiableFluidTank;
 import com.extfro.extfrocore.api.sync_system.annotations.SaveField;
 import com.extfro.extfrocore.api.sync_system.annotations.SyncToClient;
 import com.extfro.extfrocore.common.data.GTBlocks;
+import com.extfro.extfrocore.common.machine.gui.MachineUIHelper;
 
 import net.minecraft.MethodsReturnNonnullByDefault;
 import net.minecraft.Util;
@@ -34,8 +35,6 @@ import net.neoforged.neoforge.fluids.capability.IFluidHandler.FluidAction;
 import net.neoforged.neoforge.fluids.capability.wrappers.BucketPickupHandlerWrapper;
 
 import com.lowdragmc.lowdraglib2.gui.ui.ModularUI;
-import com.lowdragmc.lowdraglib2.gui.widget.ImageWidget;
-import com.lowdragmc.lowdraglib2.gui.widget.LabelWidget;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import lombok.Getter;
@@ -527,11 +526,11 @@ public class PumpMachine extends TieredEnergyMachine implements IUIMachine {
     public ModularUI createUI(Player entityPlayer) {
         return new ModularUI(176, 166, this, entityPlayer)
                 .background(GuiTextures.BACKGROUND)
-                .widget(new ImageWidget(7, 16, 81, 55, GuiTextures.DISPLAY))
-                .widget(new LabelWidget(11, 20, "gtceu.gui.fluid_amount"))
-                .widget(new LabelWidget(11, 30, () -> cache.getFluidInTank(0).getAmount() + "").setTextColor(-1)
-                        .setDropShadow(true))
-                .widget(new LabelWidget(6, 6, getBlockState().getBlock().getDescriptionId()))
+                .widget(MachineUIHelper.image(7, 16, 81, 55, GuiTextures.DISPLAY))
+                .widget(MachineUIHelper.label(11, 20, "gtceu.gui.fluid_amount"))
+                .widget(MachineUIHelper.lightLabel(11, 30,
+                        () -> net.minecraft.network.chat.Component.literal(cache.getFluidInTank(0).getAmount() + "")))
+                .widget(MachineUIHelper.label(6, 6, getBlockState().getBlock().getDescriptionId()))
                 .widget(new TankWidget(cache.getStorages()[0], 90, 35, true, true)
                         .setBackground(GuiTextures.FLUID_SLOT))
                 .widget(new ToggleButtonWidget(7, 53, 18, 18,

@@ -6,7 +6,7 @@ import com.extfro.extfrocore.api.gui.GuiTextures;
 import com.extfro.extfrocore.common.machine.trait.hpca.HPCAComponentTrait;
 import com.extfro.extfrocore.common.machine.trait.hpca.HPCACoolantProviderTrait;
 
-import com.lowdragmc.lowdraglib2.gui.texture.ResourceTexture;
+import com.lowdragmc.lowdraglib2.gui.texture.SpriteTexture;
 import lombok.Getter;
 
 public class HPCACoolerPartMachine extends HPCAComponentPartMachine {
@@ -28,7 +28,7 @@ public class HPCACoolerPartMachine extends HPCAComponentPartMachine {
     }
 
     @Override
-    public ResourceTexture getComponentIcon() {
+    public SpriteTexture getComponentIcon() {
         return advanced ? GuiTextures.HPCA_ICON_ACTIVE_COOLER_COMPONENT : GuiTextures.HPCA_ICON_HEAT_SINK_COMPONENT;
     }
 }

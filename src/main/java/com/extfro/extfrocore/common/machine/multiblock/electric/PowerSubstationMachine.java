@@ -22,6 +22,7 @@ import com.extfro.extfrocore.api.machine.trait.MachineTraitType;
 import com.extfro.extfrocore.api.machine.trait.RecipeLogic;
 import com.extfro.extfrocore.api.misc.EnergyContainerList;
 import com.extfro.extfrocore.api.sync_system.annotations.SaveField;
+import com.extfro.extfrocore.common.machine.gui.MachineUIHelper;
 import com.extfro.extfrocore.config.ConfigHolder;
 import com.extfro.extfrocore.utils.FormattingUtil;
 
@@ -38,7 +39,7 @@ import net.neoforged.neoforge.common.util.INBTSerializable;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.lowdragmc.lowdraglib2.gui.ui.ModularUI;
-import com.lowdragmc.lowdraglib2.gui.widget.*;
+import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMaps;
 import lombok.Getter;
@@ -347,14 +348,15 @@ public class PowerSubstationMachine extends WorkableMultiblockMachine
     }
 
     @Override
-    public Widget createUIWidget() {
-        var group = new WidgetGroup(0, 0, 182 + 8, 117 + 8);
-        group.addWidget(new DraggableScrollableWidgetGroup(4, 4, 182, 117).setBackground(getScreenTexture())
-                .addWidget(new LabelWidget(4, 5, self().getBlockState().getBlock().getDescriptionId()))
-                .addWidget(new ComponentPanelWidget(4, 17, this::addDisplayText)
-                        .setMaxWidthLimit(150)
-                        .clickHandler(this::handleDisplayClick)));
-        group.setBackground(GuiTextures.BACKGROUND_INVERSE);
+    public UIElement createUIWidget() {
+        var group = MachineUIHelper.group(182 + 8, 117 + 8)
+                .style(style -> style.background(GuiTextures.BACKGROUND_INVERSE));
+        var screen = MachineUIHelper.group(4, 4, 182, 117)
+                .style(style -> style.background(getScreenTexture()));
+        screen.addChild(MachineUIHelper.label(4, 5, self().getBlockState().getBlock().getDescriptionId()));
+        screen.addChild(MachineUIHelper.componentPanel(4, 17, 150, 10, this::addDisplayText));
+        addDisplayControls(screen);
+        group.addChild(screen);
         return group;
     }
 

@@ -12,9 +12,9 @@ import com.extfro.extfrocore.api.machine.trait.NotifiableFluidTank;
 import com.extfro.extfrocore.api.machine.trait.NotifiableItemStackHandler;
 import com.extfro.extfrocore.api.sync_system.annotations.SaveField;
 import com.extfro.extfrocore.api.sync_system.annotations.SyncToClient;
+import com.extfro.extfrocore.common.machine.gui.MachineUIHelper;
 
-import com.lowdragmc.lowdraglib2.gui.widget.Widget;
-import com.lowdragmc.lowdraglib2.gui.widget.WidgetGroup;
+import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
 import lombok.Getter;
 
 import java.util.List;
@@ -59,15 +59,16 @@ public class BufferMachine extends TieredMachine implements IFancyUIMachine {
     ////////////////////////////////
 
     @Override
-    public Widget createUIWidget() {
+    public UIElement createUIWidget() {
         int invTier = getTankSize(tier);
-        var group = new WidgetGroup(0, 0, 18 * (invTier + 1) + 16, 18 * invTier + 16);
-        var container = new WidgetGroup(4, 4, 18 * (invTier + 1) + 8, 18 * invTier + 8);
+        var group = MachineUIHelper.group(18 * (invTier + 1) + 16, 18 * invTier + 16);
+        var container = MachineUIHelper.group(4, 4, 18 * (invTier + 1) + 8, 18 * invTier + 8)
+                .style(style -> style.background(GuiTextures.BACKGROUND_INVERSE));
 
         int index = 0;
         for (int y = 0; y < invTier; y++) {
             for (int x = 0; x < invTier; x++) {
-                container.addWidget(new SlotWidget(
+                container.addChild(new SlotWidget(
                         getInventory().storage, index++, 4 + x * 18, 4 + y * 18, true, true)
                         .setBackgroundTexture(GuiTextures.SLOT));
             }
@@ -75,13 +76,12 @@ public class BufferMachine extends TieredMachine implements IFancyUIMachine {
 
         index = 0;
         for (int y = 0; y < invTier; y++) {
-            container.addWidget(new TankWidget(
+            container.addChild(new TankWidget(
                     tank.getStorages()[index++], 4 + invTier * 18, 4 + y * 18, true, true)
                     .setBackground(GuiTextures.FLUID_SLOT));
         }
 
-        container.setBackground(GuiTextures.BACKGROUND_INVERSE);
-        group.addWidget(container);
+        group.addChild(container);
         return group;
     }
 }

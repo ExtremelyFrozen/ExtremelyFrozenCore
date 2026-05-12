@@ -111,22 +111,6 @@ public class OreProperty implements IMaterialProperty {
         this(1, 1);
     }
 
-    public int getOreMultiplier() {
-        return oreMultiplier;
-    }
-
-    public int getByProductMultiplier() {
-        return byProductMultiplier;
-    }
-
-    public @NotNull Material getDirectSmeltResult() {
-        return directSmeltResult;
-    }
-
-    public List<Material> getSeparatedInto() {
-        return separatedInto;
-    }
-
     public void setWashedIn(Material m, int washedAmount) {
         this.washedIn = m;
         this.washedAmount = washedAmount;

@@ -10,6 +10,7 @@ import com.extfro.extfrocore.api.capability.recipe.FluidRecipeCapability;
 import com.extfro.extfrocore.api.capability.recipe.IO;
 import com.extfro.extfrocore.api.data.chemical.material.Material;
 import com.extfro.extfrocore.api.machine.feature.IDataInfoProvider;
+import com.extfro.extfrocore.api.machine.feature.multiblock.IDisplayUIMachine;
 import com.extfro.extfrocore.api.machine.feature.multiblock.IMultiPart;
 import com.extfro.extfrocore.api.machine.multiblock.WorkableElectricMultiblockMachine;
 import com.extfro.extfrocore.api.misc.EnergyContainerList;
@@ -17,6 +18,7 @@ import com.extfro.extfrocore.api.transfer.fluid.FluidHandlerList;
 import com.extfro.extfrocore.common.data.GTBlocks;
 import com.extfro.extfrocore.common.data.GTMaterials;
 import com.extfro.extfrocore.common.item.behavior.PortableScannerBehavior;
+import com.extfro.extfrocore.common.machine.gui.MachineUIHelper;
 import com.extfro.extfrocore.common.machine.trait.miner.LargeMinerLogic;
 import com.extfro.extfrocore.utils.ExtendedUseOnContext;
 import com.extfro.extfrocore.utils.GTTransferUtils;
@@ -30,8 +32,8 @@ import net.minecraft.world.InteractionResult;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler;
 
+import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
 import com.lowdragmc.lowdraglib2.gui.util.ClickData;
-import com.lowdragmc.lowdraglib2.gui.widget.ComponentPanelWidget;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMaps;
 import lombok.Getter;
@@ -44,7 +46,7 @@ import java.util.List;
 import static com.extfro.extfrocore.common.data.GTMaterials.DrillingFluid;
 
 public class LargeMinerMachine extends WorkableElectricMultiblockMachine
-                               implements IMiner, IControllable, IDataInfoProvider {
+                               implements IMiner, IControllable, IDataInfoProvider, IDisplayUIMachine {
 
     public static final int CHUNK_LENGTH = 16;
     @Getter
@@ -187,17 +189,17 @@ public class LargeMinerMachine extends WorkableElectricMultiblockMachine
             textList.add(Component.translatable("gtceu.machine.miner.startz",
                     getRecipeLogic().getZ() == Integer.MAX_VALUE ? 0 : getRecipeLogic().getZ()));
             textList.add(Component.translatable("gtceu.universal.tooltip.silk_touch")
-                    .append(ComponentPanelWidget.withButton(Component.literal("[")
+                    .append(Component.literal("[")
                             .append(getRecipeLogic().isSilkTouchMode() ?
                                     Component.translatable("gtceu.creative.activity.on") :
                                     Component.translatable("gtceu.creative.activity.off"))
-                            .append(Component.literal("]")), "silk_touch")));
+                            .append(Component.literal("]"))));
             textList.add(Component.translatable("gtceu.universal.tooltip.chunk_mode")
-                    .append(ComponentPanelWidget.withButton(Component.literal("[")
+                    .append(Component.literal("[")
                             .append(getRecipeLogic().isChunkMode() ?
                                     Component.translatable("gtceu.creative.activity.on") :
                                     Component.translatable("gtceu.creative.activity.off"))
-                            .append(Component.literal("]")), "chunk_mode")));
+                            .append(Component.literal("]"))));
             if (getRecipeLogic().isChunkMode()) {
                 textList.add(Component.translatable("gtceu.universal.tooltip.working_area_chunks", workingAreaChunks,
                         workingAreaChunks));
@@ -221,6 +223,18 @@ public class LargeMinerMachine extends WorkableElectricMultiblockMachine
                 getRecipeLogic().setSilkTouchMode(!getRecipeLogic().isSilkTouchMode());
             }
         }
+    }
+
+    @Override
+    public void addDisplayControls(UIElement display) {
+        display.addChild(MachineUIHelper.textButton(116, 47, 38, 14,
+                () -> Component.translatable(getRecipeLogic().isSilkTouchMode() ?
+                        "gtceu.creative.activity.on" : "gtceu.creative.activity.off"),
+                event -> getRecipeLogic().setSilkTouchMode(!getRecipeLogic().isSilkTouchMode())));
+        display.addChild(MachineUIHelper.textButton(116, 57, 38, 14,
+                () -> Component.translatable(getRecipeLogic().isChunkMode() ?
+                        "gtceu.creative.activity.on" : "gtceu.creative.activity.off"),
+                event -> getRecipeLogic().setChunkMode(!getRecipeLogic().isChunkMode())));
     }
 
     //////////////////////////////////////

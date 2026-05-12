@@ -64,9 +64,7 @@ public class GTRecipeTypeUI {
     protected int maxTooltips = 3;
 
     private Size xeiSize;
-    @Getter
     private int originalWidth;
-    @Getter
     private int originalHeight;
 
     public GTRecipeTypeUI(@NotNull GTRecipeType recipeType) {

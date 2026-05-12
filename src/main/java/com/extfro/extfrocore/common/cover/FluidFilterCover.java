@@ -25,7 +25,6 @@ import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.Button;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.Label;
 import lombok.Getter;
-import lombok.Setter;
 import org.jetbrains.annotations.Nullable;
 
 public class FluidFilterCover extends CoverBehavior implements IUICover {
@@ -37,7 +36,6 @@ public class FluidFilterCover extends CoverBehavior implements IUICover {
     protected FilterMode filterMode = FilterMode.FILTER_INSERT;
     private FilteredFluidHandlerWrapper fluidFilterWrapper;
     @SaveField
-    @Setter
     @Getter
     protected ManualIOMode allowFlow = ManualIOMode.DISABLED;
 
@@ -48,14 +46,6 @@ public class FluidFilterCover extends CoverBehavior implements IUICover {
     public void setFilterMode(FilterMode filterMode) {
         this.filterMode = filterMode;
         syncDataHolder.markClientSyncFieldDirty("filterMode");
-    }
-
-    public FilterMode getFilterMode() {
-        return filterMode;
-    }
-
-    public ManualIOMode getAllowFlow() {
-        return allowFlow;
     }
 
     public void setAllowFlow(ManualIOMode allowFlow) {

@@ -7,6 +7,7 @@ import com.extfro.extfrocore.api.gui.UITemplate;
 import com.extfro.extfrocore.api.gui.widget.SlotWidget;
 import com.extfro.extfrocore.api.gui.widget.TankWidget;
 import com.extfro.extfrocore.api.machine.feature.IUIMachine;
+import com.extfro.extfrocore.common.machine.gui.MachineUIHelper;
 import com.extfro.extfrocore.config.ConfigHolder;
 import com.extfro.extfrocore.utils.ExtendedUseOnContext;
 
@@ -21,10 +22,8 @@ import net.minecraft.world.entity.player.Player;
 import net.neoforged.neoforge.fluids.FluidUtil;
 
 import com.lowdragmc.lowdraglib2.gui.texture.GuiTextureGroup;
-import com.lowdragmc.lowdraglib2.gui.texture.ProgressTexture;
 import com.lowdragmc.lowdraglib2.gui.ui.ModularUI;
-import com.lowdragmc.lowdraglib2.gui.widget.LabelWidget;
-import com.lowdragmc.lowdraglib2.gui.widget.ProgressWidget;
+import com.lowdragmc.lowdraglib2.gui.ui.data.FillDirection;
 
 public class CokeOvenMachine extends PrimitiveWorkableMachine implements IUIMachine {
 
@@ -36,18 +35,18 @@ public class CokeOvenMachine extends PrimitiveWorkableMachine implements IUIMach
     public ModularUI createUI(Player entityPlayer) {
         return new ModularUI(176, 166, this, entityPlayer)
                 .background(GuiTextures.PRIMITIVE_BACKGROUND)
-                .widget(new LabelWidget(5, 5, getBlockState().getBlock().getDescriptionId()))
+                .widget(MachineUIHelper.label(5, 5, getBlockState().getBlock().getDescriptionId()))
                 .widget(new SlotWidget(importItems.storage, 0, 52, 30, true, true)
                         .setBackgroundTexture(
                                 new GuiTextureGroup(GuiTextures.PRIMITIVE_SLOT, GuiTextures.PRIMITIVE_FURNACE_OVERLAY)))
-                .widget(new ProgressWidget(recipeLogic::getProgressPercent, 76, 32, 20, 15,
+                .widget(MachineUIHelper.progress(76, 32, 20, 15, recipeLogic::getProgressPercent,
                         GuiTextures.PRIMITIVE_BLAST_FURNACE_PROGRESS_BAR))
                 .widget(new SlotWidget(exportItems.storage, 0, 103, 30, true, false)
                         .setBackgroundTexture(
                                 new GuiTextureGroup(GuiTextures.PRIMITIVE_SLOT, GuiTextures.PRIMITIVE_FURNACE_OVERLAY)))
                 .widget(new TankWidget(exportFluids.getStorages()[0], 134, 13, 20, 58, true, false)
                         .setBackground(GuiTextures.PRIMITIVE_LARGE_FLUID_TANK)
-                        .setFillDirection(ProgressTexture.FillDirection.DOWN_TO_UP)
+                        .setFillDirection(FillDirection.DOWN_TO_UP)
                         .setShowAmountOverlay(false)
                         .setOverlay(GuiTextures.PRIMITIVE_LARGE_FLUID_TANK_OVERLAY))
                 .widget(UITemplate.bindPlayerInventory(entityPlayer.getInventory(), GuiTextures.PRIMITIVE_SLOT, 7, 84,

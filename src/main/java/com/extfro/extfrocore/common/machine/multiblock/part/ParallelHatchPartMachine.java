@@ -8,11 +8,11 @@ import com.extfro.extfrocore.api.machine.feature.IRecipeLogicMachine;
 import com.extfro.extfrocore.api.machine.multiblock.MultiblockControllerMachine;
 import com.extfro.extfrocore.api.machine.multiblock.part.TieredPartMachine;
 import com.extfro.extfrocore.api.sync_system.annotations.SaveField;
+import com.extfro.extfrocore.common.machine.gui.MachineUIHelper;
 
 import net.minecraft.util.Mth;
 
-import com.lowdragmc.lowdraglib2.gui.widget.Widget;
-import com.lowdragmc.lowdraglib2.gui.widget.WidgetGroup;
+import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
 import lombok.Getter;
 
 public class ParallelHatchPartMachine extends TieredPartMachine implements IFancyUIMachine {
@@ -41,9 +41,9 @@ public class ParallelHatchPartMachine extends TieredPartMachine implements IFanc
     }
 
     @Override
-    public Widget createUIWidget() {
-        WidgetGroup parallelAmountGroup = new WidgetGroup(0, 0, 100, 20);
-        parallelAmountGroup.addWidget(new IntInputWidget(this::getCurrentParallel, this::setCurrentParallel)
+    public UIElement createUIWidget() {
+        UIElement parallelAmountGroup = MachineUIHelper.group(100, 20);
+        parallelAmountGroup.addChild(new IntInputWidget(this::getCurrentParallel, this::setCurrentParallel)
                 .setMin(MIN_PARALLEL)
                 .setMax(maxParallel));
 

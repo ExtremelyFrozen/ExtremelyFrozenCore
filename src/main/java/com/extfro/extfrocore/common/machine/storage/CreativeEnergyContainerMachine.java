@@ -9,18 +9,19 @@ import com.extfro.extfrocore.api.gui.GuiTextures;
 import com.extfro.extfrocore.api.machine.TieredMachine;
 import com.extfro.extfrocore.api.machine.feature.IUIMachine;
 import com.extfro.extfrocore.api.sync_system.annotations.SaveField;
+import com.extfro.extfrocore.common.machine.gui.MachineUIHelper;
 import com.extfro.extfrocore.utils.GTUtil;
 
 import net.minecraft.core.Direction;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 
 import com.lowdragmc.lowdraglib2.gui.ColorPattern;
-import com.lowdragmc.lowdraglib2.gui.texture.GuiTextureGroup;
-import com.lowdragmc.lowdraglib2.gui.texture.ResourceBorderTexture;
-import com.lowdragmc.lowdraglib2.gui.texture.TextTexture;
+import com.lowdragmc.lowdraglib2.gui.texture.IGuiTexture;
 import com.lowdragmc.lowdraglib2.gui.ui.ModularUI;
-import com.lowdragmc.lowdraglib2.gui.widget.*;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.Button;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.Selector;
 import org.apache.commons.lang3.ArrayUtils;
 
 import java.util.Arrays;
@@ -177,59 +178,64 @@ public class CreativeEnergyContainerMachine extends TieredMachine implements ILa
     public ModularUI createUI(Player entityPlayer) {
         return new ModularUI(176, 166, this, entityPlayer)
                 .background(GuiTextures.BACKGROUND)
-                .widget(new LabelWidget(7, 32, "gtceu.creative.energy.voltage"))
-                .widget(new TextFieldWidget(9, 47, 152, 16, () -> String.valueOf(voltage),
+                .widget(MachineUIHelper.label(7, 32, "gtceu.creative.energy.voltage"))
+                .widget(MachineUIHelper.longTextField(9, 47, 152, 16, () -> voltage,
                         value -> {
                             voltage = Long.parseLong(value);
                             setTier = GTUtil.getTierByVoltage(voltage);
-                        }).setNumbersOnly(0L, Long.MAX_VALUE))
-                .widget(new LabelWidget(7, 74, "gtceu.creative.energy.amperage"))
-                .widget(new ButtonWidget(7, 87, 20, 20,
-                        new GuiTextureGroup(ResourceBorderTexture.BUTTON_COMMON, new TextTexture("-")),
-                        cd -> amps = --amps == -1 ? 0 : amps))
-                .widget(new TextFieldWidget(31, 89, 114, 16, () -> String.valueOf(amps),
-                        value -> amps = Integer.parseInt(value)).setNumbersOnly(0, Integer.MAX_VALUE))
-                .widget(new ButtonWidget(149, 87, 20, 20,
-                        new GuiTextureGroup(ResourceBorderTexture.BUTTON_COMMON, new TextTexture("+")),
-                        cd -> {
+                        }, 0L, Long.MAX_VALUE))
+                .widget(MachineUIHelper.label(7, 74, "gtceu.creative.energy.amperage"))
+                .widget(MachineUIHelper.textButton(7, 87, 20, 20, () -> Component.literal("-"),
+                        event -> amps = --amps == -1 ? 0 : amps))
+                .widget(MachineUIHelper.intTextField(31, 89, 114, 16, () -> amps,
+                        value -> amps = Integer.parseInt(value), 0, Integer.MAX_VALUE))
+                .widget(MachineUIHelper.textButton(149, 87, 20, 20, () -> Component.literal("+"),
+                        event -> {
                             if (amps < Integer.MAX_VALUE) {
                                 amps++;
                             }
                         }))
-                .widget(new LabelWidget(7, 110,
+                .widget(MachineUIHelper.literalLabel(7, 110,
                         () -> "Average Energy I/O per tick: " + this.lastAverageEnergyIOPerTick))
-                .widget(new SwitchWidget(7, 139, 77, 20, (clickData, value) -> active = value)
-                        .setTexture(
-                                new GuiTextureGroup(ResourceBorderTexture.BUTTON_COMMON,
-                                        new TextTexture("gtceu.creative.activity.off")),
-                                new GuiTextureGroup(ResourceBorderTexture.BUTTON_COMMON,
-                                        new TextTexture("gtceu.creative.activity.on")))
-                        .setPressed(active))
-                .widget(new SwitchWidget(85, 139, 77, 20, (clickData, value) -> {
-                    source = value;
-                    if (source) {
-                        voltage = 0;
-                        amps = 0;
-                        setTier = 0;
-                    } else {
-                        voltage = EFValues.V[14];
-                        amps = Integer.MAX_VALUE;
-                        setTier = 14;
-                    }
-                }).setTexture(
-                        new GuiTextureGroup(ResourceBorderTexture.BUTTON_COMMON,
-                                new TextTexture("gtceu.creative.energy.sink")),
-                        new GuiTextureGroup(ResourceBorderTexture.BUTTON_COMMON,
-                                new TextTexture("gtceu.creative.energy.source")))
-                        .setPressed(source))
-                .widget(new SelectorWidget(7, 7, 50, 20, Arrays.stream(EFValues.VNF).toList(), -1)
-                        .setOnChanged(tier -> {
-                            setTier = ArrayUtils.indexOf(EFValues.VNF, tier);
-                            voltage = EFValues.VEX[setTier];
-                        })
-                        .setSupplier(() -> EFValues.VNF[setTier])
-                        .setButtonBackground(ResourceBorderTexture.BUTTON_COMMON)
-                        .setBackground(ColorPattern.BLACK.rectTexture())
-                        .setValue(EFValues.VNF[setTier]));
+                .widget(MachineUIHelper.textButton(7, 139, 77, 20,
+                        () -> Component.translatable(active ? "gtceu.creative.activity.on" :
+                                "gtceu.creative.activity.off"),
+                        event -> active = !active))
+                .widget(MachineUIHelper.textButton(85, 139, 77, 20,
+                        () -> Component.translatable(source ? "gtceu.creative.energy.source" :
+                                "gtceu.creative.energy.sink"),
+                        event -> {
+                            source = !source;
+                            if (source) {
+                                voltage = 0;
+                                amps = 0;
+                                setTier = 0;
+                            } else {
+                                voltage = EFValues.V[14];
+                                amps = Integer.MAX_VALUE;
+                                setTier = 14;
+                            }
+                        }))
+                .widget(createTierSelector());
+    }
+
+    private Selector<String> createTierSelector() {
+        var selector = new Selector<String>();
+        selector.layout(layout -> layout.left(7).top(7).width(50).height(20));
+        selector.setCandidates(Arrays.stream(EFValues.VNF).toList());
+        selector.setValue(EFValues.VNF[setTier], false);
+        selector.setOnChanged(tier -> {
+            setTier = ArrayUtils.indexOf(EFValues.VNF, tier);
+            voltage = EFValues.VEX[setTier];
+        });
+        selector.style(style -> style.background(ColorPattern.BLACK.rectTexture()));
+        IGuiTexture buttonTexture = GuiTextures.VANILLA_BUTTON;
+        Button selectorButton = selector.getButton();
+        if (selectorButton != null) {
+            selectorButton.buttonStyle(style -> style.baseTexture(buttonTexture)
+                    .hoverTexture(buttonTexture)
+                    .pressedTexture(buttonTexture));
+        }
+        return selector;
     }
 }

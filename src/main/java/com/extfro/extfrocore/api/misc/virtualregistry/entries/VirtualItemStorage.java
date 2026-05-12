@@ -33,10 +33,6 @@ public class VirtualItemStorage extends VirtualEntry {
         handler = new CustomItemStackHandler(slots);
     }
 
-    public @NotNull CustomItemStackHandler getHandler() {
-        return handler;
-    }
-
     @Override
     public EntryTypes<? extends VirtualEntry> getType() {
         return EntryTypes.ENDER_ITEM;

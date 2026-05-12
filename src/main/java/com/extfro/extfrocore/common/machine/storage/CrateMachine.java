@@ -15,6 +15,7 @@ import com.extfro.extfrocore.api.sync_system.annotations.SaveField;
 import com.extfro.extfrocore.api.sync_system.annotations.SyncToClient;
 import com.extfro.extfrocore.common.data.GTItems;
 import com.extfro.extfrocore.common.data.item.GTDataComponents;
+import com.extfro.extfrocore.common.machine.gui.MachineUIHelper;
 import com.extfro.extfrocore.utils.ExtendedUseOnContext;
 
 import net.minecraft.core.component.DataComponentMap;
@@ -25,7 +26,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.component.ItemContainerContents;
 
 import com.lowdragmc.lowdraglib2.gui.ui.ModularUI;
-import com.lowdragmc.lowdraglib2.gui.widget.LabelWidget;
 import lombok.Getter;
 
 public class CrateMachine extends MetaMachine implements IUIMachine {
@@ -58,7 +58,7 @@ public class CrateMachine extends MetaMachine implements IUIMachine {
                 (inventorySize - 3 * yOverflow - (inventorySize - 3 * yOverflow) % yOverflow) / yOverflow * 18 : 0;
         var modularUI = new ModularUI(176 + xOffset, 166 + yOffset, this, entityPlayer)
                 .background(GuiTextures.BACKGROUND)
-                .widget(new LabelWidget(5, 5, getBlockState().getBlock().getDescriptionId()))
+                .widget(MachineUIHelper.label(5, 5, getBlockState().getBlock().getDescriptionId()))
                 .widget(UITemplate.bindPlayerInventory(entityPlayer.getInventory(), GuiTextures.SLOT, 7 + xOffset / 2,
                         82 + yOffset, true));
         int x = 0;

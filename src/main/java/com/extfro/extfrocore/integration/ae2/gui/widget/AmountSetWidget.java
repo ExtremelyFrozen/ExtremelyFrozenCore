@@ -3,50 +3,63 @@ package com.extfro.extfrocore.integration.ae2.gui.widget;
 import com.extfro.extfrocore.api.gui.GuiTextures;
 import com.extfro.extfrocore.integration.ae2.slot.IConfigurableSlot;
 
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 import appeng.api.stacks.GenericStack;
-import com.lowdragmc.lowdraglib2.gui.widget.TextFieldWidget;
-import com.lowdragmc.lowdraglib2.gui.widget.Widget;
-import com.lowdragmc.lowdraglib2.math.Position;
+import com.lowdragmc.lowdraglib2.gui.sync.rpc.RPCEmitter;
+import com.lowdragmc.lowdraglib2.gui.sync.rpc.RPCEventBuilder;
+import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.TextField;
+import com.lowdragmc.lowdraglib2.gui.ui.rendering.GUIContext;
+import dev.vfyjxf.taffy.style.TaffyPosition;
 import lombok.Getter;
-import org.jetbrains.annotations.NotNull;
 
 import static com.lowdragmc.lowdraglib2.gui.util.DrawerHelper.drawStringSized;
 
-public class AmountSetWidget extends Widget {
+public class AmountSetWidget extends UIElement {
 
     private int index = -1;
     @Getter
-    private final TextFieldWidget amountText;
+    private final TextField amountText;
     private final ConfigWidget parentWidget;
+    private final RPCEmitter setAmountRPC = addRPCEvent(RPCEventBuilder.simple(Integer.class, Long.class, this::setAmount));
 
     public AmountSetWidget(int x, int y, ConfigWidget widget) {
-        super(x, y, 80, 30);
         this.parentWidget = widget;
-        this.amountText = new TextFieldWidget(x + 3, y + 12, 65, 13, this::getAmountStr, this::setNewAmount)
-                .setNumbersOnly(0, Integer.MAX_VALUE)
-                .setMaxStringLength(10);
+        layout(layout -> layout
+                .positionType(TaffyPosition.ABSOLUTE)
+                .left(x)
+                .top(y)
+                .width(80)
+                .height(30));
+        this.amountText = new TextField();
+        this.amountText.layout(layout -> layout
+                .positionType(TaffyPosition.ABSOLUTE)
+                .left(3)
+                .top(12)
+                .width(65)
+                .height(13));
+        this.amountText.setNumbersOnlyLong(0, Integer.MAX_VALUE);
+        this.amountText.setTextResponder(this::setNewAmount);
+        addChild(this.amountText);
     }
 
     @OnlyIn(Dist.CLIENT)
     public void setSlotIndexClient(int slotIndex) {
-        this.index = slotIndex;
-        writeClientAction(0, buf -> buf.writeVarInt(this.index));
+        setSlotIndex(slotIndex);
     }
 
     public void setSlotIndex(int slotIndex) {
         this.index = slotIndex;
+        this.amountText.setText(getAmountStr(), false);
     }
 
     public String getAmountStr() {
         if (this.index < 0) {
             return "0";
         }
-        IConfigurableSlot slot = this.parentWidget.getConfig(this.index);
+        IConfigurableSlot slot = this.parentWidget.getDisplay(this.index);
         if (slot.getConfig() != null) {
             return String.valueOf(slot.getConfig().amount());
         }
@@ -59,28 +72,31 @@ public class AmountSetWidget extends Widget {
             if (this.index < 0) {
                 return;
             }
-            IConfigurableSlot slot = this.parentWidget.getConfig(this.index);
+            IConfigurableSlot slot = this.parentWidget.getDisplay(this.index);
             if (newAmount > 0 && slot.getConfig() != null) {
-                slot.setConfig(new GenericStack(slot.getConfig().what(), newAmount));
+                setAmountRPC.send(this.index, newAmount);
             }
         } catch (NumberFormatException ignore) {}
     }
 
-    @Override
-    public void handleClientAction(int id, RegistryFriendlyByteBuf buffer) {
-        super.handleClientAction(id, buffer);
-        if (id == 0) {
-            this.index = buffer.readVarInt();
+    private void setAmount(Integer index, Long amount) {
+        if (index == null || amount == null || index < 0) {
+            return;
+        }
+        IConfigurableSlot slot = this.parentWidget.getConfig(index);
+        if (amount > 0 && slot.getConfig() != null) {
+            slot.setConfig(new GenericStack(slot.getConfig().what(), amount));
+            this.parentWidget.slotSync.markAsChanged();
         }
     }
 
-    @OnlyIn(Dist.CLIENT)
     @Override
-    public void drawInBackground(@NotNull GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
-        super.drawInBackground(graphics, mouseX, mouseY, partialTicks);
-        Position position = getPosition();
-        GuiTextures.BACKGROUND.draw(graphics, mouseX, mouseY, position.x, position.y, 80, 30);
-        drawStringSized(graphics, "Amount", position.x + 3, position.y + 3, 0x404040, false, 1f, false);
-        GuiTextures.DISPLAY.draw(graphics, mouseX, mouseY, position.x + 3, position.y + 11, 65, 14);
+    public void drawBackgroundAdditional(GUIContext context) {
+        super.drawBackgroundAdditional(context);
+        int x = Math.round(getPositionX());
+        int y = Math.round(getPositionY());
+        GuiTextures.BACKGROUND.draw(context, x, y, 80, 30);
+        drawStringSized(context.graphics, "Amount", x + 3, y + 3, 0x404040, false, 1f, false);
+        GuiTextures.DISPLAY.draw(context, x + 3, y + 11, 65, 14);
     }
 }

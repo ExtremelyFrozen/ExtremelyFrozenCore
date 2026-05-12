@@ -51,18 +51,6 @@ public class RobotArmCover extends ConveyorCover {
         this(definition, coverHolder, attachedSide, tier, CONVEYOR_SCALING.applyAsInt(tier));
     }
 
-    public TransferMode getTransferMode() {
-        return transferMode;
-    }
-
-    public int getGlobalTransferLimit() {
-        return globalTransferLimit;
-    }
-
-    public void setGlobalTransferLimit(int globalTransferLimit) {
-        this.globalTransferLimit = globalTransferLimit;
-    }
-
     @Override
     protected int doTransferItems(IItemHandler itemHandler, IItemHandler myItemHandler, int maxTransferAmount) {
         if (io == IO.OUT && itemHandler instanceof ItemNetHandler && transferMode == TransferMode.KEEP_EXACT) {

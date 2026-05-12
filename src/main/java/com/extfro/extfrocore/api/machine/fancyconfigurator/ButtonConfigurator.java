@@ -34,16 +34,6 @@ public class ButtonConfigurator implements IFancyConfiguratorButton {
     }
 
     @Override
-    public List<Component> getTooltips() {
-        return tooltips;
-    }
-
-    public ButtonConfigurator setTooltips(List<Component> tooltips) {
-        this.tooltips = tooltips;
-        return this;
-    }
-
-    @Override
     public void onClick(ClickData clickData) {
         onClick.accept(clickData);
     }

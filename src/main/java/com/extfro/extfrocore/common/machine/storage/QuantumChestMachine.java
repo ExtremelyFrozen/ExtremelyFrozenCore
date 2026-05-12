@@ -20,6 +20,7 @@ import com.extfro.extfrocore.api.sync_system.annotations.SyncToClient;
 import com.extfro.extfrocore.api.transfer.fluid.IFluidHandlerModifiable;
 import com.extfro.extfrocore.api.transfer.item.CustomItemStackHandler;
 import com.extfro.extfrocore.common.data.item.GTDataComponents;
+import com.extfro.extfrocore.common.machine.gui.MachineUIHelper;
 import com.extfro.extfrocore.utils.ExtendedUseOnContext;
 import com.extfro.extfrocore.utils.FormattingUtil;
 import com.extfro.extfrocore.utils.GTMath;
@@ -28,6 +29,7 @@ import com.extfro.extfrocore.utils.GTTransferUtils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.component.DataComponentMap;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
@@ -39,8 +41,8 @@ import net.neoforged.neoforge.items.IItemHandlerModifiable;
 import com.lowdragmc.lowdraglib2.gui.texture.GuiTextureGroup;
 import com.lowdragmc.lowdraglib2.gui.texture.IGuiTexture;
 import com.lowdragmc.lowdraglib2.gui.texture.Icons;
-import com.lowdragmc.lowdraglib2.gui.texture.ResourceBorderTexture;
-import com.lowdragmc.lowdraglib2.gui.widget.*;
+import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.Button;
 import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
 import lombok.Getter;
 import org.jetbrains.annotations.Nullable;
@@ -234,51 +236,55 @@ public class QuantumChestMachine extends TieredMachine implements IControllable,
     // *********** GUI ***********//
     //////////////////////////////////////
 
-    public Widget createUIWidget() {
-        var group = new WidgetGroup(0, 0, 109, 63);
+    public UIElement createUIWidget() {
+        var group = MachineUIHelper.group(109, 63)
+                .style(style -> style.background(GuiTextures.BACKGROUND_INVERSE));
         var importItems = createImportItems();
-        group.addWidget(new ImageWidget(4, 4, 81, 55, GuiTextures.DISPLAY))
-                .addWidget(new LabelWidget(8, 8, "gtceu.machine.quantum_chest.items_stored"))
-                .addWidget(new LabelWidget(8, 18, () -> FormattingUtil.formatNumbers(storedAmount))
-                        .setTextColor(-1)
-                        .setDropShadow(true))
-                .addWidget(new SlotWidget(importItems, 0, 87, 5, false, true)
-                        .setBackgroundTexture(new GuiTextureGroup(GuiTextures.SLOT, GuiTextures.IN_SLOT_OVERLAY)))
-                .addWidget(new SlotWidget(cache, 0, 87, 23, false, false)
-                        .setItemHook(s -> s.copyWithCount((int) Math.min(storedAmount, s.getMaxStackSize())))
-                        .setBackgroundTexture(GuiTextures.SLOT))
-                .addWidget(new ButtonWidget(87, 42, 18, 18,
-                        new GuiTextureGroup(ResourceBorderTexture.BUTTON_COMMON, Icons.DOWN.scale(0.7f)), cd -> {
-                            if (!cd.isRemote) {
-                                if (!stored.isEmpty()) {
-                                    var extracted = cache.extractItem(0,
-                                            (int) Math.min(storedAmount, stored.getMaxStackSize()), false);
-                                    if (!group.getGui().entityPlayer.addItem(extracted)) {
-                                        net.minecraft.world.level.block.Block.popResource(
-                                                group.getGui().entityPlayer.level(),
-                                                group.getGui().entityPlayer.getOnPos(), extracted);
-                                    }
-                                }
-                            }
-                        }))
-                .addWidget(new PhantomSlotWidget(lockedItem, 0, 58, 41,
-                        stack -> stored.isEmpty() || ItemStack.isSameItemSameComponents(stack, stored))
-                        .setMaxStackSize(1))
-                .addWidget(new ToggleButtonWidget(4, 41, 18, 18,
-                        GuiTextures.BUTTON_ITEM_OUTPUT, this.autoOutput::isAutoOutputItems,
-                        this.autoOutput::setAllowAutoOutputItems)
-                        .setShouldUseBaseBackground()
-                        .setTooltipText("gtceu.gui.item_auto_output.tooltip"))
-                .addWidget(new ToggleButtonWidget(22, 41, 18, 18,
-                        GuiTextures.BUTTON_LOCK, this::isLocked, this::setLocked)
-                        .setShouldUseBaseBackground()
-                        .setTooltipText("gtceu.gui.item_lock.tooltip"))
-                .addWidget(new ToggleButtonWidget(40, 41, 18, 18,
-                        GuiTextures.BUTTON_VOID, () -> isVoiding, (b) -> isVoiding = b)
-                        .setShouldUseBaseBackground()
-                        .setTooltipText("gtceu.gui.item_voiding_partial.tooltip"));
-        group.setBackground(GuiTextures.BACKGROUND_INVERSE);
+        group.addChild(MachineUIHelper.image(4, 4, 81, 55, GuiTextures.DISPLAY));
+        group.addChild(MachineUIHelper.label(8, 8, "gtceu.machine.quantum_chest.items_stored"));
+        group.addChild(MachineUIHelper.lightLabel(8, 18,
+                () -> Component.literal(FormattingUtil.formatNumbers(storedAmount))));
+        group.addChild(new SlotWidget(importItems, 0, 87, 5, false, true)
+                .setBackgroundTexture(new GuiTextureGroup(GuiTextures.SLOT, GuiTextures.IN_SLOT_OVERLAY)));
+        group.addChild(new SlotWidget(cache, 0, 87, 23, false, false)
+                .setItemHook(s -> s.copyWithCount((int) Math.min(storedAmount, s.getMaxStackSize())))
+                .setBackgroundTexture(GuiTextures.SLOT));
+        group.addChild(createExtractButton(87, 42));
+        group.addChild(new PhantomSlotWidget(lockedItem, 0, 58, 41,
+                stack -> stored.isEmpty() || ItemStack.isSameItemSameComponents(stack, stored))
+                .setMaxStackSize(1));
+        group.addChild(new ToggleButtonWidget(4, 41, 18, 18,
+                GuiTextures.BUTTON_ITEM_OUTPUT, this.autoOutput::isAutoOutputItems,
+                this.autoOutput::setAllowAutoOutputItems)
+                .setShouldUseBaseBackground()
+                .setTooltipText("gtceu.gui.item_auto_output.tooltip"));
+        group.addChild(new ToggleButtonWidget(22, 41, 18, 18,
+                GuiTextures.BUTTON_LOCK, this::isLocked, this::setLocked)
+                .setShouldUseBaseBackground()
+                .setTooltipText("gtceu.gui.item_lock.tooltip"));
+        group.addChild(new ToggleButtonWidget(40, 41, 18, 18,
+                GuiTextures.BUTTON_VOID, () -> isVoiding, (b) -> isVoiding = b)
+                .setShouldUseBaseBackground()
+                .setTooltipText("gtceu.gui.item_voiding_partial.tooltip"));
         return group;
+    }
+
+    private Button createExtractButton(int x, int y) {
+        var button = new Button().noText();
+        button.layout(layout -> layout.left(x).top(y).width(18).height(18));
+        var texture = new GuiTextureGroup(GuiTextures.VANILLA_BUTTON, Icons.DOWN.scale(0.7f));
+        button.buttonStyle(style -> style.baseTexture(texture).hoverTexture(texture).pressedTexture(texture));
+        button.setOnServerClick(event -> {
+            if (!stored.isEmpty()) {
+                var extracted = cache.extractItem(0,
+                        (int) Math.min(storedAmount, stored.getMaxStackSize()), false);
+                var player = button.getModularUI().player;
+                if (!player.addItem(extracted)) {
+                    net.minecraft.world.level.block.Block.popResource(player.level(), player.getOnPos(), extracted);
+                }
+            }
+        });
+        return button;
     }
 
     private CustomItemStackHandler createImportItems() {

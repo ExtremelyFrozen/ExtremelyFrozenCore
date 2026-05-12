@@ -103,26 +103,6 @@ public class BedrockOreDefinition {
         return IntArrayList.toList(materials().stream().mapToInt(WeightedMaterial::weight));
     }
 
-    public int getWeight() {
-        return weight;
-    }
-
-    public Set<ResourceKey<Level>> getDimensionFilter() {
-        return dimensionFilter;
-    }
-
-    public List<WeightedMaterial> getMaterials() {
-        return materials;
-    }
-
-    public void weight(int weight) {
-        this.weight = weight;
-    }
-
-    public void biomeWeightModifier(BiomeWeightModifier biomeWeightModifier) {
-        this.biomeWeightModifier = biomeWeightModifier;
-    }
-
     public List<Material> getAllMaterials() {
         return materials().stream().map(WeightedMaterial::material).toList();
     }

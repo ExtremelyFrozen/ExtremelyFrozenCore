@@ -14,6 +14,7 @@ import com.extfro.extfrocore.api.machine.steam.SteamWorkableMachine;
 import com.extfro.extfrocore.api.machine.trait.NotifiableItemStackHandler;
 import com.extfro.extfrocore.api.sync_system.annotations.SaveField;
 import com.extfro.extfrocore.common.item.behavior.PortableScannerBehavior;
+import com.extfro.extfrocore.common.machine.gui.MachineUIHelper;
 import com.extfro.extfrocore.common.machine.trait.ExhaustVentMachineTrait;
 import com.extfro.extfrocore.common.machine.trait.miner.SteamMinerLogic;
 import com.extfro.extfrocore.utils.GTTransferUtils;
@@ -31,9 +32,6 @@ import net.minecraft.world.level.block.Block;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler;
 
 import com.lowdragmc.lowdraglib2.gui.ui.ModularUI;
-import com.lowdragmc.lowdraglib2.gui.widget.ComponentPanelWidget;
-import com.lowdragmc.lowdraglib2.gui.widget.ImageWidget;
-import com.lowdragmc.lowdraglib2.gui.widget.LabelWidget;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -158,14 +156,12 @@ public class SteamMinerMachine extends SteamWorkableMachine implements IControll
             }
         }
 
-        builder.widget(new LabelWidget(5, 5, getBlockState().getBlock().getDescriptionId()));
+        builder.widget(MachineUIHelper.label(5, 5, getBlockState().getBlock().getDescriptionId()));
         builder.widget(new PredicatedImageWidget(79, 42, 18, 18, GuiTextures.INDICATOR_NO_STEAM.get(isHighPressure()))
                 .setPredicate(() -> !drainInput(true)));
-        builder.widget(new ImageWidget(7, 16, 105, 75, GuiTextures.DISPLAY_STEAM.get(isHighPressure())));
-        builder.widget(new ComponentPanelWidget(10, 19, this::addDisplayText)
-                .setMaxWidthLimit(84));
-        builder.widget(new ComponentPanelWidget(70, 19, this::addDisplayText2)
-                .setMaxWidthLimit(84));
+        builder.widget(MachineUIHelper.image(7, 16, 105, 75, GuiTextures.DISPLAY_STEAM.get(isHighPressure())));
+        builder.widget(MachineUIHelper.componentPanel(10, 19, 84, 10, this::addDisplayText));
+        builder.widget(MachineUIHelper.componentPanel(70, 19, 84, 10, this::addDisplayText2));
 
         return builder;
     }

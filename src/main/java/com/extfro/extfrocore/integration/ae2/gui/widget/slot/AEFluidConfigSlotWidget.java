@@ -1,7 +1,6 @@
 package com.extfro.extfrocore.integration.ae2.gui.widget.slot;
 
 import com.extfro.extfrocore.api.gui.GuiTextures;
-import com.extfro.extfrocore.api.gui.misc.IGhostFluidTarget;
 import com.extfro.extfrocore.core.mixins.FluidStackAccessor;
 import com.extfro.extfrocore.integration.ae2.gui.AEUIHelper;
 import com.extfro.extfrocore.integration.ae2.gui.widget.ConfigWidget;
@@ -30,7 +29,7 @@ import com.lowdragmc.lowdraglib2.gui.util.DrawerHelper;
 
 import static com.lowdragmc.lowdraglib2.gui.util.DrawerHelper.drawStringFixedCorner;
 
-public class AEFluidConfigSlotWidget extends AEConfigSlotWidget implements IGhostFluidTarget {
+public class AEFluidConfigSlotWidget extends AEConfigSlotWidget {
 
     private final RPCEmitter clearRPC;
     private final RPCEmitter setConfigRPC;
@@ -57,14 +56,14 @@ public class AEFluidConfigSlotWidget extends AEConfigSlotWidget implements IGhos
         GenericStack stock = slot.getStock();
         drawSlots(context, x, y, parentWidget.isAutoPull());
         if (this.select) {
-            GuiTextures.SELECT_BOX.draw(context.graphics, context.mouseX, context.mouseY, x, y, 18, 18);
+            GuiTextures.SELECT_BOX.draw(context, x, y, 18, 18);
         }
         int stackX = x + 1;
         int stackY = y + 1;
         if (config != null) {
             var fluid = AEUtil.toFluidStack(config);
             if (!fluid.isEmpty()) {
-                DrawerHelper.drawFluidForGui(context.graphics, fluid, stackX, stackY, 16, 16);
+                DrawerHelper.drawFluidForGui(context.graphics, fluid, stackX, stackY, 16, 16, -1);
                 if (!parentWidget.isStocking()) {
                     drawStringFixedCorner(context.graphics,
                             FormattingUtil.formatNumberReadable(config.amount(), true, FormattingUtil.DECIMAL_FORMAT_0F, "B"),
@@ -75,7 +74,7 @@ public class AEFluidConfigSlotWidget extends AEConfigSlotWidget implements IGhos
         if (stock != null) {
             var fluid = AEUtil.toFluidStack(stock);
             if (!fluid.isEmpty()) {
-                DrawerHelper.drawFluidForGui(context.graphics, fluid, stackX, stackY + 18, 16, 16);
+                DrawerHelper.drawFluidForGui(context.graphics, fluid, stackX, stackY + 18, 16, 16, -1);
                 drawStringFixedCorner(context.graphics,
                         FormattingUtil.formatNumberReadable(stock.amount(), true, FormattingUtil.DECIMAL_FORMAT_0F, "B"),
                         stackX + 17, stackY + 18 + 17, 16777215, true, 0.5f);
@@ -90,13 +89,13 @@ public class AEFluidConfigSlotWidget extends AEConfigSlotWidget implements IGhos
 
     private void drawSlots(GUIContext context, int x, int y, boolean autoPull) {
         if (autoPull) {
-            GuiTextures.SLOT_DARK.draw(context.graphics, context.mouseX, context.mouseY, x, y, 18, 18);
-            GuiTextures.CONFIG_ARROW_DARK.draw(context.graphics, context.mouseX, context.mouseY, x, y, 18, 18);
+            GuiTextures.SLOT_DARK.draw(context, x, y, 18, 18);
+            GuiTextures.CONFIG_ARROW_DARK.draw(context, x, y, 18, 18);
         } else {
-            GuiTextures.FLUID_SLOT.draw(context.graphics, context.mouseX, context.mouseY, x, y, 18, 18);
-            GuiTextures.CONFIG_ARROW.draw(context.graphics, context.mouseX, context.mouseY, x, y, 18, 18);
+            GuiTextures.FLUID_SLOT.draw(context, x, y, 18, 18);
+            GuiTextures.CONFIG_ARROW.draw(context, x, y, 18, 18);
         }
-        GuiTextures.SLOT_DARK.draw(context.graphics, context.mouseX, context.mouseY, x, y + 18, 18, 18);
+        GuiTextures.SLOT_DARK.draw(context, x, y + 18, 18, 18);
     }
 
     private void onMouseDown(com.lowdragmc.lowdraglib2.gui.ui.event.UIEvent event) {
@@ -199,7 +198,6 @@ public class AEFluidConfigSlotWidget extends AEConfigSlotWidget implements IGhos
         }
     }
 
-    @Override
     public void acceptFluid(FluidStack fluidStack) {
         if (((FluidStackAccessor) (Object) fluidStack).getRawFluid() != Fluids.EMPTY && fluidStack.getAmount() <= 0L) {
             fluidStack.setAmount(1000);

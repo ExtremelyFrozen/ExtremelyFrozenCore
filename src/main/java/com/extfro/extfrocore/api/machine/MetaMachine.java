@@ -137,14 +137,6 @@ public class MetaMachine extends ManagedSyncBlockEntity implements IGregtechBloc
         this.waitingToAdd = new ArrayList<>();
     }
 
-    public MachineCoverContainer getCoverContainer() {
-        return coverContainer;
-    }
-
-    public MachineTraitHolder getTraitHolder() {
-        return traitHolder;
-    }
-
     //////////////////////////////////////
     // ***** Machine Lifecycle ******//
     //////////////////////////////////////

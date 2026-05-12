@@ -15,6 +15,7 @@ import com.extfro.extfrocore.api.recipe.modifier.RecipeModifier;
 import com.extfro.extfrocore.api.sync_system.annotations.SaveField;
 import com.extfro.extfrocore.api.sync_system.annotations.SyncToClient;
 import com.extfro.extfrocore.common.data.GTMaterials;
+import com.extfro.extfrocore.common.machine.gui.MachineUIHelper;
 import com.extfro.extfrocore.config.ConfigHolder;
 import com.extfro.extfrocore.utils.GTUtil;
 
@@ -30,8 +31,8 @@ import net.minecraft.world.level.material.Fluids;
 import net.neoforged.neoforge.fluids.crafting.SizedFluidIngredient;
 
 import com.lowdragmc.lowdraglib2.gui.texture.IGuiTexture;
+import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
 import com.lowdragmc.lowdraglib2.gui.util.ClickData;
-import com.lowdragmc.lowdraglib2.gui.widget.ComponentPanelWidget;
 import lombok.Getter;
 import org.jetbrains.annotations.Nullable;
 
@@ -210,21 +211,27 @@ public class LargeBoilerMachine extends WorkableMultiblockMachine implements IDi
                             Component.translatable("gtceu.multiblock.large_boiler.throttle.tooltip"))));
             textList.add(throttleText);
 
-            var buttonText = Component.translatable("gtceu.multiblock.large_boiler.throttle_modify");
-            buttonText.append(" ");
-            buttonText.append(ComponentPanelWidget.withButton(Component.literal("[-]"), "sub"));
-            buttonText.append(" ");
-            buttonText.append(ComponentPanelWidget.withButton(Component.literal("[+]"), "add"));
-            textList.add(buttonText);
+            textList.add(Component.translatable("gtceu.multiblock.large_boiler.throttle_modify"));
         }
     }
 
     public void handleDisplayClick(String componentData, ClickData clickData) {
         if (!clickData.isRemote) {
-            int result = componentData.equals("add") ? 5 : -5;
-            this.throttle = Mth.clamp(throttle + result, 25, 100);
-            this.getRecipeLogic().modifyFuelBurnTime(this.throttle);
+            adjustThrottle(componentData.equals("add") ? 5 : -5);
         }
+    }
+
+    @Override
+    public void addDisplayControls(UIElement display) {
+        display.addChild(MachineUIHelper.textButton(116, 96, 18, 14, () -> Component.literal("-"),
+                event -> adjustThrottle(-5)));
+        display.addChild(MachineUIHelper.textButton(136, 96, 18, 14, () -> Component.literal("+"),
+                event -> adjustThrottle(5)));
+    }
+
+    private void adjustThrottle(int amount) {
+        this.throttle = Mth.clamp(throttle + amount, 25, 100);
+        this.getRecipeLogic().modifyFuelBurnTime(this.throttle);
     }
 
     @Override

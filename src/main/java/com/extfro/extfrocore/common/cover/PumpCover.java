@@ -100,30 +100,6 @@ public class PumpCover extends CoverBehavior implements IIOCover, IUICover, ICon
                 .onFilterRemoved(f -> configureFilter());
     }
 
-    @Override
-    public int getTransferRate() {
-        return transferRate;
-    }
-
-    @Override
-    public IO getIo() {
-        return io;
-    }
-
-    public BucketMode getBucketMode() {
-        return bucketMode;
-    }
-
-    @Override
-    public ManualIOMode getManualIOMode() {
-        return manualIOMode;
-    }
-
-    @Override
-    public boolean isWorkingEnabled() {
-        return isWorkingEnabled;
-    }
-
     public PumpCover(CoverDefinition definition, ICoverable coverHolder, Direction attachedSide, int tier) {
         this(definition, coverHolder, attachedSide, tier, PUMP_SCALING.applyAsInt(tier));
     }

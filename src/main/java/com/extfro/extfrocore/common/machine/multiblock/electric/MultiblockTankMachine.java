@@ -10,15 +10,14 @@ import com.extfro.extfrocore.api.machine.multiblock.MultiblockControllerMachine;
 import com.extfro.extfrocore.api.machine.trait.NotifiableFluidTank;
 import com.extfro.extfrocore.api.sync_system.annotations.SaveField;
 import com.extfro.extfrocore.api.transfer.fluid.IFluidHandlerModifiable;
+import com.extfro.extfrocore.common.machine.gui.MachineUIHelper;
 import com.extfro.extfrocore.utils.ExtendedUseOnContext;
 
 import net.minecraft.core.Direction;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionResult;
 
-import com.lowdragmc.lowdraglib2.gui.widget.ImageWidget;
-import com.lowdragmc.lowdraglib2.gui.widget.LabelWidget;
-import com.lowdragmc.lowdraglib2.gui.widget.Widget;
-import com.lowdragmc.lowdraglib2.gui.widget.WidgetGroup;
+import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
 import lombok.Getter;
 import org.jetbrains.annotations.Nullable;
 
@@ -59,14 +58,14 @@ public class MultiblockTankMachine extends MultiblockControllerMachine implement
     /////////////////////////////////////
 
     @Override
-    public Widget createUIWidget() {
-        var group = new WidgetGroup(0, 0, 90, 63);
-        group.setBackground(GuiTextures.BACKGROUND_INVERSE);
+    public UIElement createUIWidget() {
+        var group = MachineUIHelper.group(90, 63)
+                .style(style -> style.background(GuiTextures.BACKGROUND_INVERSE));
 
-        group.addWidget(new ImageWidget(4, 4, 82, 55, GuiTextures.DISPLAY));
-        group.addWidget(new LabelWidget(8, 8, "gtceu.gui.fluid_amount"));
-        group.addWidget(new LabelWidget(8, 18, this::getFluidLabel).setTextColor(-1).setDropShadow(true));
-        group.addWidget(new TankWidget(tank.getStorages()[0], 68, 23, true, true)
+        group.addChild(MachineUIHelper.image(4, 4, 82, 55, GuiTextures.DISPLAY));
+        group.addChild(MachineUIHelper.label(8, 8, "gtceu.gui.fluid_amount"));
+        group.addChild(MachineUIHelper.lightLabel(8, 18, () -> Component.literal(getFluidLabel())));
+        group.addChild(new TankWidget(tank.getStorages()[0], 68, 23, true, true)
                 .setBackground(GuiTextures.FLUID_SLOT));
 
         return group;

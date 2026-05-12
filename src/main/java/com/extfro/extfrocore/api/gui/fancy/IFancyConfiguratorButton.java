@@ -55,11 +55,6 @@ public interface IFancyConfiguratorButton extends IFancyConfigurator {
             return tooltipsSupplier.apply(isPressed);
         }
 
-        public Toggle setTooltipsSupplier(Function<Boolean, List<Component>> tooltipsSupplier) {
-            this.tooltipsSupplier = tooltipsSupplier;
-            return this;
-        }
-
         @Override
         public void detectAndSendChange(BiConsumer<Integer, Consumer<RegistryFriendlyByteBuf>> sender) {
             var newIsPressed = booleanSupplier.getAsBoolean();

@@ -7,16 +7,12 @@ import com.extfro.extfrocore.api.machine.MetaMachine;
 import com.extfro.extfrocore.api.machine.TickableSubscription;
 import com.extfro.extfrocore.api.machine.feature.IUIMachine;
 import com.extfro.extfrocore.api.sync_system.annotations.SaveField;
+import com.extfro.extfrocore.common.machine.gui.MachineUIHelper;
 
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
 
-import com.lowdragmc.lowdraglib2.gui.texture.GuiTextureGroup;
-import com.lowdragmc.lowdraglib2.gui.texture.ResourceBorderTexture;
-import com.lowdragmc.lowdraglib2.gui.texture.TextTexture;
 import com.lowdragmc.lowdraglib2.gui.ui.ModularUI;
-import com.lowdragmc.lowdraglib2.gui.widget.LabelWidget;
-import com.lowdragmc.lowdraglib2.gui.widget.SwitchWidget;
-import com.lowdragmc.lowdraglib2.gui.widget.TextFieldWidget;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -96,16 +92,14 @@ public class CreativeComputationProviderMachine extends MetaMachine
     public ModularUI createUI(Player entityPlayer) {
         return new ModularUI(140, 95, this, entityPlayer)
                 .background(GuiTextures.BACKGROUND)
-                .widget(new LabelWidget(7, 7, "CWUt"))
-                .widget(new TextFieldWidget(9, 20, 122, 16, () -> String.valueOf(maxCWUt),
-                        value -> maxCWUt = Integer.parseInt(value)).setNumbersOnly(0, Integer.MAX_VALUE))
-                .widget(new LabelWidget(7, 42, "gtceu.creative.computation.average"))
-                .widget(new LabelWidget(7, 54, () -> String.valueOf(lastRequestedCWUt)))
-                .widget(new SwitchWidget(9, 66, 122, 20, (clickData, value) -> setActive(value))
-                        .setSupplier(this::isActive)
-                        .setTexture(new GuiTextureGroup(ResourceBorderTexture.BUTTON_COMMON,
-                                new TextTexture("gtceu.creative.activity.off")),
-                                new GuiTextureGroup(ResourceBorderTexture.BUTTON_COMMON,
-                                        new TextTexture("gtceu.creative.activity.on"))));
+                .widget(MachineUIHelper.label(7, 7, () -> Component.literal("CWUt")))
+                .widget(MachineUIHelper.intTextField(9, 20, 122, 16, () -> maxCWUt,
+                        value -> maxCWUt = Integer.parseInt(value), 0, Integer.MAX_VALUE))
+                .widget(MachineUIHelper.label(7, 42, "gtceu.creative.computation.average"))
+                .widget(MachineUIHelper.literalLabel(7, 54, () -> String.valueOf(lastRequestedCWUt)))
+                .widget(MachineUIHelper.textButton(9, 66, 122, 20,
+                        () -> Component.translatable(isActive() ? "gtceu.creative.activity.on" :
+                                "gtceu.creative.activity.off"),
+                        event -> setActive(!isActive())));
     }
 }

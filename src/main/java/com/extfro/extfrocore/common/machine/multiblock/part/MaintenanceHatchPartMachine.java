@@ -16,6 +16,7 @@ import com.extfro.extfrocore.api.sync_system.annotations.SaveField;
 import com.extfro.extfrocore.api.sync_system.annotations.SyncToClient;
 import com.extfro.extfrocore.client.model.machine.MachineRenderState;
 import com.extfro.extfrocore.common.data.GTItems;
+import com.extfro.extfrocore.common.machine.gui.MachineUIHelper;
 import com.extfro.extfrocore.utils.ExtendedUseOnContext;
 import com.extfro.extfrocore.utils.FormattingUtil;
 
@@ -32,7 +33,7 @@ import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.wrapper.InvWrapper;
 
 import com.lowdragmc.lowdraglib2.gui.texture.GuiTextureGroup;
-import com.lowdragmc.lowdraglib2.gui.widget.*;
+import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
 import lombok.Getter;
 import lombok.Setter;
 import org.jetbrains.annotations.Nullable;
@@ -321,42 +322,37 @@ public class MaintenanceHatchPartMachine extends TieredPartMachine
     // ******** GUI *********//
     //////////////////////////////////////
     @Override
-    public Widget createUIWidget() {
-        WidgetGroup group;
+    public UIElement createUIWidget() {
+        UIElement group;
         if (isConfigurable) {
-            group = new WidgetGroup(0, 0, 150, 70);
-            group.addWidget(new DraggableScrollableWidgetGroup(4, 4, 150 - 8, 70 - 8).setBackground(GuiTextures.DISPLAY)
-                    .addWidget(new ComponentPanelWidget(4, 5, list -> {
-                        list.add(getTextWidgetText("duration", this::getDurationMultiplier));
-                        list.add(getTextWidgetText("time", this::getTimeMultiplier));
-                        var buttonText = Component.translatable("gtceu.maintenance.configurable_duration.modify");
-                        buttonText.append(" ");
-                        buttonText.append(ComponentPanelWidget.withButton(Component.literal("[-]"), "sub"));
-                        buttonText.append(" ");
-                        buttonText.append(ComponentPanelWidget.withButton(Component.literal("[+]"), "add"));
-                        list.add(buttonText);
-                    }).setMaxWidthLimit(150 - 8 - 8 - 4).clickHandler((componentData, clickData) -> {
-                        if (!clickData.isRemote) {
-                            if (componentData.equals("sub")) {
-                                durationMultiplier = Mth.clamp(durationMultiplier - DURATION_ACTION_AMOUNT,
-                                        MIN_DURATION_MULTIPLIER, MAX_DURATION_MULTIPLIER);
-                            } else if (componentData.equals("add")) {
-                                durationMultiplier = Mth.clamp(durationMultiplier + DURATION_ACTION_AMOUNT,
-                                        MIN_DURATION_MULTIPLIER, MAX_DURATION_MULTIPLIER);
-                            }
-                        }
-                    })));
+            group = MachineUIHelper.group(150, 70);
+            UIElement display = MachineUIHelper.group(4, 4, 150 - 8, 70 - 8)
+                    .style(style -> style.background(GuiTextures.DISPLAY));
+            display.addChild(MachineUIHelper.componentPanel(4, 5, 150 - 8 - 8 - 4, 10, list -> {
+                list.add(getTextWidgetText("duration", this::getDurationMultiplier));
+                list.add(getTextWidgetText("time", this::getTimeMultiplier));
+                list.add(Component.translatable("gtceu.maintenance.configurable_duration.modify"));
+            }));
+            display.addChild(MachineUIHelper.textButton(88, 44, 24, 14, () -> Component.literal("-"),
+                    event -> durationMultiplier = Mth.clamp(durationMultiplier - DURATION_ACTION_AMOUNT,
+                            MIN_DURATION_MULTIPLIER, MAX_DURATION_MULTIPLIER)));
+            display.addChild(MachineUIHelper.textButton(114, 44, 24, 14, () -> Component.literal("+"),
+                    event -> durationMultiplier = Mth.clamp(durationMultiplier + DURATION_ACTION_AMOUNT,
+                            MIN_DURATION_MULTIPLIER, MAX_DURATION_MULTIPLIER)));
+            group.addChild(display);
 
         } else {
-            group = new WidgetGroup(0, 0, 8 + 18, 8 + 20 + 18);
+            group = MachineUIHelper.group(8 + 18, 8 + 20 + 18);
         }
-        group.addWidget(new SlotWidget(itemStackHandler, 0, group.getSize().width - 4 - 18, 4)
+        int width = isConfigurable ? 150 : 8 + 18;
+        group.addChild(new SlotWidget(itemStackHandler, 0, width - 4 - 18, 4)
                 .setBackgroundTexture(new GuiTextureGroup(GuiTextures.SLOT, GuiTextures.DUCT_TAPE_OVERLAY))
                 .setHoverTooltips("gtceu.machine.maintenance_hatch_tape_slot.tooltip"));
-        group.addWidget(new ButtonWidget(group.getSize().width - 4 - 18, 4 + 20, 18, 18, GuiTextures.MAINTENANCE_BUTTON,
-                data -> fixMaintenanceProblems(group.getGui().entityPlayer))
-                .setHoverTooltips("gtceu.machine.maintenance_hatch_tool_slot.tooltip"));
-        group.setBackground(GuiTextures.BACKGROUND_INVERSE);
+        group.addChild(MachineUIHelper.textButton(width - 4 - 18, 4 + 20, 18, 18, () -> Component.literal(""),
+                event -> fixMaintenanceProblems(event.currentElement.getModularUI().player))
+                .style(style -> style.background(GuiTextures.MAINTENANCE_BUTTON)
+                        .tooltips("gtceu.machine.maintenance_hatch_tool_slot.tooltip")));
+        group.style(style -> style.background(GuiTextures.BACKGROUND_INVERSE));
         return group;
     }
 

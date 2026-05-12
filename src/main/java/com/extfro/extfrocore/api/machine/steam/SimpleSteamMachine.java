@@ -20,6 +20,7 @@ import com.extfro.extfrocore.api.recipe.modifier.ModifierFunction;
 import com.extfro.extfrocore.api.recipe.modifier.RecipeModifier;
 import com.extfro.extfrocore.api.sync_system.annotations.SaveField;
 import com.extfro.extfrocore.client.model.machine.MachineRenderState;
+import com.extfro.extfrocore.common.machine.gui.MachineUIHelper;
 import com.extfro.extfrocore.common.machine.trait.ExhaustVentMachineTrait;
 import com.extfro.extfrocore.common.recipe.condition.VentCondition;
 
@@ -29,7 +30,6 @@ import net.minecraft.world.entity.player.Player;
 
 import com.google.common.collect.Tables;
 import com.lowdragmc.lowdraglib2.gui.ui.ModularUI;
-import com.lowdragmc.lowdraglib2.gui.widget.LabelWidget;
 import com.lowdragmc.lowdraglib2.math.Position;
 import lombok.Getter;
 
@@ -192,7 +192,7 @@ public class SimpleSteamMachine extends SteamWorkableMachine implements IUIMachi
         return new ModularUI(176, 166, this, entityPlayer)
                 .background(GuiTextures.BACKGROUND_STEAM.get(isHighPressure))
                 .widget(group)
-                .widget(new LabelWidget(5, 5, getBlockState().getBlock().getDescriptionId()))
+                .widget(MachineUIHelper.label(5, 5, getBlockState().getBlock().getDescriptionId()))
                 .widget(new PredicatedImageWidget(pos.x + group.getSize().width / 2 - 9,
                         pos.y + group.getSize().height / 2 - 9, 18, 18,
                         GuiTextures.INDICATOR_NO_STEAM.get(isHighPressure))

@@ -19,10 +19,10 @@ import com.extfro.extfrocore.api.sync_system.annotations.SaveField;
 import com.extfro.extfrocore.api.sync_system.annotations.SyncToClient;
 import com.extfro.extfrocore.common.data.GTMaterials;
 import com.extfro.extfrocore.common.item.behavior.PortableScannerBehavior;
+import com.extfro.extfrocore.common.machine.gui.MachineUIHelper;
 import com.extfro.extfrocore.config.ConfigHolder;
 import com.extfro.extfrocore.utils.*;
 
-import net.minecraft.client.resources.language.I18n;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ParticleTypes;
@@ -38,11 +38,8 @@ import net.neoforged.neoforge.fluids.FluidType;
 import net.neoforged.neoforge.fluids.FluidUtil;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler.FluidAction;
 
-import com.lowdragmc.lowdraglib2.gui.texture.ProgressTexture;
 import com.lowdragmc.lowdraglib2.gui.ui.ModularUI;
-import com.lowdragmc.lowdraglib2.gui.widget.ImageWidget;
-import com.lowdragmc.lowdraglib2.gui.widget.LabelWidget;
-import com.lowdragmc.lowdraglib2.gui.widget.ProgressWidget;
+import com.lowdragmc.lowdraglib2.gui.ui.data.FillDirection;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -302,22 +299,22 @@ public abstract class SteamBoilerMachine extends SteamWorkableMachine
     public ModularUI createUI(Player entityPlayer) {
         return new ModularUI(176, 166, this, entityPlayer)
                 .background(GuiTextures.BACKGROUND_STEAM.get(isHighPressure))
-                .widget(new LabelWidget(6, 6, getBlockState().getBlock().getDescriptionId()))
-                .widget(new ProgressWidget(this::getTemperaturePercent, 96, 26, 10, 54)
-                        .setProgressTexture(GuiTextures.PROGRESS_BAR_BOILER_EMPTY.get(isHighPressure),
-                                GuiTextures.PROGRESS_BAR_BOILER_HEAT)
-                        .setFillDirection(ProgressTexture.FillDirection.DOWN_TO_UP)
-                        .setDynamicHoverTips(pct -> I18n.get("gtceu.multiblock.large_boiler.temperature",
-                                currentTemperature + 274, getMaxTemperature() + 274)))
+                .widget(MachineUIHelper.label(6, 6, getBlockState().getBlock().getDescriptionId()))
+                .widget(MachineUIHelper.progress(96, 26, 10, 54, this::getTemperaturePercent,
+                        GuiTextures.PROGRESS_BAR_BOILER_EMPTY.get(isHighPressure),
+                        GuiTextures.PROGRESS_BAR_BOILER_HEAT, FillDirection.DOWN_TO_UP)
+                        .setServerTooltipSupplier(tooltips -> tooltips.add(Component.translatable(
+                                "gtceu.multiblock.large_boiler.temperature",
+                                currentTemperature + 274, getMaxTemperature() + 274))))
                 .widget(new TankWidget(waterTank.getStorages()[0], 83, 26, 10, 54, false, true)
                         .setShowAmount(false)
-                        .setFillDirection(ProgressTexture.FillDirection.DOWN_TO_UP)
+                        .setFillDirection(FillDirection.DOWN_TO_UP)
                         .setBackground(GuiTextures.PROGRESS_BAR_BOILER_EMPTY.get(isHighPressure)))
                 .widget(new TankWidget(steamTank.getStorages()[0], 70, 26, 10, 54, true, false)
                         .setShowAmount(false)
-                        .setFillDirection(ProgressTexture.FillDirection.DOWN_TO_UP)
+                        .setFillDirection(FillDirection.DOWN_TO_UP)
                         .setBackground(GuiTextures.PROGRESS_BAR_BOILER_EMPTY.get(isHighPressure)))
-                .widget(new ImageWidget(43, 44, 18, 18, GuiTextures.CANISTER_OVERLAY_STEAM.get(isHighPressure)))
+                .widget(MachineUIHelper.image(43, 44, 18, 18, GuiTextures.CANISTER_OVERLAY_STEAM.get(isHighPressure)))
                 .widget(UITemplate.bindPlayerInventory(entityPlayer.getInventory(),
                         GuiTextures.SLOT_STEAM.get(isHighPressure), 7, 84, true));
     }

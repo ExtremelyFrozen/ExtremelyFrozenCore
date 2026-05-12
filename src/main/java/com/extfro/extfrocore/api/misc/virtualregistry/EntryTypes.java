@@ -38,10 +38,6 @@ public final class EntryTypes<T extends VirtualEntry> {
         this.factory = supplier;
     }
 
-    public ResourceLocation getId() {
-        return id;
-    }
-
     @Nullable
     public static EntryTypes<? extends VirtualEntry> fromString(String name) {
         return TYPES.get(ExtForCore.id(name));

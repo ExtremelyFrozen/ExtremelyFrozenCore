@@ -18,6 +18,7 @@ import com.extfro.extfrocore.api.sync_system.annotations.SaveField;
 import com.extfro.extfrocore.api.transfer.item.CustomItemStackHandler;
 import com.extfro.extfrocore.common.data.GTMedicalConditions;
 import com.extfro.extfrocore.common.data.GTParticleTypes;
+import com.extfro.extfrocore.common.machine.gui.MachineUIHelper;
 import com.extfro.extfrocore.common.machine.trait.hazard.EnvironmentalHazardEmitterTrait;
 import com.extfro.extfrocore.utils.GTUtil;
 
@@ -30,7 +31,6 @@ import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.items.ItemHandlerHelper;
 
 import com.lowdragmc.lowdraglib2.gui.ui.ModularUI;
-import com.lowdragmc.lowdraglib2.gui.widget.LabelWidget;
 import lombok.Getter;
 import org.jetbrains.annotations.MustBeInvokedByOverriders;
 import org.jetbrains.annotations.Nullable;
@@ -179,7 +179,7 @@ public class MufflerPartMachine extends TieredPartMachine implements IUIMachine 
         var modular = new ModularUI(176 + xOffset * 2,
                 18 + 18 * rowSize + 94, this, entityPlayer)
                 .background(GuiTextures.BACKGROUND)
-                .widget(new LabelWidget(10, 5, getBlockState().getBlock().getDescriptionId()))
+                .widget(MachineUIHelper.label(10, 5, getBlockState().getBlock().getDescriptionId()))
                 .widget(UITemplate.bindPlayerInventory(entityPlayer.getInventory(), GuiTextures.SLOT, 7 + xOffset,
                         18 + 18 * rowSize + 12, true));
 

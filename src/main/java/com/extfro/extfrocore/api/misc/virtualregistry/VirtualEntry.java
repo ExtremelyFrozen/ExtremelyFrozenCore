@@ -41,14 +41,6 @@ public abstract class VirtualEntry implements INBTSerializable<CompoundTag> {
         return description;
     }
 
-    public void setDescription(@NotNull String description) {
-        this.description = description;
-    }
-
-    public String getColorStr() {
-        return colorStr;
-    }
-
     public static int parseColor(String colorString) {
         if (colorString.length() < 8) {
             throw new IllegalArgumentException("Invalid color string: " + colorString);

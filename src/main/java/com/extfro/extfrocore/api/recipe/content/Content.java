@@ -42,10 +42,6 @@ public class Content {
         this.tierChanceBoost = fixBoost(tierChanceBoost);
     }
 
-    public Object getContent() {
-        return content;
-    }
-
     public static <T> Codec<Content> codec(RecipeCapability<T> capability) {
         // spotless:off
         return RecordCodecBuilder.create(instance -> instance.group(

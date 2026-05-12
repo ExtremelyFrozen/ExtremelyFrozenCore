@@ -7,14 +7,13 @@ import com.extfro.extfrocore.api.gui.UITemplate;
 import com.extfro.extfrocore.api.gui.widget.TankWidget;
 import com.extfro.extfrocore.api.machine.trait.NotifiableFluidTank;
 import com.extfro.extfrocore.common.data.GTMaterials;
+import com.extfro.extfrocore.common.machine.gui.MachineUIHelper;
 import com.extfro.extfrocore.config.ConfigHolder;
 
 import net.minecraft.world.entity.player.Player;
 import net.neoforged.neoforge.fluids.FluidType;
 
 import com.lowdragmc.lowdraglib2.gui.ui.ModularUI;
-import com.lowdragmc.lowdraglib2.gui.widget.ImageWidget;
-import com.lowdragmc.lowdraglib2.gui.widget.LabelWidget;
 
 public class SteamHatchPartMachine extends FluidHatchPartMachine {
 
@@ -35,11 +34,11 @@ public class SteamHatchPartMachine extends FluidHatchPartMachine {
     public ModularUI createUI(Player entityPlayer) {
         return new ModularUI(176, 166, this, entityPlayer)
                 .background(GuiTextures.BACKGROUND_STEAM.get(IS_STEEL))
-                .widget(new ImageWidget(7, 16, 81, 55, GuiTextures.DISPLAY_STEAM.get(IS_STEEL)))
-                .widget(new LabelWidget(11, 20, "gtceu.gui.fluid_amount"))
-                .widget(new LabelWidget(11, 30, () -> tank.getFluidInTank(0).getAmount() + "").setTextColor(-1)
-                        .setDropShadow(true))
-                .widget(new LabelWidget(6, 6, getBlockState().getBlock().getDescriptionId()))
+                .widget(MachineUIHelper.image(7, 16, 81, 55, GuiTextures.DISPLAY_STEAM.get(IS_STEEL)))
+                .widget(MachineUIHelper.label(11, 20, "gtceu.gui.fluid_amount"))
+                .widget(MachineUIHelper.lightLabel(11, 30,
+                        () -> net.minecraft.network.chat.Component.literal(tank.getFluidInTank(0).getAmount() + "")))
+                .widget(MachineUIHelper.label(6, 6, getBlockState().getBlock().getDescriptionId()))
                 .widget(new TankWidget(tank.getStorages()[0], 90, 35, true, true)
                         .setBackground(GuiTextures.FLUID_SLOT))
                 .widget(UITemplate.bindPlayerInventory(entityPlayer.getInventory(),

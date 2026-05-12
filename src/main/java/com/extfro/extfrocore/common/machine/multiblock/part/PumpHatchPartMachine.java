@@ -8,13 +8,12 @@ import com.extfro.extfrocore.api.gui.widget.TankWidget;
 import com.extfro.extfrocore.api.gui.widget.ToggleButtonWidget;
 import com.extfro.extfrocore.api.machine.trait.NotifiableFluidTank;
 import com.extfro.extfrocore.common.data.GTMaterials;
+import com.extfro.extfrocore.common.machine.gui.MachineUIHelper;
 
 import net.minecraft.world.entity.player.Player;
 import net.neoforged.neoforge.fluids.FluidType;
 
 import com.lowdragmc.lowdraglib2.gui.ui.ModularUI;
-import com.lowdragmc.lowdraglib2.gui.widget.ImageWidget;
-import com.lowdragmc.lowdraglib2.gui.widget.LabelWidget;
 
 public class PumpHatchPartMachine extends FluidHatchPartMachine {
 
@@ -32,11 +31,12 @@ public class PumpHatchPartMachine extends FluidHatchPartMachine {
     public ModularUI createUI(Player entityPlayer) {
         return new ModularUI(176, 166, this, entityPlayer)
                 .background(GuiTextures.BACKGROUND)
-                .widget(new ImageWidget(7, 16, 81, 55, GuiTextures.DISPLAY))
-                .widget(new LabelWidget(11, 20, "gtceu.gui.fluid_amount"))
-                .widget(new LabelWidget(11, 30, () -> String.valueOf(tank.getFluidInTank(0).getAmount()))
-                        .setTextColor(-1).setDropShadow(true))
-                .widget(new LabelWidget(6, 6, getBlockState().getBlock().getDescriptionId()))
+                .widget(MachineUIHelper.image(7, 16, 81, 55, GuiTextures.DISPLAY))
+                .widget(MachineUIHelper.label(11, 20, "gtceu.gui.fluid_amount"))
+                .widget(MachineUIHelper.lightLabel(11, 30,
+                        () -> net.minecraft.network.chat.Component.literal(
+                                String.valueOf(tank.getFluidInTank(0).getAmount()))))
+                .widget(MachineUIHelper.label(6, 6, getBlockState().getBlock().getDescriptionId()))
                 .widget(new TankWidget(tank.getStorages()[0], 90, 35, true, io.support(IO.IN))
                         .setBackground(GuiTextures.FLUID_SLOT))
                 .widget(new ToggleButtonWidget(7, 53, 18, 18,

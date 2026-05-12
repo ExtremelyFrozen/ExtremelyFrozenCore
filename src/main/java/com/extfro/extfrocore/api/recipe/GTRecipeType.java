@@ -178,26 +178,6 @@ public class GTRecipeType implements RecipeType<GTRecipe> {
         return this;
     }
 
-    public GTRecipeTypeUI getRecipeUI() {
-        return recipeUI;
-    }
-
-    public ChanceBoostFunction getChanceFunction() {
-        return chanceFunction;
-    }
-
-    public boolean isOffsetVoltageText() {
-        return offsetVoltageText;
-    }
-
-    public int getVoltageTextOffset() {
-        return voltageTextOffset;
-    }
-
-    public List<Function<CompoundTag, String>> getDataInfos() {
-        return dataInfos;
-    }
-
     public GTRecipeType setXEIVisible(boolean XEIVisible) {
         this.category.setXEIVisible(XEIVisible);
         return this;

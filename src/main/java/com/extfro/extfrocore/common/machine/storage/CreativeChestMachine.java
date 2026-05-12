@@ -8,16 +8,15 @@ import com.extfro.extfrocore.api.item.datacomponents.CreativeMachineInfo;
 import com.extfro.extfrocore.api.machine.MetaMachine;
 import com.extfro.extfrocore.api.sync_system.annotations.SaveField;
 import com.extfro.extfrocore.common.data.item.GTDataComponents;
+import com.extfro.extfrocore.common.machine.gui.MachineUIHelper;
 import com.extfro.extfrocore.utils.ExtendedUseOnContext;
 
 import net.minecraft.core.component.DataComponentMap;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.ItemStack;
 
-import com.lowdragmc.lowdraglib2.gui.texture.GuiTextureGroup;
-import com.lowdragmc.lowdraglib2.gui.texture.ResourceBorderTexture;
-import com.lowdragmc.lowdraglib2.gui.texture.TextTexture;
-import com.lowdragmc.lowdraglib2.gui.widget.*;
+import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
 import lombok.Getter;
 
 public class CreativeChestMachine extends QuantumChestMachine {
@@ -76,30 +75,25 @@ public class CreativeChestMachine extends QuantumChestMachine {
     }
 
     @Override
-    public Widget createUIWidget() {
-        var group = new WidgetGroup(0, 0, 176, 131);
-        group.addWidget(new PhantomSlotWidget(cache, 0, 36, 6)
+    public UIElement createUIWidget() {
+        var group = MachineUIHelper.group(176, 131);
+        group.addChild(new PhantomSlotWidget(cache, 0, 36, 6)
                 .setClearSlotOnRightClick(true)
                 .setMaxStackSize(1)
                 .setBackgroundTexture(GuiTextures.SLOT));
-        group.addWidget(new LabelWidget(7, 9, "gtceu.creative.chest.item"));
-        group.addWidget(new ImageWidget(7, 48, 154, 14, GuiTextures.DISPLAY));
-        group.addWidget(new TextFieldWidget(9, 50, 152, 10, () -> String.valueOf(itemsPerCycle), this::setItemsPerCycle)
-                .setMaxStringLength(11)
-                .setNumbersOnly(1, Integer.MAX_VALUE));
-        group.addWidget(new LabelWidget(7, 28, "gtceu.creative.chest.ipc"));
-        group.addWidget(new ImageWidget(7, 85, 154, 14, GuiTextures.DISPLAY));
-        group.addWidget(new TextFieldWidget(9, 87, 152, 10, () -> String.valueOf(ticksPerCycle), this::setTicksPerCycle)
-                .setMaxStringLength(11)
-                .setNumbersOnly(1, Integer.MAX_VALUE));
-        group.addWidget(new LabelWidget(7, 65, "gtceu.creative.chest.tpc"));
-        group.addWidget(new SwitchWidget(7, 101, 162, 20, (clickData, value) -> setWorkingEnabled(value))
-                .setTexture(
-                        new GuiTextureGroup(ResourceBorderTexture.BUTTON_COMMON,
-                                new TextTexture("gtceu.creative.activity.off")),
-                        new GuiTextureGroup(ResourceBorderTexture.BUTTON_COMMON,
-                                new TextTexture("gtceu.creative.activity.on")))
-                .setPressed(isWorkingEnabled()));
+        group.addChild(MachineUIHelper.label(7, 9, "gtceu.creative.chest.item"));
+        group.addChild(MachineUIHelper.image(7, 48, 154, 14, GuiTextures.DISPLAY));
+        group.addChild(MachineUIHelper.intTextField(9, 50, 152, 10, this::getItemsPerCycle, this::setItemsPerCycle,
+                1, Integer.MAX_VALUE));
+        group.addChild(MachineUIHelper.label(7, 28, "gtceu.creative.chest.ipc"));
+        group.addChild(MachineUIHelper.image(7, 85, 154, 14, GuiTextures.DISPLAY));
+        group.addChild(MachineUIHelper.intTextField(9, 87, 152, 10, this::getTicksPerCycle, this::setTicksPerCycle,
+                1, Integer.MAX_VALUE));
+        group.addChild(MachineUIHelper.label(7, 65, "gtceu.creative.chest.tpc"));
+        group.addChild(MachineUIHelper.textButton(7, 101, 162, 20,
+                () -> Component.translatable(isWorkingEnabled() ? "gtceu.creative.activity.on" :
+                        "gtceu.creative.activity.off"),
+                event -> setWorkingEnabled(!isWorkingEnabled())));
 
         return group;
     }

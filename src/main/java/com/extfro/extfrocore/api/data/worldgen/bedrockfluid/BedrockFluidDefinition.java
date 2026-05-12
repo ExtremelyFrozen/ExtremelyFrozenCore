@@ -101,30 +101,6 @@ public class BedrockFluidDefinition {
         return this.getWeight() > 0 || !this.getBiomeWeightModifier().isEmpty();
     }
 
-    public int getWeight() {
-        return weight;
-    }
-
-    public Set<ResourceKey<Level>> getDimensionFilter() {
-        return dimensionFilter;
-    }
-
-    public Fluid getStoredFluid() {
-        return storedFluid;
-    }
-
-    public BiomeWeightModifier getBiomeWeightModifier() {
-        return biomeWeightModifier;
-    }
-
-    public void setWeight(int weight) {
-        this.weight = weight;
-    }
-
-    public void setBiomeWeightModifier(BiomeWeightModifier biomeWeightModifier) {
-        this.biomeWeightModifier = biomeWeightModifier;
-    }
-
     public List<BiomeWeightModifier> getOriginalModifiers() {
         if (this.biomeWeightModifier instanceof BiomeWeightModifier.FromList list) {
             return list.getOriginalModifiers();

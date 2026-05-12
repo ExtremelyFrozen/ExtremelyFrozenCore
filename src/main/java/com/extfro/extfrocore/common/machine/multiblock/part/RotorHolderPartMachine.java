@@ -20,6 +20,7 @@ import com.extfro.extfrocore.api.sync_system.annotations.SyncToClient;
 import com.extfro.extfrocore.common.data.GTDamageTypes;
 import com.extfro.extfrocore.common.data.GTMaterials;
 import com.extfro.extfrocore.common.item.behavior.TurbineRotorBehaviour;
+import com.extfro.extfrocore.common.machine.gui.MachineUIHelper;
 import com.extfro.extfrocore.utils.ExtendedUseOnContext;
 import com.extfro.extfrocore.utils.ISubscription;
 
@@ -31,8 +32,7 @@ import net.minecraft.network.chat.Style;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.ItemStack;
 
-import com.lowdragmc.lowdraglib2.gui.widget.Widget;
-import com.lowdragmc.lowdraglib2.gui.widget.WidgetGroup;
+import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
 import lombok.Getter;
 import org.jetbrains.annotations.Nullable;
 
@@ -230,14 +230,14 @@ public class RotorHolderPartMachine extends TieredPartMachine {
     // ********** GUI ***********//
     //////////////////////////////////////
     @Override
-    public Widget createUIWidget() {
-        var group = new WidgetGroup(0, 0, 18 + 16, 18 + 16);
-        var container = new WidgetGroup(4, 4, 18 + 8, 18 + 8);
-        container.addWidget(new BlockableSlotWidget(inventory.storage, 0, 4, 4)
+    public UIElement createUIWidget() {
+        var group = MachineUIHelper.group(18 + 16, 18 + 16);
+        var container = MachineUIHelper.group(4, 4, 18 + 8, 18 + 8)
+                .style(style -> style.background(GuiTextures.BACKGROUND_INVERSE));
+        container.addChild(new BlockableSlotWidget(inventory.storage, 0, 4, 4)
                 .setIsBlocked(() -> rotorSpeed != 0)
                 .setBackground(GuiTextures.SLOT, GuiTextures.TURBINE_OVERLAY));
-        container.setBackground(GuiTextures.BACKGROUND_INVERSE);
-        group.addWidget(container);
+        group.addChild(container);
         return group;
     }
 

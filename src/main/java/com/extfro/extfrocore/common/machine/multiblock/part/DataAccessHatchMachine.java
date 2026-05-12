@@ -17,6 +17,7 @@ import com.extfro.extfrocore.api.recipe.GTRecipe;
 import com.extfro.extfrocore.api.sync_system.annotations.SaveField;
 import com.extfro.extfrocore.common.data.item.GTDataComponents;
 import com.extfro.extfrocore.common.item.behavior.PortableScannerBehavior;
+import com.extfro.extfrocore.common.machine.gui.MachineUIHelper;
 import com.extfro.extfrocore.common.machine.multiblock.electric.research.DataBankMachine;
 import com.extfro.extfrocore.common.recipe.condition.ResearchCondition;
 import com.extfro.extfrocore.utils.ItemStackHashStrategy;
@@ -30,9 +31,8 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.neoforged.neoforge.items.IItemHandler;
 
 import com.lowdragmc.lowdraglib2.gui.texture.IGuiTexture;
-import com.lowdragmc.lowdraglib2.gui.texture.ResourceTexture;
-import com.lowdragmc.lowdraglib2.gui.widget.Widget;
-import com.lowdragmc.lowdraglib2.gui.widget.WidgetGroup;
+import com.lowdragmc.lowdraglib2.gui.texture.SpriteTexture;
+import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
 import it.unimi.dsi.fastutil.objects.ObjectOpenCustomHashSet;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import lombok.Getter;
@@ -77,15 +77,15 @@ public class DataAccessHatchMachine extends TieredPartMachine
     }
 
     @Override
-    public Widget createUIWidget() {
+    public UIElement createUIWidget() {
         int rowSize = (int) Math.sqrt(getInventorySize());
         int xOffset = 18 * rowSize / 2;
-        WidgetGroup group = new WidgetGroup(0, 0, 18 * rowSize, 18 * rowSize);
+        UIElement group = MachineUIHelper.group(18 * rowSize, 18 * rowSize);
 
         for (int y = 0; y < rowSize; y++) {
             for (int x = 0; x < rowSize; x++) {
                 int index = y * rowSize + x;
-                group.addWidget(new SlotWidget(importItems, index,
+                group.addChild(new SlotWidget(importItems, index,
                         rowSize * 9 + x * 18 - xOffset, y * 18, true, true)
                         .setBackgroundTexture(GuiTextures.SLOT));
             }
@@ -172,7 +172,7 @@ public class DataAccessHatchMachine extends TieredPartMachine
 
     @Override
     public IGuiTexture getComponentIcon() {
-        return new ResourceTexture(ExtForCore.id("textures/item/data_module.png")).getSubTexture(0, 0, 1, 1 / 13f);
+        return SpriteTexture.of(ExtForCore.id("textures/item/data_module.png").toString()).getSubTexture(0, 0, 1, 1 / 13f);
     }
 
     @Override

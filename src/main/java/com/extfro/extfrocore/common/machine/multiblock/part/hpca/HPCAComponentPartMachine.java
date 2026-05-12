@@ -11,7 +11,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.BlockHitResult;
 
-import com.lowdragmc.lowdraglib2.gui.texture.ResourceTexture;
+import com.lowdragmc.lowdraglib2.gui.texture.SpriteTexture;
 import lombok.Getter;
 
 import java.util.List;
@@ -33,7 +33,7 @@ public abstract class HPCAComponentPartMachine extends MultiblockPartMachine {
 
     public abstract boolean isAdvanced();
 
-    public abstract ResourceTexture getComponentIcon();
+    public abstract SpriteTexture getComponentIcon();
 
     @Override
     public boolean shouldOpenUI(Player player, InteractionHand hand, BlockHitResult hit) {

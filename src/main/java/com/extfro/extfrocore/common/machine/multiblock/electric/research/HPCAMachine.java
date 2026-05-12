@@ -46,11 +46,8 @@ import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler;
 
 import com.lowdragmc.lowdraglib2.gui.texture.IGuiTexture;
-import com.lowdragmc.lowdraglib2.gui.texture.ProgressTexture;
-import com.lowdragmc.lowdraglib2.gui.texture.ResourceTexture;
-import com.lowdragmc.lowdraglib2.gui.widget.ImageWidget;
-import com.lowdragmc.lowdraglib2.gui.widget.Widget;
-import com.lowdragmc.lowdraglib2.gui.widget.WidgetGroup;
+import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
+import com.lowdragmc.lowdraglib2.gui.ui.data.FillDirection;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMaps;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
@@ -253,14 +250,14 @@ public class HPCAMachine extends WorkableElectricMultiblockMachine
     }
 
     @Override
-    public Widget createUIWidget() {
-        WidgetGroup builder = (WidgetGroup) super.createUIWidget();
+    public UIElement createUIWidget() {
+        UIElement builder = super.createUIWidget();
         // Create the hover grid
-        builder.addWidget(new ExtendedProgressWidget(
+        builder.addChild(new ExtendedProgressWidget(
                 () -> hpcaHandler.getAllocatedCWUt() > 0 ? progressSupplier.getAsDouble() : 0,
                 74, 57, 47, 47, GuiTextures.HPCA_COMPONENT_OUTLINE)
                 .setServerTooltipSupplier(hpcaHandler::addInfo)
-                .setFillDirection(ProgressTexture.FillDirection.LEFT_TO_RIGHT));
+                .setFillDirection(FillDirection.LEFT_TO_RIGHT));
         int startX = 76;
         int startY = 59;
 
@@ -277,7 +274,9 @@ public class HPCAMachine extends WorkableElectricMultiblockMachine
             for (int j = 0; j < 3; j++) {
                 final int index = i * 3 + j;
                 Supplier<IGuiTexture> textureSupplier = () -> hpcaHandler.getComponentTexture(index);
-                builder.addWidget(new ImageWidget(startX + (15 * j), startY + (15 * i), 13, 13, textureSupplier));
+                builder.addChild(new UIElement()
+                        .layout(layout -> layout.left(startX + (15 * j)).top(startY + (15 * i)).width(13).height(13))
+                        .style(style -> style.backgroundTexture(textureSupplier.get())));
             }
         }
         return builder;
@@ -714,7 +713,7 @@ public class HPCAMachine extends WorkableElectricMultiblockMachine
             }
         }
 
-        public ResourceTexture getComponentTexture(int index) {
+        public IGuiTexture getComponentTexture(int index) {
             if (components.size() <= index) {
                 return GuiTextures.BLANK_TRANSPARENT;
             }

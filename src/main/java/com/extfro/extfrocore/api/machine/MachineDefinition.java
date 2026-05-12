@@ -154,15 +154,6 @@ public class MachineDefinition implements Supplier<MetaMachineBlock> {
         return blockEntityTypeSupplier.get();
     }
 
-    @Nullable
-    public EditableMachineUI getEditableUI() {
-        return editableUI;
-    }
-
-    public void setEditableUI(@Nullable EditableMachineUI editableUI) {
-        this.editableUI = editableUI;
-    }
-
     public ItemStack asStack() {
         return new ItemStack(getItem());
     }

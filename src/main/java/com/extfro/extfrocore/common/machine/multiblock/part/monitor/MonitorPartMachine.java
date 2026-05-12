@@ -1,6 +1,5 @@
 package com.extfro.extfrocore.common.machine.multiblock.part.monitor;
 
-import com.extfro.extfrocore.ExtForCore;
 import com.extfro.extfrocore.api.blockentity.BlockEntityCreationInfo;
 
 import net.minecraft.world.InteractionHand;
@@ -8,7 +7,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.BlockHitResult;
 
 import com.lowdragmc.lowdraglib2.gui.texture.IGuiTexture;
-import com.lowdragmc.lowdraglib2.gui.texture.ResourceTexture;
+import com.lowdragmc.lowdraglib2.gui.texture.SpriteTexture;
 
 public class MonitorPartMachine extends MonitorComponentPartMachine {
 
@@ -23,7 +22,7 @@ public class MonitorPartMachine extends MonitorComponentPartMachine {
 
     @Override
     public IGuiTexture getComponentIcon() {
-        return ResourceTexture.fromSpirit(ExtForCore.id("item/computer_monitor_cover"));
+        return SpriteTexture.of("extfrocore:item/computer_monitor_cover");
     }
 
     @Override

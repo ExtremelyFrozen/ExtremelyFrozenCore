@@ -31,10 +31,6 @@ public class VirtualTank extends VirtualEntry {
         this(DEFAULT_CAPACITY);
     }
 
-    public @NotNull FluidTank getFluidTank() {
-        return fluidTank;
-    }
-
     @Override
     public EntryTypes<VirtualTank> getType() {
         return EntryTypes.ENDER_FLUID;

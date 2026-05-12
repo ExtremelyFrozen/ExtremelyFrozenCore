@@ -4,7 +4,7 @@ import com.extfro.extfrocore.api.blockentity.BlockEntityCreationInfo;
 import com.extfro.extfrocore.api.gui.GuiTextures;
 import com.extfro.extfrocore.common.machine.trait.hpca.HPCAComponentTrait;
 
-import com.lowdragmc.lowdraglib2.gui.texture.ResourceTexture;
+import com.lowdragmc.lowdraglib2.gui.texture.SpriteTexture;
 
 public class HPCAEmptyPartMachine extends HPCAComponentPartMachine {
 
@@ -18,7 +18,7 @@ public class HPCAEmptyPartMachine extends HPCAComponentPartMachine {
     }
 
     @Override
-    public ResourceTexture getComponentIcon() {
+    public SpriteTexture getComponentIcon() {
         return GuiTextures.HPCA_ICON_EMPTY_COMPONENT;
     }
 }

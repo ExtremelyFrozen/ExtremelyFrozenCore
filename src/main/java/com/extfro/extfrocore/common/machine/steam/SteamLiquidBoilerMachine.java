@@ -19,8 +19,8 @@ import net.minecraft.world.level.material.Fluid;
 import net.neoforged.neoforge.fluids.FluidType;
 import net.neoforged.neoforge.fluids.FluidUtil;
 
-import com.lowdragmc.lowdraglib2.gui.texture.ProgressTexture;
 import com.lowdragmc.lowdraglib2.gui.ui.ModularUI;
+import com.lowdragmc.lowdraglib2.gui.ui.data.FillDirection;
 import it.unimi.dsi.fastutil.objects.Object2BooleanMap;
 import it.unimi.dsi.fastutil.objects.Object2BooleanOpenHashMap;
 
@@ -66,7 +66,7 @@ public class SteamLiquidBoilerMachine extends SteamBoilerMachine {
         return super.createUI(entityPlayer)
                 .widget(new TankWidget(fuelTank.getStorages()[0], 119, 26, 10, 54, true, true)
                         .setShowAmount(false)
-                        .setFillDirection(ProgressTexture.FillDirection.DOWN_TO_UP)
+                        .setFillDirection(FillDirection.DOWN_TO_UP)
                         .setBackground(GuiTextures.PROGRESS_BAR_BOILER_EMPTY.get(isHighPressure)));
     }
 

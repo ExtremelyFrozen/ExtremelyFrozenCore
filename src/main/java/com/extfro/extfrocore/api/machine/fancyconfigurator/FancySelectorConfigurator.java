@@ -46,9 +46,4 @@ public class FancySelectorConfigurator<T extends Enum<T> & EnumSelectorWidget.Se
         }
         widget.setSelected(widget.values.get(next));
     }
-
-    public FancySelectorConfigurator<T> setTooltip(Function<T, List<Component>> tooltip) {
-        this.tooltip = tooltip;
-        return this;
-    }
 }

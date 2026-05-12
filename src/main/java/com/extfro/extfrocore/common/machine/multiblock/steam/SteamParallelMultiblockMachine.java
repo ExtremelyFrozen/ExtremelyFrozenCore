@@ -20,6 +20,7 @@ import com.extfro.extfrocore.api.recipe.modifier.ModifierFunction;
 import com.extfro.extfrocore.api.recipe.modifier.ParallelLogic;
 import com.extfro.extfrocore.api.recipe.modifier.RecipeModifier;
 import com.extfro.extfrocore.common.data.GTMaterials;
+import com.extfro.extfrocore.common.machine.gui.MachineUIHelper;
 import com.extfro.extfrocore.config.ConfigHolder;
 
 import net.minecraft.ChatFormatting;
@@ -29,9 +30,7 @@ import net.minecraft.world.entity.player.Player;
 
 import com.lowdragmc.lowdraglib2.gui.texture.IGuiTexture;
 import com.lowdragmc.lowdraglib2.gui.ui.ModularUI;
-import com.lowdragmc.lowdraglib2.gui.widget.ComponentPanelWidget;
-import com.lowdragmc.lowdraglib2.gui.widget.DraggableScrollableWidgetGroup;
-import com.lowdragmc.lowdraglib2.gui.widget.LabelWidget;
+import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
 import lombok.Getter;
 import lombok.Setter;
 import org.jetbrains.annotations.NotNull;
@@ -162,11 +161,11 @@ public class SteamParallelMultiblockMachine extends WorkableMultiblockMachine im
 
     @Override
     public ModularUI createUI(Player entityPlayer) {
-        var screen = new DraggableScrollableWidgetGroup(7, 4, 162, 121).setBackground(getScreenTexture());
-        screen.addWidget(new LabelWidget(4, 5, self().getBlockState().getBlock().getDescriptionId()));
-        screen.addWidget(new ComponentPanelWidget(4, 17, this::addDisplayText)
-                .setMaxWidthLimit(150)
-                .clickHandler(this::handleDisplayClick));
+        UIElement screen = MachineUIHelper.group(7, 4, 162, 121)
+                .style(style -> style.background(getScreenTexture()));
+        screen.addChild(MachineUIHelper.label(4, 5, self().getBlockState().getBlock().getDescriptionId()));
+        screen.addChild(MachineUIHelper.componentPanel(4, 17, 150, 10, this::addDisplayText));
+        addDisplayControls(screen);
         return new ModularUI(176, 216, this, entityPlayer)
                 .background(GuiTextures.BACKGROUND_STEAM.get(ConfigHolder.INSTANCE.machines.steelSteamMultiblocks))
                 .widget(screen)

@@ -21,6 +21,7 @@ import com.extfro.extfrocore.api.sync_system.annotations.SaveField;
 import com.extfro.extfrocore.api.sync_system.annotations.SyncToClient;
 import com.extfro.extfrocore.common.data.GTMachines;
 import com.extfro.extfrocore.common.item.behavior.IntCircuitBehaviour;
+import com.extfro.extfrocore.common.machine.gui.MachineUIHelper;
 import com.extfro.extfrocore.config.ConfigHolder;
 import com.extfro.extfrocore.utils.ExtendedUseOnContext;
 import com.extfro.extfrocore.utils.GTTransferUtils;
@@ -35,8 +36,7 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;
 
-import com.lowdragmc.lowdraglib2.gui.widget.Widget;
-import com.lowdragmc.lowdraglib2.gui.widget.WidgetGroup;
+import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
 import com.lowdragmc.lowdraglib2.integration.xei.IngredientIO;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -285,31 +285,31 @@ public class ItemBusPartMachine extends TieredIOPartMachine
     }
 
     @Override
-    public Widget createUIWidget() {
+    public UIElement createUIWidget() {
         int rowSize = (int) Math.sqrt(getInventorySize());
         int colSize = rowSize;
         if (getInventorySize() == 8) {
             rowSize = 4;
             colSize = 2;
         }
-        var group = new WidgetGroup(0, 0, 18 * rowSize + 16, 18 * colSize + 16);
-        var container = new WidgetGroup(4, 4, 18 * rowSize + 8, 18 * colSize + 8);
+        var group = MachineUIHelper.group(18 * rowSize + 16, 18 * colSize + 16);
+        var container = MachineUIHelper.group(4, 4, 18 * rowSize + 8, 18 * colSize + 8)
+                .style(style -> style.background(GuiTextures.BACKGROUND_INVERSE));
         int index = 0;
         if (this.io == IO.OUT) {
-            group.addWidget(filterHandler.createFilterSlotUI(71 + (18 * rowSize) / 2, 35 + 9 * rowSize)
-                    .setHoverTooltips(Component.translatable("cover.item_filter.title")));
+            group.addChild(filterHandler.createFilterSlotUI(71 + (18 * rowSize) / 2, 35 + 9 * rowSize)
+                    .style(style -> style.tooltips(Component.translatable("cover.item_filter.title"))));
         }
         for (int y = 0; y < colSize; y++) {
             for (int x = 0; x < rowSize; x++) {
-                container.addWidget(
+                container.addChild(
                         new SlotWidget(getInventory().storage, index++, 4 + x * 18, 4 + y * 18, true, io.support(IO.IN))
                                 .setBackgroundTexture(GuiTextures.SLOT)
                                 .setIngredientIO(this.io.support(IO.IN) ? IngredientIO.INPUT : IngredientIO.OUTPUT));
             }
         }
 
-        container.setBackground(GuiTextures.BACKGROUND_INVERSE);
-        group.addWidget(container);
+        group.addChild(container);
         return group;
     }
 }

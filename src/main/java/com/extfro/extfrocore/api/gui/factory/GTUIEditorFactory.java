@@ -6,7 +6,7 @@ import com.extfro.extfrocore.api.gui.editor.GTUIEditor;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
 
-import com.lowdragmc.lowdraglib2.LDLib;
+import com.lowdragmc.lowdraglib2.LDLib2;
 import com.lowdragmc.lowdraglib2.gui.factory.IContainerUIHolder;
 import com.lowdragmc.lowdraglib2.gui.factory.PlayerUIMenuType;
 import com.lowdragmc.lowdraglib2.gui.ui.ModularUI;
@@ -15,7 +15,7 @@ import com.lowdragmc.lowdraglib2.gui.ui.UI;
 public class GTUIEditorFactory implements IContainerUIHolder {
 
     public static final GTUIEditorFactory INSTANCE = new GTUIEditorFactory();
-    public static final ResourceLocation UI_ID = LDLib.location("gt_ui_editor");
+    public static final ResourceLocation UI_ID = LDLib2.id("gt_ui_editor");
 
     private GTUIEditorFactory() {
         PlayerUIMenuType.register(UI_ID, player -> this);

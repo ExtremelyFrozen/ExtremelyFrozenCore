@@ -15,6 +15,7 @@ import com.extfro.extfrocore.api.machine.trait.RecipeLogic;
 import com.extfro.extfrocore.api.pattern.util.RelativeDirection;
 import com.extfro.extfrocore.api.sync_system.annotations.RerenderOnChanged;
 import com.extfro.extfrocore.api.sync_system.annotations.SyncToClient;
+import com.extfro.extfrocore.common.machine.gui.MachineUIHelper;
 import com.extfro.extfrocore.config.ConfigHolder;
 import com.extfro.extfrocore.utils.GTUtil;
 
@@ -32,8 +33,6 @@ import net.neoforged.api.distmarker.OnlyIn;
 
 import com.lowdragmc.lowdraglib2.gui.texture.GuiTextureGroup;
 import com.lowdragmc.lowdraglib2.gui.ui.ModularUI;
-import com.lowdragmc.lowdraglib2.gui.widget.LabelWidget;
-import com.lowdragmc.lowdraglib2.gui.widget.ProgressWidget;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 
@@ -143,7 +142,7 @@ public class PrimitiveBlastFurnaceMachine extends PrimitiveWorkableMachine imple
     public ModularUI createUI(Player entityPlayer) {
         return new ModularUI(176, 166, this, entityPlayer)
                 .background(GuiTextures.PRIMITIVE_BACKGROUND)
-                .widget(new LabelWidget(5, 5, getBlockState().getBlock().getDescriptionId()))
+                .widget(MachineUIHelper.label(5, 5, getBlockState().getBlock().getDescriptionId()))
                 .widget(new SlotWidget(importItems.storage, 0, 52, 20, true, true)
                         .setBackgroundTexture(
                                 new GuiTextureGroup(GuiTextures.PRIMITIVE_SLOT, GuiTextures.PRIMITIVE_INGOT_OVERLAY)))
@@ -153,7 +152,7 @@ public class PrimitiveBlastFurnaceMachine extends PrimitiveWorkableMachine imple
                 .widget(new SlotWidget(importItems.storage, 2, 52, 56, true, true)
                         .setBackgroundTexture(
                                 new GuiTextureGroup(GuiTextures.PRIMITIVE_SLOT, GuiTextures.PRIMITIVE_FURNACE_OVERLAY)))
-                .widget(new ProgressWidget(recipeLogic::getProgressPercent, 77, 39, 20, 15,
+                .widget(MachineUIHelper.progress(77, 39, 20, 15, recipeLogic::getProgressPercent,
                         GuiTextures.PRIMITIVE_BLAST_FURNACE_PROGRESS_BAR))
                 .widget(new SlotWidget(exportItems.storage, 0, 104, 38, true, false)
                         .setBackgroundTexture(

@@ -210,12 +210,10 @@ public abstract class ConfigWidget extends UIElement {
             super.drawBackgroundAdditional(context);
             int x = Math.round(getPositionX());
             int y = Math.round(getPositionY());
-            com.extfro.extfrocore.api.gui.GuiTextures.BACKGROUND.draw(context.graphics,
-                    context.mouseX, context.mouseY, x, y, 80, 30);
+            com.extfro.extfrocore.api.gui.GuiTextures.BACKGROUND.draw(context, x, y, 80, 30);
             com.lowdragmc.lowdraglib2.gui.util.DrawerHelper.drawStringSized(context.graphics, "Amount",
                     x + 3, y + 3, 0x404040, false, 1f, false);
-            com.extfro.extfrocore.api.gui.GuiTextures.DISPLAY.draw(context.graphics,
-                    context.mouseX, context.mouseY, x + 3, y + 11, 65, 14);
+            com.extfro.extfrocore.api.gui.GuiTextures.DISPLAY.draw(context, x + 3, y + 11, 65, 14);
         }
     }
 }

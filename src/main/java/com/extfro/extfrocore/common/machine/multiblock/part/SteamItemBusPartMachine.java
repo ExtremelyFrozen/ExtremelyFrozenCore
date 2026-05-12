@@ -8,6 +8,7 @@ import com.extfro.extfrocore.api.gui.widget.SlotWidget;
 import com.extfro.extfrocore.api.gui.widget.ToggleButtonWidget;
 import com.extfro.extfrocore.api.machine.MachineDefinition;
 import com.extfro.extfrocore.common.data.GTMachines;
+import com.extfro.extfrocore.common.machine.gui.MachineUIHelper;
 import com.extfro.extfrocore.config.ConfigHolder;
 
 import net.minecraft.core.BlockPos;
@@ -15,7 +16,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.state.BlockState;
 
 import com.lowdragmc.lowdraglib2.gui.ui.ModularUI;
-import com.lowdragmc.lowdraglib2.gui.widget.LabelWidget;
 import org.jetbrains.annotations.NotNull;
 
 public class SteamItemBusPartMachine extends ItemBusPartMachine {
@@ -35,7 +35,7 @@ public class SteamItemBusPartMachine extends ItemBusPartMachine {
         var modular = new ModularUI(176 + xOffset * 2,
                 18 + 18 * rowSize + 105, this, entityPlayer)
                 .background(GuiTextures.BACKGROUND_STEAM.get(ConfigHolder.INSTANCE.machines.steelSteamMultiblocks))
-                .widget(new LabelWidget(10, 5, getBlockState().getBlock().getDescriptionId()))
+                .widget(MachineUIHelper.label(10, 5, getBlockState().getBlock().getDescriptionId()))
                 .widget(new ToggleButtonWidget(7 + xOffset, 18 + 18 * rowSize, 18, 18,
                         GuiTextures.BUTTON_ITEM_OUTPUT, this::isWorkingEnabled, this::setWorkingEnabled)
                         .setShouldUseBaseBackground() // TODO: Steamify background

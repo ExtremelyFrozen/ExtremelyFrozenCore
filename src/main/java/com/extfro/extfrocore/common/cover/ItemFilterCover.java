@@ -64,19 +64,6 @@ public class ItemFilterCover extends CoverBehavior implements IUICover {
         syncDataHolder.markClientSyncFieldDirty("filterMode");
     }
 
-    public FilterMode getFilterMode() {
-        return filterMode;
-    }
-
-    public ManualIOMode getAllowFlow() {
-        return allowFlow;
-    }
-
-    public void setAllowFlow(ManualIOMode allowFlow) {
-        this.allowFlow = allowFlow;
-        syncDataHolder.markClientSyncFieldDirty("allowFlow");
-    }
-
     @Override
     public boolean canAttach() {
         return super.canAttach() && coverHolder.getItemHandlerCap(attachedSide, false) != null;

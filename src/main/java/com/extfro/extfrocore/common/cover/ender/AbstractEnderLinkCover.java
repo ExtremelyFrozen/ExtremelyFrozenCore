@@ -135,11 +135,6 @@ public abstract class AbstractEnderLinkCover<T extends VirtualEntry> extends Cov
     }
 
     @Override
-    public boolean isWorkingEnabled() {
-        return isWorkingEnabled;
-    }
-
-    @Override
     public @NotNull UIElement createUIElement() {
         virtualEntryElement = new VirtualEntryElement(this);
         return virtualEntryElement;
@@ -151,18 +146,6 @@ public abstract class AbstractEnderLinkCover<T extends VirtualEntry> extends Cov
             syncDataHolder.markClientSyncFieldDirty("io");
             subscriptionHandler.updateSubscription();
         }
-    }
-
-    public Permissions getPermission() {
-        return permission;
-    }
-
-    public ManualIOMode getManualIOMode() {
-        return manualIOMode;
-    }
-
-    public IO getIo() {
-        return io;
     }
 
     public UUID getOwner() {
@@ -307,16 +290,6 @@ public abstract class AbstractEnderLinkCover<T extends VirtualEntry> extends Cov
         Permissions(String tooltip, IGuiTexture icon) {
             this.tooltip = tooltip;
             this.icon = icon;
-        }
-
-        @Override
-        public String getTooltip() {
-            return tooltip;
-        }
-
-        @Override
-        public IGuiTexture getIcon() {
-            return icon;
         }
     }
 

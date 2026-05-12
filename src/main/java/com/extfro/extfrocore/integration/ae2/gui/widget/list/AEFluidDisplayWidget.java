@@ -41,11 +41,11 @@ public class AEFluidDisplayWidget extends AEListGridWidget.DisplayElement {
 
     @Override
     protected void drawSlot(GUIContext context, int x, int y) {
-        GuiTextures.FLUID_SLOT.draw(context.graphics, context.mouseX, context.mouseY, x, y, 18, 18);
+        GuiTextures.FLUID_SLOT.draw(context, x, y, 18, 18);
     }
 
     @Override
     protected void drawStack(GUIContext context, GenericStack stack, int x, int y) {
-        DrawerHelper.drawFluidForGui(context.graphics, AEUtil.toFluidStack(stack), x, y, 16, 16);
+        DrawerHelper.drawFluidForGui(context.graphics, AEUtil.toFluidStack(stack), x, y, 16, 16, -1);
     }
 }

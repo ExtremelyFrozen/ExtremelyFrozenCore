@@ -301,26 +301,6 @@ public class CentralMonitorMachine extends WorkableElectricMultiblockMachine
         return monitorGroups.stream().anyMatch(group -> group.contains(component.getBlockPos()));
     }
 
-    public int getLeftDist() {
-        return leftDist;
-    }
-
-    public int getRightDist() {
-        return rightDist;
-    }
-
-    public int getUpDist() {
-        return upDist;
-    }
-
-    public int getDownDist() {
-        return downDist;
-    }
-
-    public List<MonitorGroup> getMonitorGroups() {
-        return monitorGroups;
-    }
-
     @Override
     public void addDisplayText(List<Component> textList) {
         MultiblockDisplayText.builder(textList, isFormed())
@@ -709,7 +689,7 @@ public class CentralMonitorMachine extends WorkableElectricMultiblockMachine
     public void onMachineDestroyed() {
         super.onMachineDestroyed();
         for (MonitorGroup group : monitorGroups) {
-            group.getItemStackHandler().dropInventoryInWorld(getLevel(), getBlockPos());;
+            group.getItemStackHandler().dropInventoryInWorld(getLevel(), getBlockPos());
             group.getPlaceholderSlotsHandler().dropInventoryInWorld(getLevel(), getBlockPos());
         }
     }

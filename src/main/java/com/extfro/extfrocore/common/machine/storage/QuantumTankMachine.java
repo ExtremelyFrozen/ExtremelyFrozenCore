@@ -16,6 +16,7 @@ import com.extfro.extfrocore.api.sync_system.annotations.SaveField;
 import com.extfro.extfrocore.api.sync_system.annotations.SyncToClient;
 import com.extfro.extfrocore.api.transfer.fluid.CustomFluidTank;
 import com.extfro.extfrocore.api.transfer.fluid.IFluidHandlerModifiable;
+import com.extfro.extfrocore.common.machine.gui.MachineUIHelper;
 import com.extfro.extfrocore.utils.ExtendedUseOnContext;
 import com.extfro.extfrocore.utils.FormattingUtil;
 import com.extfro.extfrocore.utils.GTMath;
@@ -23,6 +24,7 @@ import com.extfro.extfrocore.utils.GTTransferUtils;
 
 import net.minecraft.Util;
 import net.minecraft.core.Direction;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionResult;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.FluidType;
@@ -31,10 +33,7 @@ import net.neoforged.neoforge.fluids.capability.IFluidHandler;
 import net.neoforged.neoforge.items.IItemHandlerModifiable;
 
 import com.lowdragmc.lowdraglib2.gui.ColorPattern;
-import com.lowdragmc.lowdraglib2.gui.widget.ImageWidget;
-import com.lowdragmc.lowdraglib2.gui.widget.LabelWidget;
-import com.lowdragmc.lowdraglib2.gui.widget.Widget;
-import com.lowdragmc.lowdraglib2.gui.widget.WidgetGroup;
+import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
 import it.unimi.dsi.fastutil.objects.Object2LongArrayMap;
 import it.unimi.dsi.fastutil.objects.Object2LongMap;
 import lombok.Getter;
@@ -174,34 +173,33 @@ public class QuantumTankMachine extends TieredMachine implements IControllable,
     //////////////////////////////////////
     // *********** GUI ***********//
     //////////////////////////////////////
-    public Widget createUIWidget() {
-        var group = new WidgetGroup(0, 0, 90, 63);
-        group.addWidget(new ImageWidget(4, 4, 82, 55, GuiTextures.DISPLAY))
-                .addWidget(new LabelWidget(8, 8, "gtceu.gui.fluid_amount"))
-                .addWidget(new LabelWidget(8, 18, () -> FormattingUtil.formatBuckets(storedAmount))
-                        .setTextColor(-1)
-                        .setDropShadow(false))
-                .addWidget(new TankWidget(cache, 0, 68, 23, true, true)
-                        .setShowAmount(false)
-                        .setBackground(GuiTextures.FLUID_SLOT))
-                .addWidget(new PhantomFluidWidget(lockedFluid, 0, 68, 41, 18, 18,
-                        this::getLockedFluid, this::setLocked)
-                        .setShowAmount(false)
-                        .setBackground(ColorPattern.T_GRAY.rectTexture()))
-                .addWidget(new ToggleButtonWidget(4, 41, 18, 18,
-                        GuiTextures.BUTTON_FLUID_OUTPUT, this.autoOutput::isAutoOutputFluids,
-                        this.autoOutput::setAllowAutoOutputFluids)
-                        .setShouldUseBaseBackground()
-                        .setTooltipText("gtceu.gui.fluid_auto_output.tooltip"))
-                .addWidget(new ToggleButtonWidget(22, 41, 18, 18,
-                        GuiTextures.BUTTON_LOCK, this::isLocked, this::setLocked)
-                        .setShouldUseBaseBackground()
-                        .setTooltipText("gtceu.gui.fluid_lock.tooltip"))
-                .addWidget(new ToggleButtonWidget(40, 41, 18, 18,
-                        GuiTextures.BUTTON_VOID, () -> isVoiding, (b) -> isVoiding = b)
-                        .setShouldUseBaseBackground()
-                        .setTooltipText("gtceu.gui.fluid_voiding_partial.tooltip"));
-        group.setBackground(GuiTextures.BACKGROUND_INVERSE);
+    public UIElement createUIWidget() {
+        var group = MachineUIHelper.group(90, 63)
+                .style(style -> style.background(GuiTextures.BACKGROUND_INVERSE));
+        group.addChild(MachineUIHelper.image(4, 4, 82, 55, GuiTextures.DISPLAY));
+        group.addChild(MachineUIHelper.label(8, 8, "gtceu.gui.fluid_amount"));
+        group.addChild(MachineUIHelper.lightLabel(8, 18,
+                () -> Component.literal(FormattingUtil.formatBuckets(storedAmount))));
+        group.addChild(new TankWidget(cache, 0, 68, 23, true, true)
+                .setShowAmount(false)
+                .setBackground(GuiTextures.FLUID_SLOT));
+        group.addChild(new PhantomFluidWidget(lockedFluid, 0, 68, 41, 18, 18,
+                this::getLockedFluid, this::setLocked)
+                .setShowAmount(false)
+                .setBackground(ColorPattern.T_GRAY.rectTexture()));
+        group.addChild(new ToggleButtonWidget(4, 41, 18, 18,
+                GuiTextures.BUTTON_FLUID_OUTPUT, this.autoOutput::isAutoOutputFluids,
+                this.autoOutput::setAllowAutoOutputFluids)
+                .setShouldUseBaseBackground()
+                .setTooltipText("gtceu.gui.fluid_auto_output.tooltip"));
+        group.addChild(new ToggleButtonWidget(22, 41, 18, 18,
+                GuiTextures.BUTTON_LOCK, this::isLocked, this::setLocked)
+                .setShouldUseBaseBackground()
+                .setTooltipText("gtceu.gui.fluid_lock.tooltip"));
+        group.addChild(new ToggleButtonWidget(40, 41, 18, 18,
+                GuiTextures.BUTTON_VOID, () -> isVoiding, (b) -> isVoiding = b)
+                .setShouldUseBaseBackground()
+                .setTooltipText("gtceu.gui.fluid_voiding_partial.tooltip"));
         return group;
     }
 

@@ -54,30 +54,6 @@ public final class GeneratedVeinMetadata {
         this.depleted = depleted;
     }
 
-    public @NotNull ChunkPos originChunk() {
-        return originChunk;
-    }
-
-    public @NotNull BlockPos center() {
-        return center;
-    }
-
-    public @NotNull Holder<GTOreDefinition> definition() {
-        return definition;
-    }
-
-    public void definition(@NotNull Holder<GTOreDefinition> definition) {
-        this.definition = definition;
-    }
-
-    public boolean depleted() {
-        return depleted;
-    }
-
-    public void depleted(boolean depleted) {
-        this.depleted = depleted;
-    }
-
     public static GeneratedVeinMetadata readFromPacket(RegistryFriendlyByteBuf buf) {
         ChunkPos origin = new ChunkPos(buf.readVarLong());
         BlockPos center = BlockPos.of(buf.readVarLong());

@@ -3,7 +3,7 @@ package com.extfro.extfrocore.integration.jei.multipage;
 import com.extfro.extfrocore.api.gui.widget.PatternPreviewWidget;
 import com.extfro.extfrocore.api.machine.MultiblockMachineDefinition;
 
-import com.lowdragmc.lowdraglib2.jei.ModularWrapper;
+import com.lowdragmc.lowdraglib2.integration.xei.jei.ModularWrapper;
 
 public class MultiblockInfoWrapper extends ModularWrapper<PatternPreviewWidget> {
 

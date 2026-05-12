@@ -47,10 +47,6 @@ public abstract class TagFilter<T, S extends Filter<T, S>> implements Filter<T, 
         onUpdated.accept((S) this);
     }
 
-    public String getTagFilterExpression() {
-        return tagFilterExpression;
-    }
-
     public UIElement openConfigurator(int x, int y) {
         UIElement group = FilterUIElements.group(x, y, 18 * 3 + 25, 18 * 3); // 80 55
         Button info = new Button().noText();

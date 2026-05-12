@@ -23,6 +23,7 @@ import com.extfro.extfrocore.api.transfer.item.CustomItemStackHandler;
 import com.extfro.extfrocore.common.data.item.GTDataComponents;
 import com.extfro.extfrocore.common.data.machines.GTAEMachines;
 import com.extfro.extfrocore.common.item.behavior.IntCircuitBehaviour;
+import com.extfro.extfrocore.integration.ae2.gui.AEUIHelper;
 import com.extfro.extfrocore.integration.ae2.gui.widget.AETextInputButtonWidget;
 import com.extfro.extfrocore.integration.ae2.gui.widget.slot.AEPatternViewSlotWidget;
 import com.extfro.extfrocore.integration.ae2.machine.trait.InternalSlotRecipeHandler;
@@ -60,10 +61,8 @@ import appeng.helpers.patternprovider.PatternContainer;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.lowdragmc.lowdraglib2.gui.texture.GuiTextureGroup;
+import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
 import com.lowdragmc.lowdraglib2.gui.util.ClickData;
-import com.lowdragmc.lowdraglib2.gui.widget.LabelWidget;
-import com.lowdragmc.lowdraglib2.gui.widget.Widget;
-import com.lowdragmc.lowdraglib2.gui.widget.WidgetGroup;
 import it.unimi.dsi.fastutil.objects.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -286,10 +285,10 @@ public class MEPatternBufferPartMachine extends MEBusPartMachine
     }
 
     @Override
-    public Widget createUIWidget() {
+    public UIElement createUIWidget() {
         int rowSize = 9;
         int colSize = 3;
-        var group = new WidgetGroup(0, 0, 18 * rowSize + 16, 18 * colSize + 16);
+        var group = AEUIHelper.group(0, 0, 18 * rowSize + 16, 18 * colSize + 16);
         int index = 0;
         for (int y = 0; y < colSize; ++y) {
             for (int x = 0; x < rowSize; ++x) {
@@ -307,16 +306,15 @@ public class MEPatternBufferPartMachine extends MEBusPartMachine
                         })
                         .setChangeListener(() -> onPatternChange(finalI))
                         .setBackground(GuiTextures.SLOT, GuiTextures.PATTERN_OVERLAY);
-                group.addWidget(slot);
+                group.addChild(slot);
             }
         }
         // ME Network status
-        group.addWidget(new LabelWidget(
-                8,
-                2,
-                () -> this.isOnline ? "gtceu.gui.me_network.online" : "gtceu.gui.me_network.offline"));
+        group.addChild(AEUIHelper.label(8, 2, () -> this.isOnline ?
+                Component.translatable("gtceu.gui.me_network.online") :
+                Component.translatable("gtceu.gui.me_network.offline")));
 
-        group.addWidget(new AETextInputButtonWidget(18 * rowSize + 8 - 70, 2, 70, 10)
+        group.addChild(new AETextInputButtonWidget(18 * rowSize + 8 - 70, 2, 70, 10)
                 .setText(customName)
                 .setOnConfirm(this::setCustomName)
                 .setButtonTooltips(Component.translatable("gui.gtceu.rename.desc")));

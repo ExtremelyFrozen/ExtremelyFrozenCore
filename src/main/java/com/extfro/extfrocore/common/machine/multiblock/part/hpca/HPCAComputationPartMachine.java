@@ -8,7 +8,7 @@ import com.extfro.extfrocore.common.machine.trait.hpca.HPCAComputationProviderTr
 
 import net.minecraft.MethodsReturnNonnullByDefault;
 
-import com.lowdragmc.lowdraglib2.gui.texture.ResourceTexture;
+import com.lowdragmc.lowdraglib2.gui.texture.SpriteTexture;
 import lombok.Getter;
 
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -34,7 +34,7 @@ public class HPCAComputationPartMachine extends HPCAComponentPartMachine {
     }
 
     @Override
-    public ResourceTexture getComponentIcon() {
+    public SpriteTexture getComponentIcon() {
         if (hpcaComponentTrait.isDamaged()) {
             return advanced ? GuiTextures.HPCA_ICON_DAMAGED_ADVANCED_COMPUTATION_COMPONENT :
                     GuiTextures.HPCA_ICON_DAMAGED_COMPUTATION_COMPONENT;

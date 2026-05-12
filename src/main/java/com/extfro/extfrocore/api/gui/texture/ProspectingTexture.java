@@ -194,18 +194,6 @@ public class ProspectingTexture extends AbstractTexture {
         }
     }
 
-    public String getSelected() {
-        return selected;
-    }
-
-    public int getImageWidth() {
-        return imageWidth;
-    }
-
-    public int getImageHeight() {
-        return imageHeight;
-    }
-
     public void setSelected(String uniqueID) {
         if (!this.selected.equals(uniqueID)) {
             this.selected = uniqueID;

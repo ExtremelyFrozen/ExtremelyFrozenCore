@@ -182,8 +182,7 @@ public abstract class AEListGridWidget extends ScrollerView {
             int x = x();
             int y = y();
             drawSlot(context, x, y);
-            com.extfro.extfrocore.api.gui.GuiTextures.NUMBER_BACKGROUND.draw(context.graphics,
-                    context.mouseX, context.mouseY, x + 18, y, 140, 18);
+            com.extfro.extfrocore.api.gui.GuiTextures.NUMBER_BACKGROUND.draw(context, x + 18, y, 140, 18);
             GenericStack stack = gridWidget.getAt(index);
             if (stack != null) {
                 drawStack(context, stack, x + 1, y + 1);

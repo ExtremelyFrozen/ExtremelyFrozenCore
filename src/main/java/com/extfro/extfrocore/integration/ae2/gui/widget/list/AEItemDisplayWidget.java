@@ -29,7 +29,7 @@ public class AEItemDisplayWidget extends AEListGridWidget.DisplayElement {
 
     @Override
     protected void drawSlot(GUIContext context, int x, int y) {
-        GuiTextures.SLOT.draw(context.graphics, context.mouseX, context.mouseY, x, y, 18, 18);
+        GuiTextures.SLOT.draw(context, x, y, 18, 18);
     }
 
     @Override

@@ -205,14 +205,6 @@ public class GTRecipe implements Recipe<RecipeInput> {
         return tickOutputs.getOrDefault(capability, Collections.emptyList());
     }
 
-    public @NotNull EnergyStack getInputEUt() {
-        return inputEUt;
-    }
-
-    public @NotNull EnergyStack getOutputEUt() {
-        return outputEUt;
-    }
-
     public boolean hasTick() {
         return !tickInputs.isEmpty() || !tickOutputs.isEmpty();
     }

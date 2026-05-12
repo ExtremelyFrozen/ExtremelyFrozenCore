@@ -43,16 +43,6 @@ public class CustomItemStackHandler extends ItemStackHandler
         super(stacks);
     }
 
-    public CustomItemStackHandler setOnContentsChanged(@NotNull Runnable onContentsChanged) {
-        this.onContentsChanged = onContentsChanged;
-        return this;
-    }
-
-    public CustomItemStackHandler setFilter(Predicate<ItemStack> filter) {
-        this.filter = filter;
-        return this;
-    }
-
     @Override
     public boolean isItemValid(int slot, @NotNull ItemStack stack) {
         return filter.test(stack);

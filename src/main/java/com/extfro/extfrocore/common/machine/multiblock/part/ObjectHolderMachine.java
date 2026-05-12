@@ -11,14 +11,12 @@ import com.extfro.extfrocore.api.sync_system.annotations.SaveField;
 import com.extfro.extfrocore.api.sync_system.annotations.SyncToClient;
 import com.extfro.extfrocore.api.transfer.item.CustomItemStackHandler;
 import com.extfro.extfrocore.common.data.item.GTDataComponents;
+import com.extfro.extfrocore.common.machine.gui.MachineUIHelper;
 
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.ItemStack;
 
-import com.lowdragmc.lowdraglib2.gui.widget.ImageWidget;
-import com.lowdragmc.lowdraglib2.gui.widget.Widget;
-import com.lowdragmc.lowdraglib2.gui.widget.WidgetGroup;
-import com.lowdragmc.lowdraglib2.math.Position;
+import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 
@@ -81,15 +79,16 @@ public class ObjectHolderMachine extends MultiblockPartMachine {
     }
 
     @Override
-    public Widget createUIWidget() {
-        return new WidgetGroup(new Position(0, 0))
-                .addWidget(new ImageWidget(46, 15, 84, 60, GuiTextures.PROGRESS_BAR_RESEARCH_STATION_BASE))
-                .addWidget(new BlockableSlotWidget(heldItems, 0, 79, 36)
-                        .setIsBlocked(this::isLocked)
-                        .setBackground(GuiTextures.SLOT, GuiTextures.RESEARCH_STATION_OVERLAY))
-                .addWidget(new BlockableSlotWidget(heldItems, 1, 15, 36)
-                        .setIsBlocked(this::isLocked)
-                        .setBackground(GuiTextures.SLOT, GuiTextures.DATA_ORB_OVERLAY));
+    public UIElement createUIWidget() {
+        var group = MachineUIHelper.group(130, 75);
+        group.addChild(MachineUIHelper.image(46, 15, 84, 60, GuiTextures.PROGRESS_BAR_RESEARCH_STATION_BASE));
+        group.addChild(new BlockableSlotWidget(heldItems, 0, 79, 36)
+                .setIsBlocked(this::isLocked)
+                .setBackground(GuiTextures.SLOT, GuiTextures.RESEARCH_STATION_OVERLAY));
+        group.addChild(new BlockableSlotWidget(heldItems, 1, 15, 36)
+                .setIsBlocked(this::isLocked)
+                .setBackground(GuiTextures.SLOT, GuiTextures.DATA_ORB_OVERLAY));
+        return group;
     }
 
     @Override

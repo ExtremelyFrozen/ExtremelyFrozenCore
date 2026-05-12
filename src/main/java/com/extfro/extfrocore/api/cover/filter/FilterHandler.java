@@ -45,15 +45,6 @@ public abstract class FilterHandler<T, F extends Filter<T, F>> implements ISyncM
         this.container = container;
     }
 
-    @Override
-    public SyncDataHolder getSyncDataHolder() {
-        return syncDataHolder;
-    }
-
-    public ItemStack getFilterItem() {
-        return filterItem;
-    }
-
     protected abstract F loadFilter(ItemStack filterItem);
 
     protected abstract F getEmptyFilter();

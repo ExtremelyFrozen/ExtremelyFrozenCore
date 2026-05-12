@@ -47,7 +47,7 @@ public class AEItemConfigSlotWidget extends AEConfigSlotWidget {
         GenericStack stock = slot.getStock();
         drawSlots(context, x, y, parentWidget.isAutoPull());
         if (this.select) {
-            GuiTextures.SELECT_BOX.draw(context.graphics, context.mouseX, context.mouseY, x, y, 18, 18);
+            GuiTextures.SELECT_BOX.draw(context, x, y, 18, 18);
         }
         int stackX = x + 1;
         int stackY = y + 1;
@@ -74,13 +74,13 @@ public class AEItemConfigSlotWidget extends AEConfigSlotWidget {
 
     private void drawSlots(GUIContext context, int x, int y, boolean autoPull) {
         if (autoPull) {
-            GuiTextures.SLOT_DARK.draw(context.graphics, context.mouseX, context.mouseY, x, y, 18, 18);
-            GuiTextures.CONFIG_ARROW.draw(context.graphics, context.mouseX, context.mouseY, x, y, 18, 18);
+            GuiTextures.SLOT_DARK.draw(context, x, y, 18, 18);
+            GuiTextures.CONFIG_ARROW.draw(context, x, y, 18, 18);
         } else {
-            GuiTextures.SLOT.draw(context.graphics, context.mouseX, context.mouseY, x, y, 18, 18);
-            GuiTextures.CONFIG_ARROW_DARK.draw(context.graphics, context.mouseX, context.mouseY, x, y, 18, 18);
+            GuiTextures.SLOT.draw(context, x, y, 18, 18);
+            GuiTextures.CONFIG_ARROW_DARK.draw(context, x, y, 18, 18);
         }
-        GuiTextures.SLOT_DARK.draw(context.graphics, context.mouseX, context.mouseY, x, y + 18, 18, 18);
+        GuiTextures.SLOT_DARK.draw(context, x, y + 18, 18, 18);
     }
 
     private void onMouseDown(com.lowdragmc.lowdraglib2.gui.ui.event.UIEvent event) {

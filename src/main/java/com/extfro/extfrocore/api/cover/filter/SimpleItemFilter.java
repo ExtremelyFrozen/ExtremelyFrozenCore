@@ -75,10 +75,6 @@ public class SimpleItemFilter implements ItemFilter {
         onUpdated.accept(this);
     }
 
-    public boolean isIgnoreNbt() {
-        return ignoreNbt;
-    }
-
     public UIElement openConfigurator(int x, int y) {
         UIElement group = FilterUIElements.group(x, y, 18 * 3 + 25, 18 * 3); // 80 55
         for (int i = 0; i < 3; i++) {

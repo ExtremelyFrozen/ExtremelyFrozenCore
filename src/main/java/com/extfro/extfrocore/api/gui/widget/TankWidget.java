@@ -232,10 +232,6 @@ public class TankWidget extends FluidSlot {
         return this;
     }
 
-    public float getXEIChance() {
-        return XEIChance;
-    }
-
     public TankWidget setChangeListener(Runnable changeListener) {
         this.changeListener = changeListener;
         return this;

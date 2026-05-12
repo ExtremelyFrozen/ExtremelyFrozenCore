@@ -102,14 +102,6 @@ public class AdvancedEnergyDetectorCover extends EnergyDetectorCover implements 
         initializeMinMaxInputs(wasPercent);
     }
 
-    public void setMinValue(long minValue) {
-        this.minValue = minValue;
-    }
-
-    public void setMaxValue(long maxValue) {
-        this.maxValue = maxValue;
-    }
-
     //////////////////////////////////////
     // *********** GUI ***********//
     //////////////////////////////////////

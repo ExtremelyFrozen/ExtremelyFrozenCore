@@ -107,34 +107,6 @@ public class ComputerMonitorCover extends CoverBehavior
                         this, null, new MultiLineComponent(text), placeholderUUID));
     }
 
-    public List<MutableComponent> getText() {
-        return text;
-    }
-
-    public int getUpdateInterval() {
-        return updateInterval;
-    }
-
-    public void setUpdateInterval(int updateInterval) {
-        this.updateInterval = updateInterval;
-    }
-
-    public long getTicksSincePlaced() {
-        return ticksSincePlaced;
-    }
-
-    public List<MutableComponent> getCreateDisplayTargetBuffer() {
-        return createDisplayTargetBuffer;
-    }
-
-    public List<MutableComponent> getComputerCraftTextBuffer() {
-        return computerCraftTextBuffer;
-    }
-
-    public UUID getPlaceholderUUID() {
-        return placeholderUUID;
-    }
-
     public void setDisplayTargetBufferLine(int line, MutableComponent component) {
         createDisplayTargetBuffer.set(line, component);
     }

@@ -27,10 +27,6 @@ public class WaypointManager {
     @Getter
     private static boolean active = false;
 
-    public static boolean isActive() {
-        return active;
-    }
-
     public static void init() {
         var toggle = ConfigHolder.INSTANCE.compat.minimap.toggle;
         if (toggle.xaerosMapIntegration && ExtForCore.isModLoaded(EFValues.MODID_XAEROS_MINIMAP)) {

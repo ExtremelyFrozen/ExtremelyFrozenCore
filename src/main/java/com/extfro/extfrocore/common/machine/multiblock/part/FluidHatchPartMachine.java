@@ -20,6 +20,7 @@ import com.extfro.extfrocore.api.sync_system.annotations.SaveField;
 import com.extfro.extfrocore.api.sync_system.annotations.SyncToClient;
 import com.extfro.extfrocore.common.data.GTMachines;
 import com.extfro.extfrocore.common.item.behavior.IntCircuitBehaviour;
+import com.extfro.extfrocore.common.machine.gui.MachineUIHelper;
 import com.extfro.extfrocore.config.ConfigHolder;
 import com.extfro.extfrocore.utils.ExtendedUseOnContext;
 import com.extfro.extfrocore.utils.GTTransferUtils;
@@ -37,10 +38,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.FluidType;
 
-import com.lowdragmc.lowdraglib2.gui.widget.ImageWidget;
-import com.lowdragmc.lowdraglib2.gui.widget.LabelWidget;
-import com.lowdragmc.lowdraglib2.gui.widget.Widget;
-import com.lowdragmc.lowdraglib2.gui.widget.WidgetGroup;
+import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
 import lombok.Getter;
 import org.jetbrains.annotations.Nullable;
 
@@ -261,7 +259,7 @@ public class FluidHatchPartMachine extends TieredIOPartMachine implements IHasCi
     }
 
     @Override
-    public Widget createUIWidget() {
+    public UIElement createUIWidget() {
         if (slots == 1) {
             return createSingleSlotGUI();
         } else {
@@ -269,15 +267,16 @@ public class FluidHatchPartMachine extends TieredIOPartMachine implements IHasCi
         }
     }
 
-    protected Widget createSingleSlotGUI() {
-        var group = new WidgetGroup(0, 0, 89, 63);
-        group.addWidget(new ImageWidget(4, 4, 81, 55, GuiTextures.DISPLAY));
+    protected UIElement createSingleSlotGUI() {
+        var group = MachineUIHelper.group(89, 63)
+                .style(style -> style.background(GuiTextures.BACKGROUND_INVERSE));
+        group.addChild(MachineUIHelper.image(4, 4, 81, 55, GuiTextures.DISPLAY));
         TankWidget tankWidget;
 
         // Add input/output-specific widgets
         if (this.io.support(IO.OUT)) {
             // if this is an output hatch, assign tankWidget to the phantom widget displaying the locked fluid...
-            group.addWidget(tankWidget = new PhantomFluidWidget(this.tank.getLockedFluid(), 0, 67, 40, 18, 18,
+            group.addChild(tankWidget = new PhantomFluidWidget(this.tank.getLockedFluid(), 0, 67, 40, 18, 18,
                     () -> this.tank.getLockedFluid().getFluid(), f -> {
                         if (!this.tank.getFluidInTank(0).isEmpty()) {
                             return;
@@ -291,23 +290,21 @@ public class FluidHatchPartMachine extends TieredIOPartMachine implements IHasCi
                         }
                     }).setShowAmount(false).setDrawHoverTips(true).setBackground(GuiTextures.FLUID_SLOT));
 
-            group.addWidget(new ToggleButtonWidget(7, 40, 18, 18,
+            group.addChild(new ToggleButtonWidget(7, 40, 18, 18,
                     GuiTextures.BUTTON_LOCK, this.tank::isLocked, this.tank::setLocked)
                     .setTooltipText("gtceu.gui.fluid_lock.tooltip")
-                    .setShouldUseBaseBackground())
-                    // ...and add the actual tank widget separately.
-                    .addWidget(new TankWidget(tank.getStorages()[0], 67, 22, 18, 18, true, io.support(IO.IN))
-                            .setShowAmount(true).setDrawHoverTips(true).setBackground(GuiTextures.FLUID_SLOT));
+                    .setShouldUseBaseBackground());
+            // ...and add the actual tank widget separately.
+            group.addChild(new TankWidget(tank.getStorages()[0], 67, 22, 18, 18, true, io.support(IO.IN))
+                    .setShowAmount(true).setDrawHoverTips(true).setBackground(GuiTextures.FLUID_SLOT));
         } else {
-            group.addWidget(tankWidget = new TankWidget(tank.getStorages()[0], 67, 22, 18, 18, true, io.support(IO.IN))
+            group.addChild(tankWidget = new TankWidget(tank.getStorages()[0], 67, 22, 18, 18, true, io.support(IO.IN))
                     .setShowAmount(true).setDrawHoverTips(true).setBackground(GuiTextures.FLUID_SLOT));
         }
 
-        group.addWidget(new LabelWidget(8, 8, "gtceu.gui.fluid_amount"))
-                .addWidget(new LabelWidget(8, 18, () -> getFluidAmountText(tankWidget)))
-                .addWidget(new LabelWidget(8, 28, () -> getFluidNameText(tankWidget).getString()));
-
-        group.setBackground(GuiTextures.BACKGROUND_INVERSE);
+        group.addChild(MachineUIHelper.label(8, 8, "gtceu.gui.fluid_amount"));
+        group.addChild(MachineUIHelper.label(8, 18, () -> Component.literal(getFluidAmountText(tankWidget))));
+        group.addChild(MachineUIHelper.label(8, 28, () -> getFluidNameText(tankWidget)));
         return group;
     }
 
@@ -338,7 +335,7 @@ public class FluidHatchPartMachine extends TieredIOPartMachine implements IHasCi
         return String.format("%,d", fluidStack.isEmpty() ? 0 : fluidStack.getAmount());
     }
 
-    protected Widget createMultiSlotGUI() {
+    protected UIElement createMultiSlotGUI() {
         int rowSize = (int) Math.sqrt(slots);
         int colSize = rowSize;
         if (slots == 8) {
@@ -346,20 +343,20 @@ public class FluidHatchPartMachine extends TieredIOPartMachine implements IHasCi
             colSize = 2;
         }
 
-        var group = new WidgetGroup(0, 0, 18 * rowSize + 16, 18 * colSize + 16);
-        var container = new WidgetGroup(4, 4, 18 * rowSize + 8, 18 * colSize + 8);
+        var group = MachineUIHelper.group(18 * rowSize + 16, 18 * colSize + 16);
+        var container = MachineUIHelper.group(4, 4, 18 * rowSize + 8, 18 * colSize + 8)
+                .style(style -> style.background(GuiTextures.BACKGROUND_INVERSE));
 
         int index = 0;
         for (int y = 0; y < colSize; y++) {
             for (int x = 0; x < rowSize; x++) {
-                container.addWidget(
+                container.addChild(
                         new TankWidget(tank.getStorages()[index++], 4 + x * 18, 4 + y * 18, true, io.support(IO.IN))
                                 .setBackground(GuiTextures.FLUID_SLOT));
             }
         }
 
-        container.setBackground(GuiTextures.BACKGROUND_INVERSE);
-        group.addWidget(container);
+        group.addChild(container);
 
         return group;
     }

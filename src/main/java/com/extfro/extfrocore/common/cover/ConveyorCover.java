@@ -106,34 +106,6 @@ public class ConveyorCover extends CoverBehavior implements IIOCover, IUICover, 
                 .onFilterRemoved(f -> configureFilter());
     }
 
-    @Override
-    public int getTransferRate() {
-        return transferRate;
-    }
-
-    @Override
-    public IO getIo() {
-        return io;
-    }
-
-    public DistributionMode getDistributionMode() {
-        return distributionMode;
-    }
-
-    @Override
-    public ManualIOMode getManualIOMode() {
-        return manualIOMode;
-    }
-
-    @Override
-    public boolean isWorkingEnabled() {
-        return isWorkingEnabled;
-    }
-
-    public FilterHandler<ItemStack, ItemFilter> getFilterHandler() {
-        return filterHandler;
-    }
-
     public ConveyorCover(CoverDefinition definition, ICoverable coverHolder, Direction attachedSide, int tier) {
         this(definition, coverHolder, attachedSide, tier, CONVEYOR_SCALING.applyAsInt(tier));
     }
