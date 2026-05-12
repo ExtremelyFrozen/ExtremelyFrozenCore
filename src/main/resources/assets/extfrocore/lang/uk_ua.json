@@ -2084,7 +2084,7 @@
 	"cover.storage.title": "Кришка сховища",
 	"cover.tag_filter.info.0": "§bПриймає складні вирази",
 	"cover.tag_filter.info.1": "§6a & b§r = AND",
-	"cover.tag_filter.info.10": "§bПриклад:§6 *dusts/gold | (gtceu:circuits & !*lv)",
+	"cover.tag_filter.info.10": "§bПриклад:§6 *dusts/gold | (extfrocore:circuits & !*lv)",
 	"cover.tag_filter.info.11": "Перебирає увесь золотий пил або всі схеми, окрім lv",
 	"cover.tag_filter.info.2": "§6a | b§r = OR",
 	"cover.tag_filter.info.3": "§6a ^ b§r = XOR",

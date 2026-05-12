@@ -2,9 +2,9 @@
 	"credit": "Made with Blockbench",
 	"parent": "block/block",
 	"textures": {
-		"1": "gtceu:block/stones/gravel",
-		"2": "gtceu:block/stones/surface_rock_stone",
-		"particle": "gtceu:block/stones/gravel"
+		"1": "extfrocore:block/stones/gravel",
+		"2": "extfrocore:block/stones/surface_rock_stone",
+		"particle": "extfrocore:block/stones/gravel"
 	},
 	"elements": [
 		{

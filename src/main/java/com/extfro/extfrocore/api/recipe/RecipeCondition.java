@@ -61,11 +61,11 @@ public abstract class RecipeCondition<T extends RecipeCondition<T>> {
     }
 
     public IGuiTexture getInValidTexture() {
-        return CroppedTexture.of("gtceu:textures/gui/condition/" + getType() + ".png", 0, 0, 1, 0.5f);
+        return CroppedTexture.of("extfrocore:textures/gui/condition/" + getType() + ".png", 0, 0, 1, 0.5f);
     }
 
     public IGuiTexture getValidTexture() {
-        return CroppedTexture.of("gtceu:textures/gui/condition/" + getType() + ".png", 0, 0.5f, 1, 0.5f);
+        return CroppedTexture.of("extfrocore:textures/gui/condition/" + getType() + ".png", 0, 0.5f, 1, 0.5f);
     }
 
     public boolean isOr() {

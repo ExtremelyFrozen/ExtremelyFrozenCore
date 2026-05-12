@@ -25,7 +25,7 @@ public class AEItemConfigWidget extends ConfigWidget {
             this.displayList[index] = new ExportOnlyAEItemSlot();
             this.cached[index] = new ExportOnlyAEItemSlot();
             line = index / 8;
-            this.addWidget(new AEItemConfigSlotWidget((index - line * 8) * 18, line * (18 * 2 + 2), this, index));
+            this.addChild(new AEItemConfigSlotWidget((index - line * 8) * 18, line * (18 * 2 + 2), this, index));
         }
     }
 

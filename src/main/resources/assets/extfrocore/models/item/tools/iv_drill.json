@@ -1,9 +1,9 @@
 {
 	"parent": "item/handheld",
 	"textures": {
-		"layer0": "gtceu:item/tools/power_unit_iv",
-		"layer1": "gtceu:item/tools/drill",
-		"layer2": "gtceu:item/void",
-		"layer3": "gtceu:item/tools/drill_body"
+		"layer0": "extfrocore:item/tools/power_unit_iv",
+		"layer1": "extfrocore:item/tools/drill",
+		"layer2": "extfrocore:item/void",
+		"layer3": "extfrocore:item/tools/drill_body"
 	}
 }

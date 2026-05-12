@@ -1,18 +1,18 @@
 {
-	"parent": "gtceu:block/cube/tinted/bottom_top",
+	"parent": "extfrocore:block/cube/tinted/bottom_top",
 	"textures": {
 		"particle": "#side",
 
-		"bottom": "gtceu:block/casings/voltage/lv/bottom",
-		"top": "gtceu:block/casings/voltage/lv/top",
-		"side": "gtceu:block/casings/voltage/lv/side",
+		"bottom": "extfrocore:block/casings/voltage/lv/bottom",
+		"top": "extfrocore:block/casings/voltage/lv/top",
+		"side": "extfrocore:block/casings/voltage/lv/side",
 
-		"overlay_in_io": "gtceu:block/overlay/machine/overlay_energy_1a_in",
-		"overlay_in_io_emissive": "gtceu:block/overlay/machine/overlay_energy_1a_in_emissive",
-		"overlay_in_tinted": "gtceu:block/overlay/machine/overlay_energy_1a_tinted",
-		"overlay_out_io": "gtceu:block/overlay/machine/overlay_energy_1a_out",
-		"overlay_out_io_emissive": "gtceu:block/overlay/machine/overlay_energy_1a_out_emissive",
-		"overlay_out_tinted": "gtceu:block/void"
+		"overlay_in_io": "extfrocore:block/overlay/machine/overlay_energy_1a_in",
+		"overlay_in_io_emissive": "extfrocore:block/overlay/machine/overlay_energy_1a_in_emissive",
+		"overlay_in_tinted": "extfrocore:block/overlay/machine/overlay_energy_1a_tinted",
+		"overlay_out_io": "extfrocore:block/overlay/machine/overlay_energy_1a_out",
+		"overlay_out_io_emissive": "extfrocore:block/overlay/machine/overlay_energy_1a_out_emissive",
+		"overlay_out_tinted": "extfrocore:block/void"
 	},
 	"elements": [
 		{

@@ -1,5 +1,5 @@
 {
 	"ldlib": {
-		"connection": "gtceu:block/lamps/white_off_ctm"
+		"connection": "extfrocore:block/lamps/white_off_ctm"
 	}
 }

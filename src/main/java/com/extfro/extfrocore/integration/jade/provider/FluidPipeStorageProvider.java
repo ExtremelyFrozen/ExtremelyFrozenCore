@@ -13,6 +13,7 @@ import net.minecraft.world.phys.HitResult;
 import org.jetbrains.annotations.NotNull;
 import snownee.jade.api.Accessor;
 import snownee.jade.api.fluid.JadeFluidObject;
+import snownee.jade.api.view.*;
 
 import java.util.ArrayList;
 import java.util.List;

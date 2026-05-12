@@ -2,7 +2,7 @@
 	"parent": "block/block",
 	"loader": "neoforge:composite",
 	"textures": {
-		"particle": "gtceu:block/material_sets/flint/ore_emissive"
+		"particle": "extfrocore:block/material_sets/flint/ore_emissive"
 	},
 	"children": {
 		"base_stone": {
@@ -11,8 +11,8 @@
 		"ore_texture": {
 			"parent": "block/block",
 			"textures": {
-				"layer0": "gtceu:block/material_sets/flint/ore_emissive",
-				"layer1": "gtceu:block/material_sets/flint/ore_emissive_layer2",
+				"layer0": "extfrocore:block/material_sets/flint/ore_emissive",
+				"layer1": "extfrocore:block/material_sets/flint/ore_emissive_layer2",
 				"particle": "#layer0"
 			},
 			"render_type": "translucent",

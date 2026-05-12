@@ -1,5 +1,5 @@
 {
-	"parent": "gtceu:block/overlay/top_emissive",
+	"parent": "extfrocore:block/overlay/top_emissive",
 	"elements": [
 		{
 			"from": [0, 0, 0],

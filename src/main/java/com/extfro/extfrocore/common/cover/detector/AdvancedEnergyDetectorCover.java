@@ -6,25 +6,27 @@ import com.extfro.extfrocore.api.capability.IEnergyInfoProvider;
 import com.extfro.extfrocore.api.cover.CoverDefinition;
 import com.extfro.extfrocore.api.cover.IUICover;
 import com.extfro.extfrocore.api.gui.GuiTextures;
-import com.extfro.extfrocore.api.gui.widget.LongInputWidget;
-import com.extfro.extfrocore.api.gui.widget.ToggleButtonWidget;
 import com.extfro.extfrocore.api.sync_system.annotations.SaveField;
+import com.extfro.extfrocore.data.lang.LangHandler;
 import com.extfro.extfrocore.utils.GTMath;
 
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 
-import com.lowdragmc.lowdraglib2.gui.widget.LabelWidget;
-import com.lowdragmc.lowdraglib2.gui.widget.TextBoxWidget;
-import com.lowdragmc.lowdraglib2.gui.widget.Widget;
-import com.lowdragmc.lowdraglib2.gui.widget.WidgetGroup;
-import com.lowdragmc.lowdraglib2.utils.LocalizationUtils;
+import com.lowdragmc.lowdraglib2.gui.texture.GuiTextureGroup;
+import com.lowdragmc.lowdraglib2.gui.texture.IGuiTexture;
+import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.Button;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.Label;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.TextField;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigInteger;
-import java.util.List;
+import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 
 import static com.extfro.extfrocore.utils.RedstoneUtil.computeLatchedRedstoneBetweenValues;
 
@@ -42,8 +44,8 @@ public class AdvancedEnergyDetectorCover extends EnergyDetectorCover implements 
     @Getter
     private boolean usePercent;
 
-    private LongInputWidget minValueInput;
-    private LongInputWidget maxValueInput;
+    private TextField minValueInput;
+    private TextField maxValueInput;
 
     public AdvancedEnergyDetectorCover(CoverDefinition definition, ICoverable coverHolder, Direction attachedSide) {
         super(definition, coverHolder, attachedSide);
@@ -100,42 +102,84 @@ public class AdvancedEnergyDetectorCover extends EnergyDetectorCover implements 
         initializeMinMaxInputs(wasPercent);
     }
 
+    public void setMinValue(long minValue) {
+        this.minValue = minValue;
+    }
+
+    public void setMaxValue(long maxValue) {
+        this.maxValue = maxValue;
+    }
+
     //////////////////////////////////////
     // *********** GUI ***********//
     //////////////////////////////////////
 
     @Override
-    public Widget createUIWidget() {
-        WidgetGroup group = new WidgetGroup(0, 0, 176, 105);
-        group.addWidget(new LabelWidget(10, 5, "cover.advanced_energy_detector.label"));
+    public UIElement createUIElement() {
+        UIElement group = new UIElement().layout(layout -> layout.width(176).height(105));
+        group.addChild(label(10, 5, "cover.advanced_energy_detector.label", 156));
+        group.addChild(label(10, 55, "cover.advanced_energy_detector.min", 25));
+        group.addChild(label(10, 80, "cover.advanced_energy_detector.max", 25));
 
-        group.addWidget(new TextBoxWidget(10, 55, 25,
-                List.of(LocalizationUtils.format("cover.advanced_energy_detector.min"))));
-
-        group.addWidget(new TextBoxWidget(10, 80, 25,
-                List.of(LocalizationUtils.format("cover.advanced_energy_detector.max"))));
-
-        minValueInput = new LongInputWidget(40, 50, 176 - 40 - 10, 20, this::getMinValue, this::setMinValue);
-        maxValueInput = new LongInputWidget(40, 75, 176 - 40 - 10, 20, this::getMaxValue, this::setMaxValue);
+        minValueInput = longInput(40, 50, 176 - 40 - 10, minValue, this::setMinValue);
+        maxValueInput = longInput(40, 75, 176 - 40 - 10, maxValue, this::setMaxValue);
         initializeMinMaxInputs(usePercent);
-        group.addWidget(minValueInput);
-        group.addWidget(maxValueInput);
+        group.addChild(minValueInput);
+        group.addChild(maxValueInput);
 
         // Invert Redstone Output Toggle:
-        group.addWidget(new ToggleButtonWidget(
-                9, 20, 20, 20,
-                GuiTextures.INVERT_REDSTONE_BUTTON, this::isInverted, this::setInverted)
-                .isMultiLang()
-                .setTooltipText("cover.advanced_energy_detector.invert"));
+        group.addChild(toggleButton(9, 20, 20, 20,
+                GuiTextures.INVERT_REDSTONE_BUTTON, this::isInverted, this::setInverted,
+                "cover.advanced_energy_detector.invert"));
 
         // Mode (EU / Percent) Toggle:
-        group.addWidget(new ToggleButtonWidget(
-                176 - 29, 20, 20, 20,
-                GuiTextures.ENERGY_DETECTOR_COVER_MODE_BUTTON, this::isUsePercent, this::setUsePercent)
-                .isMultiLang()
-                .setTooltipText("cover.advanced_energy_detector.use_percent"));
+        group.addChild(toggleButton(176 - 29, 20, 20, 20,
+                GuiTextures.ENERGY_DETECTOR_COVER_MODE_BUTTON, () -> usePercent, this::setUsePercent,
+                "cover.advanced_energy_detector.use_percent"));
 
         return group;
+    }
+
+    private Label label(int x, int y, String translationKey, int width) {
+        Label label = new Label();
+        label.setValue(Component.translatable(translationKey));
+        label.layout(layout -> layout.left(x).top(y).width(width).height(10));
+        label.textStyle(style -> style.textColor(0x404040).textShadow(false));
+        return label;
+    }
+
+    private TextField longInput(int x, int y, int width, long value, Consumer<Long> setter) {
+        TextField field = new TextField();
+        field.layout(layout -> layout.left(x).top(y).width(width).height(20));
+        field.style(style -> style.background(GuiTextures.DISPLAY));
+        field.textFieldStyle(style -> style.textColor(0x404040).textShadow(false));
+        field.setNumbersOnlyLong(0L, Long.MAX_VALUE);
+        field.setText(String.valueOf(value));
+        field.setTextResponder(text -> {
+            if (!text.isBlank()) {
+                setter.accept(Long.parseLong(text));
+            }
+        });
+        return field;
+    }
+
+    private Button toggleButton(int x, int y, int width, int height, IGuiTexture icon, BooleanSupplier getter,
+                                Consumer<Boolean> setter, String tooltipPrefix) {
+        Button button = new Button().noText();
+        button.layout(layout -> layout.left(x).top(y).width(width).height(height));
+        Consumer<Button> update = b -> {
+            IGuiTexture texture = new GuiTextureGroup(GuiTextures.VANILLA_BUTTON.copy()
+                    .setColor(getter.getAsBoolean() ? 0xffa0ffa0 : -1), icon);
+            b.buttonStyle(style -> style.baseTexture(texture).hoverTexture(texture).pressedTexture(texture));
+            b.style(style -> style.tooltips(LangHandler.getMultiLang(tooltipPrefix + "." +
+                    (getter.getAsBoolean() ? "enabled" : "disabled")).toArray(Component[]::new)));
+        };
+        update.accept(button);
+        button.setOnServerClick(event -> {
+            setter.accept(!getter.getAsBoolean());
+            update.accept(button);
+        });
+        return button;
     }
 
     private void initializeMinMaxInputs(boolean wasPercent) {
@@ -149,32 +193,29 @@ public class AdvancedEnergyDetectorCover extends EnergyDetectorCover implements 
             energyCapacity = Long.MAX_VALUE;
         }
 
-        minValueInput.setMin(0L);
-        maxValueInput.setMin(0L);
-
         if (usePercent) {
             // This needs to be before setting the maximum, because otherwise the value would be limited to 100 EU
             // before converting to percent.
             if (!wasPercent) {
-                minValueInput.setValue(GTMath.clamp((long) (((double) minValue / energyCapacity) * 100), 0, 100));
-                maxValueInput.setValue(GTMath.clamp((long) (((double) maxValue / energyCapacity) * 100), 0, 100));
+                minValue = GTMath.clamp((long) (((double) minValue / energyCapacity) * 100), 0, 100);
+                maxValue = GTMath.clamp((long) (((double) maxValue / energyCapacity) * 100), 0, 100);
             }
 
-            minValueInput.setMax(100L);
-            maxValueInput.setMax(100L);
+            minValueInput.setNumbersOnlyLong(0L, 100L);
+            maxValueInput.setNumbersOnlyLong(0L, 100L);
         } else {
-            minValueInput.setMax(energyCapacity);
-            maxValueInput.setMax(energyCapacity);
+            minValueInput.setNumbersOnlyLong(0L, energyCapacity);
+            maxValueInput.setNumbersOnlyLong(0L, energyCapacity);
 
             // This needs to be after setting the maximum, because otherwise the converted value would be
             // limited to 100.
             if (wasPercent) {
-                minValueInput.setValue(
-                        GTMath.clamp((long) Math.ceil((minValue / 100.0) * energyCapacity), 0, energyCapacity));
-                maxValueInput.setValue(
-                        GTMath.clamp((long) Math.ceil((maxValue / 100.0) * energyCapacity), 0, energyCapacity));
+                minValue = GTMath.clamp((long) Math.ceil((minValue / 100.0) * energyCapacity), 0, energyCapacity);
+                maxValue = GTMath.clamp((long) Math.ceil((maxValue / 100.0) * energyCapacity), 0, energyCapacity);
             }
         }
+        minValueInput.setText(String.valueOf(minValue), false);
+        maxValueInput.setText(String.valueOf(maxValue), false);
     }
 
     @Override

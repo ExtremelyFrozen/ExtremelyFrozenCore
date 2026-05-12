@@ -3,13 +3,15 @@ package com.extfro.extfrocore.api.transfer.fluid;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler;
 
-import lombok.AllArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 
-@AllArgsConstructor
 public class ModifiableFluidHandlerWrapper implements IFluidHandlerModifiable {
 
     private IFluidHandler handler;
+
+    public ModifiableFluidHandlerWrapper(IFluidHandler handler) {
+        this.handler = handler;
+    }
 
     @Override
     public void setFluidInTank(int tank, FluidStack fluidStack) {

@@ -6,22 +6,21 @@ import com.extfro.extfrocore.api.placeholder.exceptions.UnclosedBracketException
 import com.extfro.extfrocore.api.placeholder.exceptions.UnexpectedBracketException;
 import com.extfro.extfrocore.api.placeholder.exceptions.UnknownPlaceholderException;
 import com.extfro.extfrocore.client.renderer.monitor.IMonitorRenderer;
+import com.extfro.extfrocore.api.gui.GuiTextures;
 import com.extfro.extfrocore.data.lang.LangHandler;
-import com.extfro.extfrocore.utils.GTStringUtils;
 import com.extfro.extfrocore.utils.GTUtil;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.MethodsReturnNonnullByDefault;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
-import com.lowdragmc.lowdraglib2.gui.texture.TextTexture;
-import com.lowdragmc.lowdraglib2.gui.widget.DraggableScrollableWidgetGroup;
-import com.lowdragmc.lowdraglib2.gui.widget.TextTextureWidget;
-import com.lowdragmc.lowdraglib2.gui.widget.Widget;
-import com.lowdragmc.lowdraglib2.gui.widget.WidgetGroup;
+import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.Label;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.ScrollerView;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 
 import java.util.*;
@@ -191,33 +190,47 @@ public class PlaceholderHandler {
         return placeholders.keySet();
     }
 
-    public static Widget getPlaceholderHandlerUI(String filter) {
-        DraggableScrollableWidgetGroup placeholderReference = new DraggableScrollableWidgetGroup(280, 15, 100, 200);
+    public static UIElement getPlaceholderHandlerUI(String filter) {
+        UIElement out = new UIElement();
+        out.layout(layout -> layout.width(160).height(215));
+
+        Label placeholderReferenceLabel = label(0, 0, 160, 15,
+                Component.literal(LangHandler.getMultiLang("gtceu.gui.computer_monitor_cover.placeholder_reference")
+                        .stream()
+                        .map(Component::getString)
+                        .reduce((a, b) -> a + " " + b)
+                        .orElse("Placeholders")));
+        out.addChild(placeholderReferenceLabel);
+
+        ScrollerView placeholderReference = new ScrollerView();
+        placeholderReference.layout(layout -> layout.left(0).top(15).width(100).height(200));
+        placeholderReference.style(style -> style.background(GuiTextures.DISPLAY));
+        out.addChild(placeholderReference);
+
         Consumer<String> onSearch = (newSearch) -> {
-            placeholderReference.clearAllWidgets();
+            placeholderReference.clearAllScrollViewChildren();
             int y = 2;
             ArrayList<String> placeholders = new ArrayList<>(getAllPlaceholderNames());
             placeholders.removeIf(s -> s == null || !s.contains(newSearch));
             placeholders.sort(String::compareTo);
             for (String placeholder : placeholders) {
-                TextTextureWidget placeholderName = new TextTextureWidget(0, y, 80, 15, placeholder);
-                placeholderName.getTextTexture().type = TextTexture.TextType.LEFT;
-                placeholderName.setHoverTooltips(GTStringUtils
-                        .toImmutable(LangHandler.getSingleOrMultiLang("gtceu.placeholder_info." + placeholder)));
-                placeholderReference.addWidget(placeholderName);
+                Label placeholderName = label(0, y, 80, 15, Component.literal(placeholder));
+                placeholderName.style(style -> style.tooltips(LangHandler
+                        .getSingleOrMultiLang("gtceu.placeholder_info." + placeholder)
+                        .toArray(Component[]::new)));
+                placeholderReference.addScrollViewChild(placeholderName);
                 y += 15;
             }
         };
         onSearch.accept(filter);
-        TextTextureWidget placeholderReferenceLabel = new TextTextureWidget(
-                280, 0,
-                160, 15,
-                GTStringUtils.componentsToString(
-                        LangHandler.getMultiLang("gtceu.gui.computer_monitor_cover.placeholder_reference")));
-        placeholderReferenceLabel.getTextTexture().type = TextTexture.TextType.LEFT;
-        WidgetGroup out = new WidgetGroup();
-        out.addWidget(placeholderReferenceLabel);
-        out.addWidget(placeholderReference);
         return out;
+    }
+
+    private static Label label(int x, int y, int width, int height, Component component) {
+        Label label = new Label();
+        label.setValue(component);
+        label.layout(layout -> layout.left(x).top(y).width(width).height(height));
+        label.textStyle(style -> style.textColor(0x404040).textShadow(false));
+        return label;
     }
 }

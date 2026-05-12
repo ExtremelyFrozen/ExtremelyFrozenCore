@@ -1,7 +1,7 @@
 {
-	"parent": "gtceu:block/overlay/only/front",
+	"parent": "extfrocore:block/overlay/only/front",
 	"textures": {
-		"overlay_color": "gtceu:block/overlay/machine/overlay_color"
+		"overlay_color": "extfrocore:block/overlay/machine/overlay_color"
 	},
 	"elements": [
 		{

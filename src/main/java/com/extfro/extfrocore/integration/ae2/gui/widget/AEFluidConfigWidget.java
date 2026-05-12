@@ -25,7 +25,7 @@ public class AEFluidConfigWidget extends ConfigWidget {
             this.displayList[index] = new ExportOnlyAEFluidSlot();
             this.cached[index] = new ExportOnlyAEFluidSlot();
             line = index / 8;
-            this.addWidget(new AEFluidConfigSlotWidget((index - line * 8) * 18, line * (18 * 2 + 2), this, index));
+            this.addChild(new AEFluidConfigSlotWidget((index - line * 8) * 18, line * (18 * 2 + 2), this, index));
         }
     }
 

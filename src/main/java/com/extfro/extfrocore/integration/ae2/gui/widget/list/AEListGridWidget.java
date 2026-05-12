@@ -1,190 +1,121 @@
 package com.extfro.extfrocore.integration.ae2.gui.widget.list;
 
+import com.extfro.extfrocore.integration.ae2.gui.AEUIHelper;
 import com.extfro.extfrocore.integration.ae2.utils.KeyStorage;
-
-import net.minecraft.network.RegistryFriendlyByteBuf;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
+import com.lowdragmc.lowdraglib2.gui.sync.SyncValue;
+import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.ScrollerView;
+import com.lowdragmc.lowdraglib2.gui.ui.event.UIEvents;
+import com.lowdragmc.lowdraglib2.gui.ui.rendering.GUIContext;
+import com.lowdragmc.lowdraglib2.gui.util.DrawerHelper;
+import dev.vfyjxf.taffy.style.TaffyPosition;
+import it.unimi.dsi.fastutil.objects.Object2LongMap;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
 
 import appeng.api.stacks.AEFluidKey;
-import appeng.api.stacks.AEItemKey;
 import appeng.api.stacks.AEKey;
+import appeng.api.stacks.AEItemKey;
 import appeng.api.stacks.GenericStack;
-import com.lowdragmc.lowdraglib2.gui.widget.DraggableScrollableWidgetGroup;
-import com.lowdragmc.lowdraglib2.gui.widget.Widget;
-import it.unimi.dsi.fastutil.objects.Object2LongMap;
-import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * A display only widget for {@link KeyStorage}
+ * Display-only LDLib2 UI element for {@link KeyStorage}.
  */
-public abstract class AEListGridWidget extends DraggableScrollableWidgetGroup {
+public abstract class AEListGridWidget extends ScrollerView {
 
     protected final KeyStorage list;
     private final int slotAmountY;
-    private int slotRowsAmount;
-    protected final static int ROW_CHANGE_ID = 2;
-    protected final static int CONTENT_CHANGE_ID = 3;
-
-    protected final Object2LongMap<AEKey> changeMap = new Object2LongOpenHashMap<>();
-    protected final KeyStorage cached = new KeyStorage();
     protected final List<GenericStack> displayList = new ArrayList<>();
+    private final SyncValue<ListTag> listSync;
+    private int rowCount;
 
     public AEListGridWidget(int x, int y, int slotsY, KeyStorage internalList) {
-        super(x, y, 18 + 140, slotsY * 18);
         this.list = internalList;
         this.slotAmountY = slotsY;
+        this.rowCount = slotsY;
+        layout(layout -> layout
+                .positionType(TaffyPosition.ABSOLUTE)
+                .left(x)
+                .top(y)
+                .width(18 + 140)
+                .height(slotsY * 18));
+        scrollerStyle(style -> style.scrollerViewStyle(0));
+        viewPort.layout(layout -> layout.paddingAll(0));
+        viewContainer.layout(layout -> layout.width(18 + 140).height(slotsY * 18));
+
+        this.listSync = new SyncValue<>("ae_list", ListTag.class, new ListTag());
+        this.listSync.setValueProvider(() -> createSnapshot(provider()));
+        this.listSync.addListener(this::readSnapshot);
+        addSyncValue(this.listSync);
+        addEventListener(UIEvents.TICK, event -> {
+            if (getModularUI() != null && getModularUI().player != null && !getModularUI().player.level().isClientSide) {
+                this.listSync.markAsChanged();
+            }
+        });
+        rebuildRows(slotsY);
     }
 
     public GenericStack getAt(int index) {
         return index >= 0 && index < displayList.size() ? displayList.get(index) : null;
     }
 
-    private void addSlotRows(int amount) {
-        for (int i = 0; i < amount; i++) {
-            int widgetAmount = this.widgets.size();
-            Widget widget = createDisplayWidget(0, i * 18, widgetAmount);
-            this.addWidget(widget);
+    private HolderLookup.Provider provider() {
+        var mui = getModularUI();
+        if (mui != null && mui.player != null) {
+            return mui.player.registryAccess();
         }
+        return net.minecraft.core.RegistryAccess.EMPTY;
     }
 
-    private void removeSlotRows(int amount) {
-        for (int i = 0; i < amount; i++) {
-            Widget slotWidget = this.widgets.remove(this.widgets.size() - 1);
-            removeWidget(slotWidget);
+    private ListTag createSnapshot(HolderLookup.Provider provider) {
+        var tags = new ListTag();
+        if (this.list == null) {
+            return tags;
         }
+        for (Object2LongMap.Entry<AEKey> entry : this.list.storage.object2LongEntrySet()) {
+            if (!acceptKey(entry.getKey())) {
+                continue;
+            }
+            var tag = new CompoundTag();
+            tag.put("key", entry.getKey().toTagGeneric(provider));
+            tag.putLong("value", entry.getLongValue());
+            tags.add(tag);
+        }
+        return tags;
     }
 
-    private void modifySlotRows(int delta) {
-        if (delta > 0) {
-            addSlotRows(delta);
-        } else {
-            removeSlotRows(delta);
-        }
-    }
-
-    protected void writeListChange(RegistryFriendlyByteBuf buffer) {
-        this.changeMap.clear();
-
-        // Remove
-        var cachedIt = cached.storage.object2LongEntrySet().iterator();
-        while (cachedIt.hasNext()) {
-            var entry = cachedIt.next();
-            var cachedKey = entry.getKey();
-            if (!list.storage.containsKey(cachedKey)) {
-                this.changeMap.put(cachedKey, -entry.getLongValue());
-                cachedIt.remove();
+    private void readSnapshot(ListTag tags) {
+        displayList.clear();
+        HolderLookup.Provider provider = provider();
+        for (int i = 0; i < tags.size(); i++) {
+            var tag = tags.getCompound(i);
+            AEKey key = AEKey.fromTagGeneric(provider, tag.getCompound("key"));
+            if (key != null && acceptKey(key)) {
+                displayList.add(new GenericStack(key, tag.getLong("value")));
             }
         }
+        rebuildRows(Math.max(this.slotAmountY, this.displayList.size()));
+    }
 
-        // Change/Add
-        for (var entry : list.storage.object2LongEntrySet()) {
-            var key = entry.getKey();
-            long value = entry.getLongValue();
-            long cacheValue = cached.storage.getOrDefault(key, 0);
-            if (cacheValue == 0) {
-                // Add
-                this.changeMap.put(key, value);
-                this.cached.storage.put(key, value);
-            } else {
-                // Change
-                if (cacheValue != value) {
-                    this.changeMap.put(key, value - cacheValue);
-                    this.cached.storage.put(key, value);
-                }
-            }
+    private void rebuildRows(int rows) {
+        if (rows == this.rowCount && viewContainer.getChildren().size() == rows) {
+            return;
         }
-
-        buffer.writeVarInt(this.changeMap.size());
-        for (var entry : this.changeMap.object2LongEntrySet()) {
-            entry.getKey().writeToPacket(buffer);
-            buffer.writeVarLong(entry.getLongValue());
+        this.rowCount = rows;
+        viewContainer.clearAllChildren();
+        viewContainer.layout(layout -> layout.width(18 + 140).height(rows * 18));
+        for (int index = 0; index < rows; index++) {
+            viewContainer.addChild(createDisplayElement(index));
         }
     }
 
-    protected void readListChange(RegistryFriendlyByteBuf buffer) {
-        int size = buffer.readVarInt();
-        for (int i = 0; i < size; i++) {
-            var key = fromPacket(buffer);
-            long delta = buffer.readVarLong();
+    protected abstract boolean acceptKey(AEKey key);
 
-            boolean found = false;
-            var li = displayList.listIterator();
-            while (li.hasNext()) {
-                var stack = li.next();
-                if (stack.what().equals(key)) {
-                    long newAmount = stack.amount() + delta;
-                    if (newAmount > 0) {
-                        li.set(new GenericStack(key, newAmount));
-                    } else {
-                        li.remove();
-                    }
-                    found = true;
-                    break;
-                }
-            }
-            if (!found) {
-                displayList.add(new GenericStack(key, delta));
-            }
-        }
-    }
-
-    protected abstract void toPacket(RegistryFriendlyByteBuf buffer, AEKey key);
-
-    protected abstract AEKey fromPacket(RegistryFriendlyByteBuf buffer);
-
-    protected abstract Widget createDisplayWidget(int x, int y, int index);
-
-    @Override
-    public void detectAndSendChanges() {
-        super.detectAndSendChanges();
-        if (this.list == null) return;
-        int slotRowsRequired = Math.max(this.slotAmountY, list.storage.size());
-        if (this.slotRowsAmount != slotRowsRequired) {
-            int slotsToAdd = slotRowsRequired - this.slotRowsAmount;
-            this.slotRowsAmount = slotRowsRequired;
-            this.writeUpdateInfo(ROW_CHANGE_ID, buf -> buf.writeVarInt(slotsToAdd));
-            this.modifySlotRows(slotsToAdd);
-        }
-        this.writeUpdateInfo(CONTENT_CHANGE_ID, this::writeListChange);
-    }
-
-    @Override
-    @OnlyIn(Dist.CLIENT)
-    public void readUpdateInfo(int id, RegistryFriendlyByteBuf buffer) {
-        super.readUpdateInfo(id, buffer);
-        if (id == ROW_CHANGE_ID) {
-            int slotsToAdd = buffer.readVarInt();
-            this.modifySlotRows(slotsToAdd);
-        }
-        if (id == CONTENT_CHANGE_ID) {
-            this.readListChange(buffer);
-        }
-    }
-
-    @Override
-    public void writeInitialData(RegistryFriendlyByteBuf buffer) {
-        super.writeInitialData(buffer);
-        if (this.list == null) return;
-        int slotRowsRequired = Math.max(this.slotAmountY, list.storage.size());
-        int slotsToAdd = slotRowsRequired - this.slotRowsAmount;
-        this.slotRowsAmount = slotRowsRequired;
-        this.modifySlotRows(slotsToAdd);
-        buffer.writeVarInt(slotsToAdd);
-        this.writeListChange(buffer);
-    }
-
-    @Override
-    @OnlyIn(Dist.CLIENT)
-    public void readInitialData(RegistryFriendlyByteBuf buffer) {
-        super.readInitialData(buffer);
-        if (this.list == null) return;
-        this.modifySlotRows(buffer.readVarInt());
-        this.readListChange(buffer);
-    }
+    protected abstract UIElement createDisplayElement(int index);
 
     public static class Item extends AEListGridWidget {
 
@@ -193,18 +124,13 @@ public abstract class AEListGridWidget extends DraggableScrollableWidgetGroup {
         }
 
         @Override
-        protected void toPacket(RegistryFriendlyByteBuf buffer, AEKey key) {
-            key.writeToPacket(buffer);
+        protected boolean acceptKey(AEKey key) {
+            return key instanceof AEItemKey;
         }
 
         @Override
-        protected AEKey fromPacket(RegistryFriendlyByteBuf buffer) {
-            return AEItemKey.fromPacket(buffer);
-        }
-
-        @Override
-        protected Widget createDisplayWidget(int x, int y, int index) {
-            return new AEItemDisplayWidget(x, y, this, index);
+        protected UIElement createDisplayElement(int index) {
+            return new AEItemDisplayWidget(this, index);
         }
     }
 
@@ -215,18 +141,61 @@ public abstract class AEListGridWidget extends DraggableScrollableWidgetGroup {
         }
 
         @Override
-        protected void toPacket(RegistryFriendlyByteBuf buffer, AEKey key) {
-            key.writeToPacket(buffer);
+        protected boolean acceptKey(AEKey key) {
+            return key instanceof AEFluidKey;
         }
 
         @Override
-        protected AEKey fromPacket(RegistryFriendlyByteBuf buffer) {
-            return AEFluidKey.fromPacket(buffer);
+        protected UIElement createDisplayElement(int index) {
+            return new AEFluidDisplayWidget(this, index);
+        }
+    }
+
+    static abstract class DisplayElement extends UIElement {
+
+        protected final AEListGridWidget gridWidget;
+        protected final int index;
+
+        protected DisplayElement(AEListGridWidget gridWidget, int index) {
+            this.gridWidget = gridWidget;
+            this.index = index;
+            layout(layout -> layout
+                    .positionType(TaffyPosition.ABSOLUTE)
+                    .left(0)
+                    .top(index * 18)
+                    .width(18 + 140)
+                    .height(18));
+        }
+
+        protected int x() {
+            return Math.round(getPositionX());
+        }
+
+        protected int y() {
+            return Math.round(getPositionY());
         }
 
         @Override
-        protected Widget createDisplayWidget(int x, int y, int index) {
-            return new AEFluidDisplayWidget(x, y, this, index);
+        public void drawBackgroundAdditional(GUIContext context) {
+            super.drawBackgroundAdditional(context);
+            int x = x();
+            int y = y();
+            drawSlot(context, x, y);
+            com.extfro.extfrocore.api.gui.GuiTextures.NUMBER_BACKGROUND.draw(context.graphics,
+                    context.mouseX, context.mouseY, x + 18, y, 140, 18);
+            GenericStack stack = gridWidget.getAt(index);
+            if (stack != null) {
+                drawStack(context, stack, x + 1, y + 1);
+                DrawerHelper.drawText(context.graphics, String.format("x%,d", stack.amount()),
+                        x + 21, y + 6, 1, 0xFFFFFFFF);
+            }
+            if (isMouseOver(context.mouseX, context.mouseY)) {
+                AEUIHelper.drawSelectionOverlay(context.graphics, x + 1, y + 1, 16, 16);
+            }
         }
+
+        protected abstract void drawSlot(GUIContext context, int x, int y);
+
+        protected abstract void drawStack(GUIContext context, GenericStack stack, int x, int y);
     }
 }

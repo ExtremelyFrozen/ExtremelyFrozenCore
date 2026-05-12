@@ -3,8 +3,8 @@
 	"parent": "block/block",
 	"textures": {
 		"particle": "#all",
-		"all": "gtceu:block/casings/solid/machine_coke_bricks",
-		"overlay": "gtceu:block/overlay/machine/overlay_hatch"
+		"all": "extfrocore:block/casings/solid/machine_coke_bricks",
+		"overlay": "extfrocore:block/overlay/machine/overlay_hatch"
 	},
 	"elements": [
 		{

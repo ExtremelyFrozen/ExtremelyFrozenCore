@@ -2,63 +2,38 @@ package com.extfro.extfrocore.integration.ae2.gui.widget.list;
 
 import com.extfro.extfrocore.api.gui.GuiTextures;
 import com.extfro.extfrocore.integration.ae2.utils.AEUtil;
-
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import com.lowdragmc.lowdraglib2.gui.ui.event.HoverTooltips;
+import com.lowdragmc.lowdraglib2.gui.ui.event.UIEvents;
+import com.lowdragmc.lowdraglib2.gui.ui.rendering.GUIContext;
 import net.minecraft.world.item.ItemStack;
 
 import appeng.api.stacks.GenericStack;
-import com.lowdragmc.lowdraglib2.gui.widget.Widget;
-import com.lowdragmc.lowdraglib2.math.Position;
-import com.lowdragmc.lowdraglib2.math.Size;
-import org.jetbrains.annotations.NotNull;
 
-import static com.extfro.extfrocore.integration.ae2.gui.widget.slot.AEConfigSlotWidget.drawSelectionOverlay;
 import static com.lowdragmc.lowdraglib2.gui.util.DrawerHelper.drawItemStack;
-import static com.lowdragmc.lowdraglib2.gui.util.DrawerHelper.drawText;
 
 /**
- * Display a certain {@link appeng.api.stacks.GenericStack} element.
+ * Display a certain {@link GenericStack} item element.
  */
-public class AEItemDisplayWidget extends Widget {
+public class AEItemDisplayWidget extends AEListGridWidget.DisplayElement {
 
-    private final AEListGridWidget gridWidget;
-    private final int index;
-
-    public AEItemDisplayWidget(int x, int y, AEListGridWidget gridWidget, int index) {
-        super(new Position(x, y), new Size(18, 18));
-        this.gridWidget = gridWidget;
-        this.index = index;
-    }
-
-    @Override
-    public void drawInBackground(@NotNull GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
-        super.drawInBackground(graphics, mouseX, mouseY, partialTicks);
-        Position position = getPosition();
-        GenericStack item = this.gridWidget.getAt(this.index);
-        GuiTextures.SLOT.draw(graphics, mouseX, mouseY, position.x, position.y, 18, 18);
-        GuiTextures.NUMBER_BACKGROUND.draw(graphics, mouseX, mouseY, position.x + 18, position.y, 140, 18);
-        int stackX = position.x + 1;
-        int stackY = position.y + 1;
-        if (item != null) {
-            ItemStack itemStack = AEUtil.toItemStack(item);
-            drawItemStack(graphics, itemStack, stackX, stackY, -1, null);
-            String amountStr = String.format("x%,d", item.amount());
-            drawText(graphics, amountStr, stackX + 20, stackY + 5, 1, 0xFFFFFFFF);
-        }
-        if (isMouseOverElement(mouseX, mouseY)) {
-            drawSelectionOverlay(graphics, stackX, stackY, 16, 16);
-        }
-    }
-
-    @Override
-    public void drawInForeground(@NotNull GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
-        if (isMouseOverElement(mouseX, mouseY)) {
+    public AEItemDisplayWidget(AEListGridWidget gridWidget, int index) {
+        super(gridWidget, index);
+        addEventListener(UIEvents.HOVER_TOOLTIPS, event -> {
             GenericStack item = this.gridWidget.getAt(this.index);
             if (item != null) {
-                ItemStack itemStack = AEUtil.toItemStack(item);
-                graphics.renderTooltip(Minecraft.getInstance().font, itemStack, mouseX, mouseY);
+                event.hoverTooltips = HoverTooltips.empty().stack(AEUtil.toItemStack(item));
             }
-        }
+        });
+    }
+
+    @Override
+    protected void drawSlot(GUIContext context, int x, int y) {
+        GuiTextures.SLOT.draw(context.graphics, context.mouseX, context.mouseY, x, y, 18, 18);
+    }
+
+    @Override
+    protected void drawStack(GUIContext context, GenericStack stack, int x, int y) {
+        ItemStack itemStack = AEUtil.toItemStack(stack);
+        drawItemStack(context.graphics, itemStack, x, y, -1, null);
     }
 }

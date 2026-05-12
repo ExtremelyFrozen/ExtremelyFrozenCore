@@ -1,86 +1,101 @@
 package com.extfro.extfrocore.integration.ae2.gui.widget;
 
-import com.extfro.extfrocore.integration.ae2.gui.widget.slot.AEConfigSlotWidget;
 import com.extfro.extfrocore.integration.ae2.slot.IConfigurableSlot;
-
-import net.minecraft.network.RegistryFriendlyByteBuf;
+import com.lowdragmc.lowdraglib2.gui.sync.SyncValue;
+import com.lowdragmc.lowdraglib2.gui.sync.rpc.RPCEmitter;
+import com.lowdragmc.lowdraglib2.gui.sync.rpc.RPCEventBuilder;
+import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.TextField;
+import com.lowdragmc.lowdraglib2.gui.ui.event.UIEvents;
+import com.lowdragmc.lowdraglib2.gui.ui.rendering.GUIContext;
+import dev.vfyjxf.taffy.style.TaffyPosition;
+import lombok.Getter;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 import appeng.api.stacks.GenericStack;
-import com.lowdragmc.lowdraglib2.gui.widget.Widget;
-import com.lowdragmc.lowdraglib2.gui.widget.WidgetGroup;
-import com.lowdragmc.lowdraglib2.math.Position;
-import com.lowdragmc.lowdraglib2.math.Size;
-import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
-import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
-import lombok.Getter;
 
-public abstract class ConfigWidget extends WidgetGroup {
+public abstract class ConfigWidget extends UIElement {
 
     protected final IConfigurableSlot[] config;
-    protected IConfigurableSlot[] cached;
-    protected Int2ObjectMap<IConfigurableSlot> changeMap = new Int2ObjectOpenHashMap<>();
     protected IConfigurableSlot[] displayList;
-    protected AmountSetWidget amountSetWidget;
-    protected final static int UPDATE_ID = 1000;
+    public final SyncValue<ListTag> slotSync;
+    protected final AmountEditor amountEditor;
+    protected RPCEmitter setAmountRPC;
 
     @Getter
     protected final boolean isStocking;
 
     public ConfigWidget(int x, int y, IConfigurableSlot[] config, boolean isStocking) {
-        super(new Position(x, y), new Size(config.length / 2 * 18, 18 * 4 + 2));
         this.isStocking = isStocking;
         this.config = config;
+        layout(layout -> layout
+                .positionType(TaffyPosition.ABSOLUTE)
+                .left(x)
+                .top(y)
+                .width(config.length / 2f * 18)
+                .height(18 * 4 + 2));
         this.init();
-        this.amountSetWidget = new AmountSetWidget(31, -50, this);
-        this.addWidget(this.amountSetWidget);
-        this.addWidget(this.amountSetWidget.getAmountText());
-        this.amountSetWidget.setVisible(false);
-        this.amountSetWidget.getAmountText().setVisible(false);
-    }
+        this.amountEditor = new AmountEditor(this);
+        this.amountEditor.setVisible(false);
+        addChild(this.amountEditor);
 
-    @OnlyIn(Dist.CLIENT)
-    public void enableAmountClient(int slotIndex) {
-        this.amountSetWidget.setSlotIndexClient(slotIndex);
-        this.amountSetWidget.setVisible(true);
-        this.amountSetWidget.getAmountText().setVisible(true);
-    }
-
-    @OnlyIn(Dist.CLIENT)
-    public void disableAmountClient() {
-        this.amountSetWidget.setSlotIndexClient(-1);
-        this.amountSetWidget.setVisible(false);
-        this.amountSetWidget.getAmountText().setVisible(false);
-    }
-
-    public void enableAmount(int slotIndex) {
-        this.amountSetWidget.setSlotIndex(slotIndex);
-        this.amountSetWidget.setVisible(true);
-        this.amountSetWidget.getAmountText().setVisible(true);
-    }
-
-    public void disableAmount() {
-        this.amountSetWidget.setSlotIndex(-1);
-        this.amountSetWidget.setVisible(false);
-        this.amountSetWidget.getAmountText().setVisible(false);
-    }
-
-    @OnlyIn(Dist.CLIENT)
-    @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (this.amountSetWidget.isVisible()) {
-            if (this.amountSetWidget.getAmountText().mouseClicked(mouseX, mouseY, button)) {
-                return true;
+        this.slotSync = new SyncValue<>("ae_config", ListTag.class, new ListTag());
+        this.slotSync.setValueProvider(() -> createSnapshot(provider(), this.config));
+        this.slotSync.addListener(this::readSnapshot);
+        addSyncValue(this.slotSync);
+        addEventListener(UIEvents.TICK, event -> {
+            if (getModularUI() != null && getModularUI().player != null && !getModularUI().player.level().isClientSide) {
+                this.slotSync.markAsChanged();
             }
+        });
+        this.setAmountRPC = addRPCEvent(RPCEventBuilder.simple(Integer.class, Long.class, this::setAmount));
+        addEventListener(UIEvents.MOUSE_DOWN, event -> {
+            clearSlotSelection();
+            disableAmountClient();
+        }, true);
+    }
+
+    protected HolderLookup.Provider provider() {
+        var mui = getModularUI();
+        if (mui != null && mui.player != null) {
+            return mui.player.registryAccess();
         }
-        for (Widget w : this.widgets) {
-            if (w instanceof AEConfigSlotWidget slot) {
-                slot.setSelect(false);
+        return net.minecraft.core.RegistryAccess.EMPTY;
+    }
+
+    private ListTag createSnapshot(HolderLookup.Provider provider, IConfigurableSlot[] slots) {
+        var tags = new ListTag();
+        for (int index = 0; index < slots.length; index++) {
+            IConfigurableSlot slot = slots[index];
+            var tag = new CompoundTag();
+            tag.putInt("index", index);
+            if (slot.getConfig() != null) {
+                tag.put("config", GenericStack.writeTag(provider, slot.getConfig()));
             }
+            if (slot.getStock() != null) {
+                tag.put("stock", GenericStack.writeTag(provider, slot.getStock()));
+            }
+            tags.add(tag);
         }
-        this.disableAmountClient();
-        return super.mouseClicked(mouseX, mouseY, button);
+        return tags;
+    }
+
+    protected void readSnapshot(ListTag tags) {
+        HolderLookup.Provider provider = provider();
+        for (int i = 0; i < tags.size(); i++) {
+            CompoundTag tag = tags.getCompound(i);
+            int index = tag.getInt("index");
+            if (index < 0 || index >= displayList.length) {
+                continue;
+            }
+            IConfigurableSlot slot = displayList[index];
+            slot.setConfig(tag.contains("config") ? GenericStack.readTag(provider, tag.getCompound("config")) : null);
+            slot.setStock(tag.contains("stock") ? GenericStack.readTag(provider, tag.getCompound("stock")) : null);
+        }
     }
 
     abstract void init();
@@ -88,70 +103,6 @@ public abstract class ConfigWidget extends WidgetGroup {
     public abstract boolean hasStackInConfig(GenericStack stack);
 
     public abstract boolean isAutoPull();
-
-    @Override
-    public void detectAndSendChanges() {
-        super.detectAndSendChanges();
-        this.changeMap.clear();
-        for (int index = 0; index < this.config.length; index++) {
-            IConfigurableSlot newSlot = this.config[index];
-            IConfigurableSlot oldSlot = this.cached[index];
-            GenericStack nConfig = newSlot.getConfig();
-            GenericStack nStock = newSlot.getStock();
-            GenericStack oConfig = oldSlot.getConfig();
-            GenericStack oStock = oldSlot.getStock();
-            if (!areAEStackCountsEqual(nConfig, oConfig) || !areAEStackCountsEqual(nStock, oStock)) {
-                this.changeMap.put(index, newSlot.copy());
-                this.cached[index] = this.config[index].copy();
-                this.gui.holder.markAsDirty();
-            }
-        }
-        if (!this.changeMap.isEmpty()) {
-            this.writeUpdateInfo(UPDATE_ID, buf -> {
-                buf.writeVarInt(this.changeMap.size());
-                for (int index : this.changeMap.keySet()) {
-                    GenericStack sConfig = this.changeMap.get(index).getConfig();
-                    GenericStack sStock = this.changeMap.get(index).getStock();
-                    buf.writeVarInt(index);
-                    if (sConfig != null) {
-                        buf.writeBoolean(true);
-                        GenericStack.writeBuffer(sConfig, buf);
-                    } else {
-                        buf.writeBoolean(false);
-                    }
-                    if (sStock != null) {
-                        buf.writeBoolean(true);
-                        GenericStack.writeBuffer(sStock, buf);
-                    } else {
-                        buf.writeBoolean(false);
-                    }
-                }
-            });
-        }
-    }
-
-    @OnlyIn(Dist.CLIENT)
-    @Override
-    public void readUpdateInfo(int id, RegistryFriendlyByteBuf buffer) {
-        super.readUpdateInfo(id, buffer);
-        if (id == UPDATE_ID) {
-            int size = buffer.readVarInt();
-            for (int i = 0; i < size; i++) {
-                int index = buffer.readVarInt();
-                IConfigurableSlot slot = this.displayList[index];
-                if (buffer.readBoolean()) {
-                    slot.setConfig(GenericStack.readBuffer(buffer));
-                } else {
-                    slot.setConfig(null);
-                }
-                if (buffer.readBoolean()) {
-                    slot.setStock(GenericStack.readBuffer(buffer));
-                } else {
-                    slot.setStock(null);
-                }
-            }
-        }
-    }
 
     public final IConfigurableSlot getConfig(int index) {
         return this.config[index];
@@ -161,13 +112,109 @@ public abstract class ConfigWidget extends WidgetGroup {
         return this.displayList[index];
     }
 
-    protected final boolean areAEStackCountsEqual(GenericStack s1, GenericStack s2) {
-        if (s2 == s1) {
-            return true;
+    @OnlyIn(Dist.CLIENT)
+    public void enableAmountClient(int slotIndex) {
+        this.amountEditor.setSlotIndex(slotIndex);
+        this.amountEditor.setVisible(true);
+        this.amountEditor.refreshText();
+    }
+
+    @OnlyIn(Dist.CLIENT)
+    public void disableAmountClient() {
+        this.amountEditor.setSlotIndex(-1);
+        this.amountEditor.setVisible(false);
+    }
+
+    protected void clearSlotSelection() {
+        for (UIElement child : getChildren()) {
+            if (child instanceof com.extfro.extfrocore.integration.ae2.gui.widget.slot.AEConfigSlotWidget slot) {
+                slot.setSelect(false);
+            }
         }
-        if (s1 != null && s2 != null) {
-            return s1.amount() == s2.amount() && s1.what().matches(s2);
+    }
+
+    private void setAmount(Integer index, Long amount) {
+        if (index == null || amount == null || index < 0 || index >= config.length) {
+            return;
         }
-        return false;
+        IConfigurableSlot slot = this.config[index];
+        if (amount > 0 && slot.getConfig() != null) {
+            slot.setConfig(new GenericStack(slot.getConfig().what(), amount));
+            this.slotSync.markAsChanged();
+        }
+    }
+
+    public boolean isStackValidForSlot(GenericStack stack) {
+        if (stack == null || stack.amount() < 0) return true;
+        if (!isStocking()) return true;
+        return !hasStackInConfig(stack);
+    }
+
+    public static class AmountEditor extends UIElement {
+
+        private int index = -1;
+        private final ConfigWidget parentWidget;
+        private final TextField amountText;
+
+        public AmountEditor(ConfigWidget widget) {
+            this.parentWidget = widget;
+            layout(layout -> layout
+                    .positionType(TaffyPosition.ABSOLUTE)
+                    .left(31)
+                    .top(-50)
+                    .width(80)
+                    .height(30));
+            this.amountText = new TextField();
+            this.amountText.layout(layout -> layout
+                    .positionType(TaffyPosition.ABSOLUTE)
+                    .left(3)
+                    .top(12)
+                    .width(65)
+                    .height(13));
+            this.amountText.setNumbersOnlyLong(0, Integer.MAX_VALUE);
+            this.amountText.setTextResponder(this::setNewAmount);
+            addChild(this.amountText);
+        }
+
+        public void setSlotIndex(int slotIndex) {
+            this.index = slotIndex;
+        }
+
+        public void refreshText() {
+            this.amountText.setText(getAmountStr(), false);
+        }
+
+        private String getAmountStr() {
+            if (this.index < 0) {
+                return "0";
+            }
+            IConfigurableSlot slot = this.parentWidget.getDisplay(this.index);
+            if (slot.getConfig() != null) {
+                return String.valueOf(slot.getConfig().amount());
+            }
+            return "0";
+        }
+
+        private void setNewAmount(String amount) {
+            try {
+                long newAmount = Long.parseLong(amount);
+                if (newAmount > 0 && this.index >= 0) {
+                    parentWidget.setAmountRPC.send(this.index, newAmount);
+                }
+            } catch (NumberFormatException ignore) {}
+        }
+
+        @Override
+        public void drawBackgroundAdditional(GUIContext context) {
+            super.drawBackgroundAdditional(context);
+            int x = Math.round(getPositionX());
+            int y = Math.round(getPositionY());
+            com.extfro.extfrocore.api.gui.GuiTextures.BACKGROUND.draw(context.graphics,
+                    context.mouseX, context.mouseY, x, y, 80, 30);
+            com.lowdragmc.lowdraglib2.gui.util.DrawerHelper.drawStringSized(context.graphics, "Amount",
+                    x + 3, y + 3, 0x404040, false, 1f, false);
+            com.extfro.extfrocore.api.gui.GuiTextures.DISPLAY.draw(context.graphics,
+                    context.mouseX, context.mouseY, x + 3, y + 11, 65, 14);
+        }
     }
 }

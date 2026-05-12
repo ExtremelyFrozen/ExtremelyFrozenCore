@@ -2,14 +2,14 @@
 	"parent": "block/block",
 	"textures": {
 		"particle": "#side",
-		"bottom": "gtceu:block/casings/voltage/lv/bottom",
-		"top": "gtceu:block/casings/voltage/lv/top",
-		"side": "gtceu:block/casings/voltage/lv/side",
+		"bottom": "extfrocore:block/casings/voltage/lv/bottom",
+		"top": "extfrocore:block/casings/voltage/lv/top",
+		"side": "extfrocore:block/casings/voltage/lv/side",
 
-		"screen": "gtceu:block/overlay/machine/overlay_screen",
-		"screen_emissive": "gtceu:block/overlay/machine/overlay_screen_emissive",
-		"hatch": "gtceu:block/overlay/machine/overlay_hatch",
-		"pump": "gtceu:block/overlay/machine/overlay_adv_pump"
+		"screen": "extfrocore:block/overlay/machine/overlay_screen",
+		"screen_emissive": "extfrocore:block/overlay/machine/overlay_screen_emissive",
+		"hatch": "extfrocore:block/overlay/machine/overlay_hatch",
+		"pump": "extfrocore:block/overlay/machine/overlay_adv_pump"
 	},
 	"elements": [
 		{

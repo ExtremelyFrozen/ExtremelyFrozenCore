@@ -1,5 +1,5 @@
 {
-	"parent": "gtceu:block/machine/template/rotor_holder/rotor_idle",
+	"parent": "extfrocore:block/machine/template/rotor_holder/rotor_idle",
 	"elements": [
 		{
 			"from": [-16, -16, -0.016],

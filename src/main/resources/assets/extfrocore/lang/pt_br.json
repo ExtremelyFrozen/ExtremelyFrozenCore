@@ -2113,7 +2113,7 @@
 	"cover.storage.title": "Cobertura de Armazenamento",
 	"cover.tag_filter.info.0": "§bAceita expressões complexas",
 	"cover.tag_filter.info.1": "§6a & b§r = E",
-	"cover.tag_filter.info.10": "§bExemplo: §6*dusts/gold | (gtceu:circuits & !*lv)",
+	"cover.tag_filter.info.10": "§bExemplo: §6*dusts/gold | (extfrocore:circuits & !*lv)",
 	"cover.tag_filter.info.11": "Isso corresponde a todos os pós de ouro ou todos os circuitos exceto os LV",
 	"cover.tag_filter.info.2": "§6a | b§r = OU",
 	"cover.tag_filter.info.3": "§6a ^ b§r = XOR",

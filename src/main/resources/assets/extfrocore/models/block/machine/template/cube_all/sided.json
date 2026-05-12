@@ -1,17 +1,17 @@
 {
-	"parent": "gtceu:block/cube/tinted/all",
+	"parent": "extfrocore:block/cube/tinted/all",
 	"textures": {
-		"overlay_front": "gtceu:block/void",
-		"overlay_back": "gtceu:block/void",
-		"overlay_top": "gtceu:block/void",
-		"overlay_bottom": "gtceu:block/void",
-		"overlay_side": "gtceu:block/void",
+		"overlay_front": "extfrocore:block/void",
+		"overlay_back": "extfrocore:block/void",
+		"overlay_top": "extfrocore:block/void",
+		"overlay_bottom": "extfrocore:block/void",
+		"overlay_side": "extfrocore:block/void",
 
-		"overlay_front_emissive": "gtceu:block/void",
-		"overlay_back_emissive": "gtceu:block/void",
-		"overlay_top_emissive": "gtceu:block/void",
-		"overlay_bottom_emissive": "gtceu:block/void",
-		"overlay_side_emissive": "gtceu:block/void"
+		"overlay_front_emissive": "extfrocore:block/void",
+		"overlay_back_emissive": "extfrocore:block/void",
+		"overlay_top_emissive": "extfrocore:block/void",
+		"overlay_bottom_emissive": "extfrocore:block/void",
+		"overlay_side_emissive": "extfrocore:block/void"
 	},
 	"elements": [
 		{

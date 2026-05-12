@@ -1,7 +1,7 @@
 {
 	"parent": "item/generated",
 	"textures": {
-		"layer0": "gtceu:item/battery.hull.hv",
-		"layer1": "gtceu:item/battery.re.hv.lithium/7"
+		"layer0": "extfrocore:item/battery.hull.hv",
+		"layer1": "extfrocore:item/battery.re.hv.lithium/7"
 	}
 }

@@ -1,7 +1,7 @@
 {
-	"parent": "gtceu:block/machine/template/cube_all/sided",
+	"parent": "extfrocore:block/machine/template/cube_all/sided",
 	"textures": {
-		"overlay_pipe": "gtceu:block/overlay/machine/overlay_pipe"
+		"overlay_pipe": "extfrocore:block/overlay/machine/overlay_pipe"
 	},
 	"elements": [
 		{

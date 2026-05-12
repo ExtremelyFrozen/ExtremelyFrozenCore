@@ -1,8 +1,8 @@
 {
 	"parent": "block/block",
 	"textures": {
-		"base": "gtceu:block/multiblock/large_turbine/base_bg",
-		"ring": "gtceu:block/multiblock/large_turbine/base_ring"
+		"base": "extfrocore:block/multiblock/large_turbine/base_bg",
+		"ring": "extfrocore:block/multiblock/large_turbine/base_ring"
 	},
 	"elements": [
 		{

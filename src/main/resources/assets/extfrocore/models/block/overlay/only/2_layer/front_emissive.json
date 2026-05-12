@@ -1,5 +1,5 @@
 {
-	"parent": "gtceu:block/overlay/only/front_emissive",
+	"parent": "extfrocore:block/overlay/only/front_emissive",
 	"elements": [
 		{
 			"from": [0, 0, -0.01],

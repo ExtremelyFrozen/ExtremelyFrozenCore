@@ -1,5 +1,5 @@
 {
-	"parent": "gtceu:block/machine/template/sided/sided",
+	"parent": "extfrocore:block/machine/template/sided/sided",
 	"textures": {
 		"overlay_front": "#overlay",
 		"overlay_back": "#overlay",

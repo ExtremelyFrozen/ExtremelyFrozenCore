@@ -2,9 +2,9 @@
 	"loader": "neoforge:fluid_container",
 	"parent": "neoforge:item/default",
 	"textures": {
-		"base": "gtceu:item/liquid_fuel_jetpack/base",
-		"fluid": "gtceu:item/liquid_fuel_jetpack/overlay",
-		"cover": "gtceu:item/liquid_fuel_jetpack/base"
+		"base": "extfrocore:item/liquid_fuel_jetpack/base",
+		"fluid": "extfrocore:item/liquid_fuel_jetpack/overlay",
+		"cover": "extfrocore:item/liquid_fuel_jetpack/base"
 	},
 	"fluid": "minecraft:empty"
 }

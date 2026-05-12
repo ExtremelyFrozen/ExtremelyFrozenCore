@@ -1,5 +1,5 @@
 {
 	"ldlib": {
-		"connection": "gtceu:block/casings/cleanroom/filter_casing_ctm"
+		"connection": "extfrocore:block/casings/cleanroom/filter_casing_ctm"
 	}
 }

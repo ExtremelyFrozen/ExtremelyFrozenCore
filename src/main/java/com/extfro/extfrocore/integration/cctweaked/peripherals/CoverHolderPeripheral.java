@@ -18,7 +18,7 @@ public class CoverHolderPeripheral implements GenericPeripheral {
 
     @Override
     public String id() {
-        return "gtceu:coverable";
+        return "extfrocore:coverable";
     }
 
     @LuaFunction

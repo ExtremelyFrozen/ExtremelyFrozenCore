@@ -27,6 +27,6 @@ public enum DistributionMode implements EnumSelectorWidget.SelectableEnum {
 
     @Override
     public IGuiTexture getIcon() {
-        return SpriteTexture.of("gtceu:textures/gui/icon/distribution_mode/" + localeName + ".png");
+        return SpriteTexture.of("extfrocore:textures/gui/icon/distribution_mode/" + localeName + ".png");
     }
 }

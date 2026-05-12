@@ -1,7 +1,7 @@
 {
 	"parent": "block/block",
 	"textures": {
-		"rotor": "gtceu:block/multiblock/large_turbine/rotor_idle"
+		"rotor": "extfrocore:block/multiblock/large_turbine/rotor_idle"
 	},
 	"elements": [
 		{

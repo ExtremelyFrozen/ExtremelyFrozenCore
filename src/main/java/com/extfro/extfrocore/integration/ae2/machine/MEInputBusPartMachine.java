@@ -8,6 +8,7 @@ import com.extfro.extfrocore.api.machine.trait.NotifiableItemStackHandler;
 import com.extfro.extfrocore.common.data.item.GTDataComponents;
 import com.extfro.extfrocore.common.item.behavior.IntCircuitBehaviour;
 import com.extfro.extfrocore.integration.ae2.gui.widget.AEItemConfigWidget;
+import com.extfro.extfrocore.integration.ae2.gui.AEUIHelper;
 import com.extfro.extfrocore.integration.ae2.slot.ExportOnlyAEItemList;
 import com.extfro.extfrocore.integration.ae2.slot.ExportOnlyAEItemSlot;
 import com.extfro.extfrocore.utils.GTMath;
@@ -24,10 +25,7 @@ import net.minecraft.world.item.component.CustomData;
 import appeng.api.config.Actionable;
 import appeng.api.stacks.GenericStack;
 import appeng.api.storage.MEStorage;
-import com.lowdragmc.lowdraglib2.gui.widget.LabelWidget;
-import com.lowdragmc.lowdraglib2.gui.widget.Widget;
-import com.lowdragmc.lowdraglib2.gui.widget.WidgetGroup;
-import com.lowdragmc.lowdraglib2.math.Position;
+import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
 
 public class MEInputBusPartMachine extends MEBusPartMachine
                                    implements IDataStickInteractable, IHasCircuitSlot {
@@ -116,16 +114,12 @@ public class MEInputBusPartMachine extends MEBusPartMachine
     ///////////////////////////////
 
     @Override
-    public Widget createUIWidget() {
-        WidgetGroup group = new WidgetGroup(new Position(0, 0));
-        // ME Network status
-        group.addWidget(new LabelWidget(3, 0, () -> this.isOnline ?
-                "gtceu.gui.me_network.online" :
-                "gtceu.gui.me_network.offline"));
-
-        // Config slots
-        group.addWidget(new AEItemConfigWidget(3, 10, this.aeItemHandler));
-
+    public UIElement createUIWidget() {
+        UIElement group = AEUIHelper.group(0, 0, 170, 82);
+        group.addChild(AEUIHelper.label(3, 0, () -> this.isOnline ?
+                Component.translatable("gtceu.gui.me_network.online") :
+                Component.translatable("gtceu.gui.me_network.offline")));
+        group.addChild(new AEItemConfigWidget(3, 10, this.aeItemHandler));
         return group;
     }
 

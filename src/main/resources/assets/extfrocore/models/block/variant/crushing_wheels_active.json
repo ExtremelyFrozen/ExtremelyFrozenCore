@@ -2,7 +2,7 @@
 	"parent": "block/cube_bottom_top",
 	"textures": {
 		"bottom": "#side",
-		"side": "gtceu:block/casings/gcym/secure_maceration_casing",
-		"top": "gtceu:block/casings/unique/crushing_wheels_active"
+		"side": "extfrocore:block/casings/gcym/secure_maceration_casing",
+		"top": "extfrocore:block/casings/unique/crushing_wheels_active"
 	}
 }

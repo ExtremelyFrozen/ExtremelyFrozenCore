@@ -6,7 +6,6 @@ import com.extfro.extfrocore.api.cover.filter.FilterHandler;
 import com.extfro.extfrocore.api.cover.filter.FilterHandlers;
 import com.extfro.extfrocore.api.cover.filter.FluidFilter;
 import com.extfro.extfrocore.api.gui.GuiTextures;
-import com.extfro.extfrocore.api.gui.widget.TankWidget;
 import com.extfro.extfrocore.api.misc.virtualregistry.EntryTypes;
 import com.extfro.extfrocore.api.misc.virtualregistry.VirtualEnderRegistry;
 import com.extfro.extfrocore.api.misc.virtualregistry.VirtualEntry;
@@ -23,7 +22,8 @@ import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.FluidUtil;
 
-import com.lowdragmc.lowdraglib2.gui.widget.*;
+import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.FluidSlot;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -141,9 +141,14 @@ public class EnderFluidLinkCover extends AbstractEnderLinkCover<VirtualTank> {
     //////////////////////////////////////
 
     @Override
-    protected Widget addVirtualEntryWidget(VirtualEntry entry, int x, int y, int width, int height, boolean canClick) {
-        return new TankWidget(((VirtualTank) entry).getFluidTank(), 0, x, y, width, height, canClick, canClick)
-                .setBackground(GuiTextures.FLUID_SLOT);
+    protected UIElement addVirtualEntryWidget(VirtualEntry entry, int x, int y, int width, int height, boolean canClick) {
+        FluidSlot slot = new FluidSlot();
+        slot.bind(((VirtualTank) entry).getFluidTank(), 0);
+        slot.layout(layout -> layout.left(x).top(y).width(width).height(height));
+        slot.style(style -> style.background(GuiTextures.FLUID_SLOT));
+        slot.setAllowClickFilled(canClick);
+        slot.setAllowClickDrained(canClick);
+        return slot;
     }
 
     @NotNull

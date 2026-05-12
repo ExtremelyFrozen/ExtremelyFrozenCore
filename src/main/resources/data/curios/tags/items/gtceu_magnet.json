@@ -1,4 +1,4 @@
 {
 	"replace": false,
-	"values": ["gtceu:lv_item_magnet", "gtceu:hv_item_magnet"]
+	"values": ["extfrocore:lv_item_magnet", "extfrocore:hv_item_magnet"]
 }

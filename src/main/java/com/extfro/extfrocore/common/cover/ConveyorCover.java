@@ -13,7 +13,6 @@ import com.extfro.extfrocore.api.cover.filter.FilterHandlers;
 import com.extfro.extfrocore.api.cover.filter.ItemFilter;
 import com.extfro.extfrocore.api.gui.GuiTextures;
 import com.extfro.extfrocore.api.gui.widget.EnumSelectorWidget;
-import com.extfro.extfrocore.api.gui.widget.IntInputWidget;
 import com.extfro.extfrocore.api.machine.ConditionalSubscriptionHandler;
 import com.extfro.extfrocore.api.sync_system.annotations.RerenderOnChanged;
 import com.extfro.extfrocore.api.sync_system.annotations.SaveField;
@@ -36,22 +35,23 @@ import net.neoforged.neoforge.items.IItemHandlerModifiable;
 import net.neoforged.neoforge.items.ItemHandlerHelper;
 
 import com.lowdragmc.lowdraglib2.gui.texture.GuiTextureGroup;
-import com.lowdragmc.lowdraglib2.gui.widget.LabelWidget;
-import com.lowdragmc.lowdraglib2.gui.widget.SwitchWidget;
-import com.lowdragmc.lowdraglib2.gui.widget.Widget;
-import com.lowdragmc.lowdraglib2.gui.widget.WidgetGroup;
-import com.lowdragmc.lowdraglib2.utils.LocalizationUtils;
+import com.lowdragmc.lowdraglib2.gui.texture.IGuiTexture;
+import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.Button;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.Label;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.TextField;
 import it.unimi.dsi.fastutil.ints.Int2IntFunction;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenCustomHashMap;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 
 public class ConveyorCover extends CoverBehavior implements IIOCover, IUICover, IControllable {
 
@@ -81,7 +81,7 @@ public class ConveyorCover extends CoverBehavior implements IIOCover, IUICover, 
     @Getter
     protected boolean isWorkingEnabled = true;
     protected int itemsLeftToTransferLastSecond;
-    private Widget ioModeSwitch;
+    private Button ioModeSwitch;
 
     @SaveField
     @SyncToClient
@@ -104,6 +104,34 @@ public class ConveyorCover extends CoverBehavior implements IIOCover, IUICover, 
                 .onFilterLoaded(f -> configureFilter())
                 .onFilterUpdated(f -> configureFilter())
                 .onFilterRemoved(f -> configureFilter());
+    }
+
+    @Override
+    public int getTransferRate() {
+        return transferRate;
+    }
+
+    @Override
+    public IO getIo() {
+        return io;
+    }
+
+    public DistributionMode getDistributionMode() {
+        return distributionMode;
+    }
+
+    @Override
+    public ManualIOMode getManualIOMode() {
+        return manualIOMode;
+    }
+
+    @Override
+    public boolean isWorkingEnabled() {
+        return isWorkingEnabled;
+    }
+
+    public FilterHandler<ItemStack, ItemFilter> getFilterHandler() {
+        return filterHandler;
     }
 
     public ConveyorCover(CoverDefinition definition, ICoverable coverHolder, Direction attachedSide, int tier) {
@@ -390,19 +418,28 @@ public class ConveyorCover extends CoverBehavior implements IIOCover, IUICover, 
         return result;
     }
 
-    @AllArgsConstructor
     protected static class TypeItemInfo {
 
         public final ItemStack itemStack;
         public final IntList slots;
         public int totalCount;
+
+        public TypeItemInfo(ItemStack itemStack, IntList slots, int totalCount) {
+            this.itemStack = itemStack;
+            this.slots = slots;
+            this.totalCount = totalCount;
+        }
     }
 
-    @AllArgsConstructor
     protected static class GroupItemInfo {
 
         public final ItemStack itemStack;
         public int totalCount;
+
+        public GroupItemInfo(ItemStack itemStack, int totalCount) {
+            this.itemStack = itemStack;
+            this.totalCount = totalCount;
+        }
     }
 
     public boolean shouldRespectDistributionMode() {
@@ -416,48 +453,99 @@ public class ConveyorCover extends CoverBehavior implements IIOCover, IUICover, 
     // *********** GUI ***********//
     //////////////////////////////////////
     @Override
-    public Widget createUIWidget() {
-        final var group = new WidgetGroup(0, 0, 176, 137);
-        group.addWidget(new LabelWidget(10, 5, Component.translatable(getUITitle(), EFValues.VN[tier]).getString()));
+    public UIElement createUIElement() {
+        final var group = new UIElement().layout(layout -> layout.width(176).height(137));
+        group.addChild(label(10, 5, Component.translatable(getUITitle(), EFValues.VN[tier]), 156));
 
-        group.addWidget(new IntInputWidget(10, 20, 156, 20, () -> this.transferRate, this::setTransferRate)
-                .setMin(1).setMax(maxItemTransferRate));
+        group.addChild(intInput(10, 20, 156, transferRate, 1, maxItemTransferRate, this::setTransferRate));
 
         final EnumSelectorWidget<DistributionMode> distributionSelector = new EnumSelectorWidget<>(146, 67, 20, 20,
                 DistributionMode.values(), distributionMode, this::setDistributionMode);
 
         distributionSelector.setVisible(shouldRespectDistributionMode());
-        group.addWidget(distributionSelector);
+        group.addChild(distributionSelector);
 
-        ioModeSwitch = new SwitchWidget(10, 45, 20, 20,
-                (clickData, value) -> {
-                    setIo(value ? IO.IN : IO.OUT);
-                    ioModeSwitch.setHoverTooltips(
-                            LocalizationUtils.format("cover.conveyor.mode", LocalizationUtils.format(io.tooltip)));
-                })
-                .setTexture(
-                        new GuiTextureGroup(GuiTextures.VANILLA_BUTTON, IO.OUT.icon),
-                        new GuiTextureGroup(GuiTextures.VANILLA_BUTTON, IO.IN.icon))
-                .setPressed(io == IO.IN)
-                .setHoverTooltips(
-                        LocalizationUtils.format("cover.conveyor.mode", LocalizationUtils.format(io.tooltip)));
-        group.addWidget(ioModeSwitch);
+        ioModeSwitch = button(10, 45, 20, 20);
+        ioModeSwitch.setOnServerClick(event -> {
+            setIo(io == IO.IN ? IO.OUT : IO.IN);
+            updateIOModeSwitch();
+        });
+        updateIOModeSwitch();
+        group.addChild(ioModeSwitch);
 
         if (shouldDisplayDistributionMode()) {
-            group.addWidget(new EnumSelectorWidget<>(146, 67, 20, 20,
+            group.addChild(new EnumSelectorWidget<>(146, 67, 20, 20,
                     DistributionMode.VALUES, distributionMode, this::setDistributionMode));
         }
 
-        group.addWidget(new EnumSelectorWidget<>(146, 107, 20, 20,
-                ManualIOMode.VALUES, manualIOMode, this::setManualIOMode)
-                .setHoverTooltips("cover.universal.manual_import_export.mode.description"));
+        group.addChild(new EnumSelectorWidget<>(146, 107, 20, 20,
+                ManualIOMode.VALUES, manualIOMode, this::setManualIOMode));
 
-        group.addWidget(filterHandler.createFilterSlotUI(125, 108));
-        group.addWidget(filterHandler.createFilterConfigUI(10, 72, 156, 60));
+        group.addChild(filterHandler.createFilterSlotUI(125, 108));
+        group.addChild(filterHandler.createFilterConfigUI(10, 72, 156, 60));
 
         buildAdditionalUI(group);
 
         return group;
+    }
+
+    protected Label label(int x, int y, Component component, int width) {
+        Label label = new Label();
+        label.setValue(component);
+        label.layout(layout -> layout.left(x).top(y).width(width).height(10));
+        label.textStyle(style -> style.textColor(0x404040).textShadow(false));
+        return label;
+    }
+
+    protected Label label(int x, int y, String translationKey, int width) {
+        return label(x, y, Component.translatable(translationKey), width);
+    }
+
+    protected TextField intInput(int x, int y, int width, int value, int min, int max, Consumer<Integer> setter) {
+        TextField field = new TextField();
+        field.layout(layout -> layout.left(x).top(y).width(width).height(20));
+        field.style(style -> style.background(GuiTextures.DISPLAY));
+        field.textFieldStyle(style -> style.textColor(0x404040).textShadow(false));
+        field.setNumbersOnlyInt(min, max);
+        field.setText(String.valueOf(value));
+        field.setTextResponder(text -> {
+            if (!text.isBlank()) {
+                setter.accept(Integer.parseInt(text));
+            }
+        });
+        return field;
+    }
+
+    protected Button button(int x, int y, int width, int height) {
+        Button button = new Button().noText();
+        button.layout(layout -> layout.left(x).top(y).width(width).height(height));
+        return button;
+    }
+
+    protected Button toggleButton(int x, int y, int width, int height, IGuiTexture icon, BooleanSupplier getter,
+                                  Consumer<Boolean> setter) {
+        Button button = button(x, y, width, height);
+        Consumer<Button> update = b -> {
+            IGuiTexture texture = new GuiTextureGroup(GuiTextures.VANILLA_BUTTON.copy()
+                    .setColor(getter.getAsBoolean() ? 0xffa0ffa0 : -1), icon);
+            b.buttonStyle(style -> style.baseTexture(texture).hoverTexture(texture).pressedTexture(texture));
+        };
+        update.accept(button);
+        button.setOnServerClick(event -> {
+            setter.accept(!getter.getAsBoolean());
+            update.accept(button);
+        });
+        return button;
+    }
+
+    private void updateIOModeSwitch() {
+        if (ioModeSwitch == null) {
+            return;
+        }
+        IGuiTexture texture = new GuiTextureGroup(GuiTextures.VANILLA_BUTTON, io.icon);
+        ioModeSwitch.buttonStyle(style -> style.baseTexture(texture).hoverTexture(texture).pressedTexture(texture));
+        ioModeSwitch.style(style -> style.tooltips(Component.translatable("cover.conveyor.mode",
+                Component.translatable(io.tooltip))));
     }
 
     private boolean shouldDisplayDistributionMode() {
@@ -472,7 +560,7 @@ public class ConveyorCover extends CoverBehavior implements IIOCover, IUICover, 
         return "cover.conveyor.title";
     }
 
-    protected void buildAdditionalUI(WidgetGroup group) {
+    protected void buildAdditionalUI(UIElement group) {
         // Do nothing in the base implementation. This is intended to be overridden by subclasses.
     }
 

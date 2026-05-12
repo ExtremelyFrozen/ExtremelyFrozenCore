@@ -1,5 +1,5 @@
 {
-	"parent": "gtceu:block/cube/emissive/default",
+	"parent": "extfrocore:block/cube/emissive/default",
 	"textures": {
 		"particle": "#all",
 		"down": "#all",

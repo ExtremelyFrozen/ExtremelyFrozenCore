@@ -6,8 +6,6 @@ import com.extfro.extfrocore.api.capability.GTCapabilityHelper;
 import com.extfro.extfrocore.api.capability.IMonitorComponent;
 import com.extfro.extfrocore.api.capability.recipe.IO;
 import com.extfro.extfrocore.api.gui.GuiTextures;
-import com.extfro.extfrocore.api.gui.widget.IntInputWidget;
-import com.extfro.extfrocore.api.gui.widget.SlotWidget;
 import com.extfro.extfrocore.api.item.IComponentItem;
 import com.extfro.extfrocore.api.item.component.IItemComponent;
 import com.extfro.extfrocore.api.item.component.IMonitorModuleItem;
@@ -28,7 +26,6 @@ import com.extfro.extfrocore.common.machine.multiblock.electric.monitor.MonitorG
 import com.extfro.extfrocore.common.machine.trait.CentralMonitorLogic;
 import com.extfro.extfrocore.common.network.packets.SCPacketMonitorGroupNBTChange;
 import com.extfro.extfrocore.data.lang.LangHandler;
-import com.extfro.extfrocore.utils.GTStringUtils;
 
 import net.minecraft.MethodsReturnNonnullByDefault;
 import net.minecraft.core.BlockPos;
@@ -44,12 +41,15 @@ import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.lowdragmc.lowdraglib2.gui.texture.*;
-import com.lowdragmc.lowdraglib2.gui.widget.*;
+import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.Button;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.ItemSlot;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.ScrollerView;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.TextField;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.awt.*;
 import java.util.*;
 import java.util.List;
 import java.util.function.Consumer;
@@ -301,6 +301,26 @@ public class CentralMonitorMachine extends WorkableElectricMultiblockMachine
         return monitorGroups.stream().anyMatch(group -> group.contains(component.getBlockPos()));
     }
 
+    public int getLeftDist() {
+        return leftDist;
+    }
+
+    public int getRightDist() {
+        return rightDist;
+    }
+
+    public int getUpDist() {
+        return upDist;
+    }
+
+    public int getDownDist() {
+        return downDist;
+    }
+
+    public List<MonitorGroup> getMonitorGroups() {
+        return monitorGroups;
+    }
+
     @Override
     public void addDisplayText(List<Component> textList) {
         MultiblockDisplayText.builder(textList, isFormed())
@@ -309,25 +329,37 @@ public class CentralMonitorMachine extends WorkableElectricMultiblockMachine
     }
 
     @Override
-    public Widget createUIWidget() {
+    public UIElement createUIWidget() {
         updateStructureDimensions();
         selectedComponents.clear();
-        WidgetGroup builder = (WidgetGroup) super.createUIWidget();
+        UIElement builder = super.createUIWidget();
 
-        WidgetGroup main = new WidgetGroup();
-        DraggableScrollableWidgetGroup componentSelection = new DraggableScrollableWidgetGroup(0, 10, 200, 110);
-        main.addWidget(componentSelection);
-        WidgetGroup options = new WidgetGroup(-100, 20, 60, 20);
-        WidgetGroup groupConfig = new WidgetGroup(10, 30, 100, 100);
+        UIElement main = new UIElement().layout(layout -> layout.left(0).top(0).width(240).height(140));
+        ScrollerView componentSelection = new ScrollerView();
+        componentSelection.layout(layout -> layout.left(0).top(10).width(200).height(110));
+        componentSelection.style(style -> style.background(GuiTextures.DISPLAY));
+        main.addChild(componentSelection);
+        UIElement options = new UIElement().layout(layout -> layout.left(-100).top(20).width(70).height(60));
+        UIElement groupConfig = new UIElement().layout(layout -> layout.left(10).top(30).width(230).height(150));
         groupConfig.setVisible(false);
 
-        ButtonWidget infoWidget = new ButtonWidget(200, 10, 20, 20, null);
-        infoWidget.setButtonTexture(GuiTextures.INFO_ICON);
-        infoWidget.setHoverTooltips(
-                GTStringUtils.toImmutable(LangHandler.getSingleOrMultiLang("gtceu.central_monitor.info_tooltip")));
-        builder.addWidget(infoWidget);
+        Button infoWidget = iconButton(200, 10, 20, 20, GuiTextures.INFO_ICON);
+        infoWidget.style(style -> style.tooltips(
+                LangHandler.getSingleOrMultiLang("gtceu.central_monitor.info_tooltip").toArray(Component[]::new)));
+        builder.addChild(infoWidget);
         List<@Nullable MonitorGroup> configGroup = new ArrayList<>();
         configGroup.add(null);
+        List<List<Runnable>> imageButtons = new ArrayList<>();
+        Map<BlockPos, Runnable> rightClickCallbacks = new HashMap<>();
+        int[] dataSlot = new int[] { 1, 9 };
+        TextField dataSlotInput = intInput(120, 0, 60, 14, dataSlot[0], 1, dataSlot[1], n -> dataSlot[0] = n);
+        dataSlotInput.setVisible(false);
+        builder.addChild(dataSlotInput);
+
+        ScrollerView groupList = new ScrollerView();
+        groupList.layout(layout -> layout.left(-100).top(50).width(85).height(80));
+        groupList.style(style -> style.background(GuiTextures.DISPLAY));
+        builder.addChild(groupList);
 
         Consumer<@Nullable MonitorGroup> openGroupConfig = (group) -> {
             configGroup.set(0, group);
@@ -336,98 +368,81 @@ public class CentralMonitorMachine extends WorkableElectricMultiblockMachine
                 groupConfig.setVisible(false);
                 return;
             }
-            groupConfig.clearAllWidgets();
-            groupConfig.addWidget(new LabelWidget(0, 5, () -> {
-                String currentName = "";
-                if (configGroup.get(0) != null) {
-                    currentName = configGroup.get(0).getName();
-                }
-                return Component.translatable("gtceu.central_monitor.gui.currently_editing", currentName).getString();
-            }));
+            groupConfig.clearAllChildren();
+            groupConfig.addChild(label(0, 5, 150, 12,
+                    Component.translatable("gtceu.central_monitor.gui.currently_editing", group.getName())));
             for (int i = 0; i < 8; i++) {
-                SlotWidget slot = new SlotWidget(group.getPlaceholderSlotsHandler(), i, -38, 16 * i + 46);
-                slot.setHoverTooltips(GTStringUtils
-                        .toImmutable(LangHandler.getMultiLang("gtceu.gui.computer_monitor_cover.slot_tooltip", i + 1)));
-                groupConfig.addWidget(slot);
+                ItemSlot slot = new ItemSlot().bind(group.getPlaceholderSlotsHandler(), i);
+                slot.layout(layout -> layout.left(-38).top(16 * i + 46).width(18).height(18));
+                slot.style(style -> style.background(GuiTextures.SLOT).tooltips(LangHandler
+                        .getMultiLang("gtceu.gui.computer_monitor_cover.slot_tooltip", i + 1)
+                        .toArray(Component[]::new)));
+                groupConfig.addChild(slot);
             }
-            SlotWidget slot = new SlotWidget(
-                    group.getItemStackHandler(), 0,
-                    0, 20);
-            WidgetGroup itemUI = new WidgetGroup(40, 20, 100, 100);
-            Runnable changeListener = () -> {
-                if (slot.getLastItem().is(slot.getItem().getItem())) return;
-                itemUI.clearAllWidgets();
-                if (slot.getItem().getItem() instanceof IComponentItem item) {
+            ItemSlot moduleSlot = new ItemSlot().bind(group.getItemStackHandler(), 0);
+            moduleSlot.layout(layout -> layout.left(0).top(20).width(18).height(18));
+            moduleSlot.style(style -> style.background(GuiTextures.SLOT));
+            UIElement itemUI = new UIElement().layout(layout -> layout.left(40).top(20).width(190).height(130));
+            Runnable refreshModuleUI = () -> {
+                itemUI.clearAllChildren();
+                ItemStack stack = group.getItemStackHandler().getStackInSlot(0);
+                if (stack.getItem() instanceof IComponentItem item) {
                     for (IItemComponent component : item.getComponents()) {
                         if (component instanceof IMonitorModuleItem module) {
-                            itemUI.addWidget(module.createUIWidget(slot.getItem(), this, group));
+                            itemUI.addChild(module.createUIWidget(stack, this, group));
                         }
                     }
                 }
             };
-            slot.setChangeListener(changeListener);
-            changeListener.run();
-            groupConfig.addWidget(itemUI);
-            groupConfig.addWidget(slot);
+            moduleSlot.registerValueListener(stack -> refreshModuleUI.run());
+            refreshModuleUI.run();
+            groupConfig.addChild(itemUI);
+            groupConfig.addChild(moduleSlot);
             main.setVisible(false);
             groupConfig.setVisible(true);
         };
-        builder.addWidget(groupConfig);
-        DraggableScrollableWidgetGroup groupList = new DraggableScrollableWidgetGroup(-100, 50, 70, 80);
+        builder.addChild(groupConfig);
 
-        List<List<Consumer<Iterator<IMonitorComponent>>>> imageButtons = new ArrayList<>();
-        Map<BlockPos, Runnable> rightClickCallbacks = new HashMap<>();
-        int[] dataSlot = new int[2]; // list to be able to modify it in lambdas
-        dataSlot[0] = 1; // the slot (index starts from 1)
-        dataSlot[1] = 9; // amount of slots
-        IntInputWidget dataSlotInput = new IntInputWidget(120, 20, 60, -20, () -> dataSlot[0],
-                n -> dataSlot[0] = Mth.clamp(n, 1, dataSlot[1]));
-        dataSlotInput.setVisible(false);
-        builder.addWidget(dataSlotInput);
-
+        int[] groupListY = { 5 };
         Consumer<MonitorGroup> addGroupToList = group -> {
-            ButtonWidget label = new ButtonWidget(20, groupList.widgets.size() * 15 + 5, 60, 10, null);
-            TextTexture text = new TextTexture(group.getName());
-            text.setType(TextTexture.TextType.LEFT);
-            label.setButtonTexture(text);
-            label.setOnPressCallback(click -> {
+            int y = groupListY[0];
+            Button labelButton = textButton(20, y, 60, 12, Component.literal(group.getName()));
+            labelButton.setOnClick(click -> {
                 group.getMonitorPositions().forEach(pos -> {
                     BlockPos rel = toRelative(pos);
                     if (imageButtons.size() - 1 < rel.getY()) return;
                     if (imageButtons.get(rel.getY()).size() - 1 < rel.getX()) return;
-                    imageButtons.get(rel.getY()).get(rel.getX()).accept(null);
+                    imageButtons.get(rel.getY()).get(rel.getX()).run();
                 });
                 if (group.getTargetRaw() != null) {
                     rightClickCallbacks.getOrDefault(group.getTargetRaw(), () -> {}).run();
                 }
             });
-            groupList.addWidget(label);
+            groupList.addScrollViewChild(labelButton);
 
-            ButtonWidget configButton = new ButtonWidget(
-                    0, label.getSelfPositionY() - 3,
-                    16, 16,
-                    GuiTextures.IO_CONFIG_COVER_SETTINGS,
-                    click -> {
-                        if (configGroup.get(0) == null) {
-                            openGroupConfig.accept(group);
-                        } else {
-                            openGroupConfig.accept(null);
-                        }
-                    });
-            groupList.addWidget(configButton);
+            Button configButton = iconButton(0, y - 3, 16, 16, GuiTextures.IO_CONFIG_COVER_SETTINGS);
+            configButton.setOnClick(click -> {
+                if (configGroup.get(0) == null) {
+                    openGroupConfig.accept(group);
+                } else {
+                    openGroupConfig.accept(null);
+                }
+            });
+            groupList.addScrollViewChild(configButton);
+            groupListY[0] += 15;
         };
 
         monitorGroups.forEach(addGroupToList);
-        builder.addWidget(groupList);
-        main.addWidget(options);
-        ButtonWidget removeFromGroupButton = new ButtonWidget(0, 0, 60, 20, null);
-        removeFromGroupButton.setButtonTexture(new TextTexture("gtceu.central_monitor.gui.remove_from_group"));
+        main.addChild(options);
+        Button removeFromGroupButton = textButton(0, 0, 70, 16,
+                Component.translatable("gtceu.central_monitor.gui.remove_from_group"));
         removeFromGroupButton.setVisible(false);
-        ButtonWidget setTargetButton = new ButtonWidget(0, 15, 60, 20, null);
-        setTargetButton.setButtonTexture(new TextTexture("gtceu.central_monitor.gui.set_target"));
+        Button setTargetButton = textButton(0, 18, 70, 16,
+                Component.translatable("gtceu.central_monitor.gui.set_target"));
         setTargetButton.setVisible(false);
-        ButtonWidget createGroupButton = new ButtonWidget(0, 0, 60, 20, null);
-        createGroupButton.setOnPressCallback(click -> {
+        Button createGroupButton = textButton(0, 0, 70, 16,
+                Component.translatable("gtceu.central_monitor.gui.create_group"));
+        createGroupButton.setOnServerClick(click -> {
             MonitorGroup group = new MonitorGroup(
                     Component.translatable("gtceu.gui.central_monitor.group_default_name", monitorGroups.size() + 1)
                             .getString());
@@ -444,13 +459,13 @@ public class CentralMonitorMachine extends WorkableElectricMultiblockMachine
             while (it.hasNext()) {
                 IMonitorComponent c = it.next();
                 BlockPos rel = toRelative(c.getBlockPos());
-                imageButtons.get(rel.getY()).get(rel.getX()).accept(it);
+                imageButtons.get(rel.getY()).get(rel.getX()).run();
             }
             if (!selectedTargets.isEmpty()) {
                 rightClickCallbacks.getOrDefault(selectedTargets.get(0).getBlockPos(), () -> {}).run();
             }
         });
-        setTargetButton.setOnPressCallback(click -> {
+        setTargetButton.setOnServerClick(click -> {
             MonitorGroup group = null;
             for (MonitorGroup group2 : monitorGroups) {
                 for (IMonitorComponent component : selectedComponents) {
@@ -468,7 +483,7 @@ public class CentralMonitorMachine extends WorkableElectricMultiblockMachine
                 group.setDataSlot(dataSlot[0] - 1);
             }
         });
-        removeFromGroupButton.setOnPressCallback(click -> {
+        removeFromGroupButton.setOnServerClick(click -> {
             for (MonitorGroup group : monitorGroups) {
                 for (IMonitorComponent component : selectedComponents) group.remove(component.getBlockPos());
             }
@@ -481,28 +496,26 @@ public class CentralMonitorMachine extends WorkableElectricMultiblockMachine
                     itg.remove();
                 }
             }
-            groupList.clearAllWidgets();
+            groupList.clearAllScrollViewChildren();
+            groupListY[0] = 5;
             monitorGroups.forEach(addGroupToList);
 
             removeFromGroupButton.setVisible(false);
             createGroupButton.setVisible(true);
-            Iterator<IMonitorComponent> it = selectedComponents.iterator();
-            while (it.hasNext()) {
-                IMonitorComponent c = it.next();
+            for (IMonitorComponent c : selectedComponents) {
                 BlockPos rel = toRelative(c.getBlockPos());
                 if (imageButtons.size() - 1 < rel.getY()) continue;
                 if (imageButtons.get(rel.getY()).size() - 1 < rel.getX()) continue;
-                imageButtons.get(rel.getY()).get(rel.getX()).accept(it);
+                imageButtons.get(rel.getY()).get(rel.getX()).run();
             }
             if (!selectedTargets.isEmpty()) {
                 rightClickCallbacks.getOrDefault(selectedTargets.get(0).getBlockPos(), () -> {}).run();
             }
         });
-        createGroupButton.setButtonTexture(new TextTexture("gtceu.central_monitor.gui.create_group"));
         createGroupButton.setVisible(false);
-        options.addWidget(removeFromGroupButton);
-        options.addWidget(createGroupButton);
-        options.addWidget(setTargetButton);
+        options.addChild(removeFromGroupButton);
+        options.addChild(createGroupButton);
+        options.addChild(setTargetButton);
         int startX = 20;
         int startY = 30;
         for (int row = 0; row <= downDist + upDist; row++) {
@@ -512,21 +525,17 @@ public class CentralMonitorMachine extends WorkableElectricMultiblockMachine
                 GuiTextureGroup textures = new GuiTextureGroup(texture, new ColorBorderTexture(2, 0xFFFFFF));
                 IMonitorComponent component = getComponent(row, col);
                 if (component == null) {
-                    imageButtons.getLast().add(it -> {});
+                    imageButtons.getLast().add(() -> {});
                     continue;
                 }
-                ButtonWidget img = new ButtonWidget(startX + (16 * col), startY + (16 * row), 16, 16, textures, null);
-                Consumer<Iterator<IMonitorComponent>> callback = (it) -> {
+                Button img = iconButton(startX + (16 * col), startY + (16 * row), 16, 16, textures);
+                Runnable callback = () -> {
                     if (!component.isMonitor()) return;
                     if (selectedComponents.contains(component)) {
-                        if (it == null) {
-                            selectedComponents.remove(component);
-                        } else {
-                            it.remove();
-                        }
+                        selectedComponents.remove(component);
 
                         if (!selectedTargets.isEmpty() && selectedTargets.get(0) == component) {
-                            ColorRectTexture rect = new ColorRectTexture(Color.BLUE);
+                            ColorRectTexture rect = new ColorRectTexture(0x800000ff);
                             textures.setTextures(rect, texture);
                         } else {
                             textures.setTextures(texture);
@@ -556,20 +565,20 @@ public class CentralMonitorMachine extends WorkableElectricMultiblockMachine
                         }
                         selectedComponents.add(component);
                         ColorRectTexture rect = new ColorRectTexture(
-                                (selectedTargets.isEmpty() || selectedTargets.get(0) != component) ? Color.RED :
-                                        Color.PINK);
+                                (selectedTargets.isEmpty() || selectedTargets.get(0) != component) ? 0x80ff0000 :
+                                        0x80ff80c0);
                         textures.setTextures(rect, texture);
                     }
                     if (isInAnyGroup(component)) {
                         monitorGroups.forEach(group -> {
                             if (group.contains(component.getBlockPos())) {
-                                img.setHoverTooltips(
-                                        Component.translatable("gtceu.gui.central_monitor.group", group.getName()));
+                                img.style(style -> style.tooltips(
+                                        Component.translatable("gtceu.gui.central_monitor.group", group.getName())));
                             }
                         });
                     } else {
-                        img.setHoverTooltips(Component.translatable("gtceu.gui.central_monitor.group",
-                                Component.translatable("gtceu.gui.central_monitor.none")));
+                        img.style(style -> style.tooltips(Component.translatable("gtceu.gui.central_monitor.group",
+                                Component.translatable("gtceu.gui.central_monitor.none"))));
                     }
                 };
                 Runnable rightClickCallback = () -> {
@@ -577,7 +586,7 @@ public class CentralMonitorMachine extends WorkableElectricMultiblockMachine
                         if (selectedTargets.get(0).getBlockPos() == component.getBlockPos()) {
                             selectedTargets.clear();
                             if (selectedComponents.contains(component)) {
-                                ColorRectTexture rect = new ColorRectTexture(Color.RED);
+                                ColorRectTexture rect = new ColorRectTexture(0x80ff0000);
                                 textures.setTextures(rect, texture);
                             } else {
                                 textures.setTextures(texture);
@@ -598,9 +607,9 @@ public class CentralMonitorMachine extends WorkableElectricMultiblockMachine
                     selectedTargets.add(component);
                     ColorRectTexture rect;
                     if (selectedComponents.contains(component)) {
-                        rect = new ColorRectTexture(Color.PINK);
+                        rect = new ColorRectTexture(0x80ff80c0);
                     } else {
-                        rect = new ColorRectTexture(Color.BLUE);
+                        rect = new ColorRectTexture(0x800000ff);
                     }
                     textures.setTextures(rect, texture);
                     if (component.getDataItems() != null) {
@@ -627,29 +636,62 @@ public class CentralMonitorMachine extends WorkableElectricMultiblockMachine
                 };
                 if (isInAnyGroup(component)) {
                     monitorGroups.forEach(group -> {
-                        if (group.contains(component.getBlockPos())) img.setHoverTooltips(
-                                Component.translatable("gtceu.gui.central_monitor.group", group.getName()));
+                        if (group.contains(component.getBlockPos())) img.style(style -> style.tooltips(
+                                Component.translatable("gtceu.gui.central_monitor.group", group.getName())));
                     });
                 } else {
-                    img.setHoverTooltips(Component.translatable("gtceu.gui.central_monitor.group",
-                            Component.translatable("gtceu.gui.central_monitor.none")));
+                    img.style(style -> style.tooltips(Component.translatable("gtceu.gui.central_monitor.group",
+                            Component.translatable("gtceu.gui.central_monitor.none"))));
                 }
-                img.setOnPressCallback(click -> {
-                    if (click.button == 0) callback.accept(null);
+                img.setOnClick(click -> {
+                    if (click.button == 0) callback.run();
                     else if (click.button == 1) rightClickCallback.run();
                 });
-                componentSelection.addWidget(img);
+                componentSelection.addScrollViewChild(img);
                 imageButtons.getLast().add(callback);
                 rightClickCallbacks.put(component.getBlockPos(), rightClickCallback);
             }
         }
-        builder.addWidget(main);
+        builder.addChild(main);
         return builder;
     }
 
     @Override
     public IGuiTexture getComponentIcon() {
-        return ResourceTexture.fromSpirit(ExtForCore.id("block/multiblock/network_switch/overlay_front_active"));
+        return SpriteTexture.of("extfrocore:textures/block/multiblock/network_switch/overlay_front_active.png");
+    }
+
+    private Button iconButton(int x, int y, int width, int height, IGuiTexture texture) {
+        Button button = new Button().noText();
+        button.layout(layout -> layout.left(x).top(y).width(width).height(height));
+        button.buttonStyle(style -> style.baseTexture(texture).hoverTexture(texture).pressedTexture(texture));
+        return button;
+    }
+
+    private Button textButton(int x, int y, int width, int height, Component text) {
+        IGuiTexture texture = new GuiTextureGroup(GuiTextures.VANILLA_BUTTON,
+                new TextTexture(text.getString()).setType(TextTexture.TextType.LEFT).setWidth(width - 4));
+        Button button = new Button().noText();
+        button.layout(layout -> layout.left(x).top(y).width(width).height(height));
+        button.buttonStyle(style -> style.baseTexture(texture).hoverTexture(texture).pressedTexture(texture));
+        button.style(style -> style.tooltips(text));
+        return button;
+    }
+
+    private TextField intInput(int x, int y, int width, int height, int value, int min, int max,
+                               Consumer<Integer> setter) {
+        TextField field = new TextField();
+        field.layout(layout -> layout.left(x).top(y).width(width).height(height));
+        field.style(style -> style.background(GuiTextures.DISPLAY));
+        field.textFieldStyle(style -> style.textColor(0x404040).textShadow(false));
+        field.setNumbersOnlyInt(min, max);
+        field.setText(String.valueOf(value));
+        field.setTextResponder(text -> {
+            if (!text.isBlank()) {
+                setter.accept(Mth.clamp(Integer.parseInt(text), min, max));
+            }
+        });
+        return field;
     }
 
     @Override

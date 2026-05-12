@@ -21,6 +21,16 @@ public enum TransferMode implements EnumSelectorWidget.SelectableEnum {
     TransferMode(String tooltip, String textureName, int maxStackSize) {
         this.tooltip = tooltip;
         this.maxStackSize = maxStackSize;
-        this.icon = SpriteTexture.of("gtceu:textures/gui/icon/transfer_mode/" + textureName + ".png");
+        this.icon = SpriteTexture.of("extfrocore:textures/gui/icon/transfer_mode/" + textureName + ".png");
+    }
+
+    @Override
+    public String getTooltip() {
+        return tooltip;
+    }
+
+    @Override
+    public IGuiTexture getIcon() {
+        return icon;
     }
 }

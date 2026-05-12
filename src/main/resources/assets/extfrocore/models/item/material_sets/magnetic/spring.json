@@ -1,6 +1,6 @@
 {
-	"parent": "gtceu:item/material_sets/dull/spring",
+	"parent": "extfrocore:item/material_sets/dull/spring",
 	"textures": {
-		"layer2": "gtceu:item/material_sets/magnetic/magnetic_overlay"
+		"layer2": "extfrocore:item/material_sets/magnetic/magnetic_overlay"
 	}
 }

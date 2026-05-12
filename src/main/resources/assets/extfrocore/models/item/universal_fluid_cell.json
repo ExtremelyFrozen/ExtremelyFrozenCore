@@ -2,8 +2,8 @@
 	"loader": "neoforge:fluid_container",
 	"parent": "neoforge:item/default",
 	"textures": {
-		"base": "gtceu:item/universal_fluid_cell/base",
-		"fluid": "gtceu:item/universal_fluid_cell/overlay"
+		"base": "extfrocore:item/universal_fluid_cell/base",
+		"fluid": "extfrocore:item/universal_fluid_cell/overlay"
 	},
 	"fluid": "minecraft:empty"
 }

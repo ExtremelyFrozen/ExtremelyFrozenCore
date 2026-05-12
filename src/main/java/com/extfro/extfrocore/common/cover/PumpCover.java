@@ -11,9 +11,8 @@ import com.extfro.extfrocore.api.cover.IUICover;
 import com.extfro.extfrocore.api.cover.filter.FilterHandler;
 import com.extfro.extfrocore.api.cover.filter.FilterHandlers;
 import com.extfro.extfrocore.api.cover.filter.FluidFilter;
+import com.extfro.extfrocore.api.gui.GuiTextures;
 import com.extfro.extfrocore.api.gui.widget.EnumSelectorWidget;
-import com.extfro.extfrocore.api.gui.widget.IntInputWidget;
-import com.extfro.extfrocore.api.gui.widget.NumberInputWidget;
 import com.extfro.extfrocore.api.machine.ConditionalSubscriptionHandler;
 import com.extfro.extfrocore.api.sync_system.annotations.RerenderOnChanged;
 import com.extfro.extfrocore.api.sync_system.annotations.SaveField;
@@ -34,9 +33,9 @@ import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler;
 
-import com.lowdragmc.lowdraglib2.gui.widget.LabelWidget;
-import com.lowdragmc.lowdraglib2.gui.widget.Widget;
-import com.lowdragmc.lowdraglib2.gui.widget.WidgetGroup;
+import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.Label;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.TextField;
 import it.unimi.dsi.fastutil.ints.Int2IntFunction;
 import it.unimi.dsi.fastutil.objects.Object2LongMap;
 import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
@@ -46,6 +45,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Consumer;
 
 public class PumpCover extends CoverBehavior implements IIOCover, IUICover, IControllable {
 
@@ -82,7 +82,7 @@ public class PumpCover extends CoverBehavior implements IIOCover, IUICover, ICon
     @SyncToClient
     protected final FilterHandler<FluidStack, FluidFilter> filterHandler;
     protected final ConditionalSubscriptionHandler subscriptionHandler;
-    private NumberInputWidget<Integer> transferRateWidget;
+    private TextField transferRateWidget;
 
     public PumpCover(CoverDefinition definition, ICoverable coverHolder, Direction attachedSide, int tier,
                      int maxTransferRate) {
@@ -98,6 +98,30 @@ public class PumpCover extends CoverBehavior implements IIOCover, IUICover, ICon
                 .onFilterLoaded(f -> configureFilter())
                 .onFilterUpdated(f -> configureFilter())
                 .onFilterRemoved(f -> configureFilter());
+    }
+
+    @Override
+    public int getTransferRate() {
+        return transferRate;
+    }
+
+    @Override
+    public IO getIo() {
+        return io;
+    }
+
+    public BucketMode getBucketMode() {
+        return bucketMode;
+    }
+
+    @Override
+    public ManualIOMode getManualIOMode() {
+        return manualIOMode;
+    }
+
+    @Override
+    public boolean isWorkingEnabled() {
+        return isWorkingEnabled;
     }
 
     public PumpCover(CoverDefinition definition, ICoverable coverHolder, Direction attachedSide, int tier) {
@@ -184,13 +208,13 @@ public class PumpCover extends CoverBehavior implements IIOCover, IUICover, ICon
         if (transferRateWidget == null) return;
 
         if (oldMultiplier > newMultiplier) {
-            transferRateWidget.setValue(getCurrentBucketModeTransferRate());
+            transferRateWidget.setText(String.valueOf(getCurrentBucketModeTransferRate()), false);
         }
 
-        transferRateWidget.setMax(maxFluidTransferRate / bucketMode.multiplier);
+        transferRateWidget.setNumbersOnlyInt(0, maxFluidTransferRate / bucketMode.multiplier);
 
         if (newMultiplier > oldMultiplier) {
-            transferRateWidget.setValue(getCurrentBucketModeTransferRate());
+            transferRateWidget.setText(String.valueOf(getCurrentBucketModeTransferRate()), false);
         }
     }
 
@@ -276,28 +300,27 @@ public class PumpCover extends CoverBehavior implements IIOCover, IUICover, ICon
     //////////////////////////////////////
 
     @Override
-    public Widget createUIWidget() {
-        final var group = new WidgetGroup(0, 0, 176, 137);
-        group.addWidget(new LabelWidget(10, 5, Component.translatable(getUITitle(), EFValues.VN[tier]).getString()));
+    public UIElement createUIElement() {
+        final var group = new UIElement().layout(layout -> layout.width(176).height(137));
+        group.addChild(label(10, 5, Component.translatable(getUITitle(), EFValues.VN[tier]), 156));
 
-        transferRateWidget = new IntInputWidget(10, 20, 134, 20,
-                this::getCurrentBucketModeTransferRate, this::setCurrentBucketModeTransferRate).setMin(0);
+        transferRateWidget = intInput(10, 20, 134, getCurrentBucketModeTransferRate(),
+                0, maxFluidTransferRate / bucketMode.multiplier, this::setCurrentBucketModeTransferRate);
         setBucketMode(this.bucketMode); // initial input widget config happens here
-        group.addWidget(transferRateWidget);
+        group.addChild(transferRateWidget);
 
-        group.addWidget(new EnumSelectorWidget<>(
+        group.addChild(new EnumSelectorWidget<>(
                 146, 20, 20, 20,
                 Arrays.stream(BucketMode.values()).filter(m -> m.multiplier <= maxFluidTransferRate).toList(),
                 bucketMode, this::setBucketMode).setTooltipSupplier(this::getBucketModeTooltip));
 
-        group.addWidget(new EnumSelectorWidget<>(10, 45, 20, 20, List.of(IO.IN, IO.OUT), io, this::setIo));
+        group.addChild(new EnumSelectorWidget<>(10, 45, 20, 20, List.of(IO.IN, IO.OUT), io, this::setIo));
 
-        group.addWidget(new EnumSelectorWidget<>(146, 107, 20, 20,
-                ManualIOMode.VALUES, manualIOMode, this::setManualIOMode)
-                .setHoverTooltips("cover.universal.manual_import_export.mode.description"));
+        group.addChild(new EnumSelectorWidget<>(146, 107, 20, 20,
+                ManualIOMode.VALUES, manualIOMode, this::setManualIOMode));
 
-        group.addWidget(filterHandler.createFilterSlotUI(125, 108));
-        group.addWidget(filterHandler.createFilterConfigUI(10, 72, 156, 60));
+        group.addChild(filterHandler.createFilterSlotUI(125, 108));
+        group.addChild(filterHandler.createFilterConfigUI(10, 72, 156, 60));
 
         buildAdditionalUI(group);
 
@@ -307,6 +330,29 @@ public class PumpCover extends CoverBehavior implements IIOCover, IUICover, ICon
     private List<Component> getBucketModeTooltip(BucketMode mode, String langKey) {
         return List.of(
                 Component.translatable(langKey).append(Component.translatable("gtceu.gui.content.units.per_tick")));
+    }
+
+    protected Label label(int x, int y, Component component, int width) {
+        Label label = new Label();
+        label.setValue(component);
+        label.layout(layout -> layout.left(x).top(y).width(width).height(10));
+        label.textStyle(style -> style.textColor(0x404040).textShadow(false));
+        return label;
+    }
+
+    protected TextField intInput(int x, int y, int width, int value, int min, int max, Consumer<Integer> setter) {
+        TextField field = new TextField();
+        field.layout(layout -> layout.left(x).top(y).width(width).height(20));
+        field.style(style -> style.background(GuiTextures.DISPLAY));
+        field.textFieldStyle(style -> style.textColor(0x404040).textShadow(false));
+        field.setNumbersOnlyInt(min, max);
+        field.setText(String.valueOf(value));
+        field.setTextResponder(text -> {
+            if (!text.isBlank()) {
+                setter.accept(Integer.parseInt(text));
+            }
+        });
+        return field;
     }
 
     private int getCurrentBucketModeTransferRate() {
@@ -322,7 +368,7 @@ public class PumpCover extends CoverBehavior implements IIOCover, IUICover, ICon
         return "cover.pump.title";
     }
 
-    protected void buildAdditionalUI(WidgetGroup group) {
+    protected void buildAdditionalUI(UIElement group) {
         // Do nothing in the base implementation. This is intended to be overridden by subclasses.
     }
 

@@ -11,8 +11,7 @@ import com.extfro.extfrocore.api.sync_system.annotations.SyncToClient;
 
 import net.minecraft.core.Direction;
 
-import com.lowdragmc.lowdraglib2.gui.widget.Widget;
-import com.lowdragmc.lowdraglib2.gui.widget.WidgetGroup;
+import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
 import lombok.Getter;
 
 import java.util.UUID;
@@ -74,8 +73,8 @@ public class EnderRedstoneLinkCover extends AbstractEnderLinkCover<VirtualRedsto
     }
 
     @Override
-    protected Widget addVirtualEntryWidget(VirtualEntry entry, int x, int y, int width, int height, boolean canClick) {
-        return new WidgetGroup(x, y, width, height);
+    protected UIElement addVirtualEntryWidget(VirtualEntry entry, int x, int y, int width, int height, boolean canClick) {
+        return new UIElement().layout(layout -> layout.left(x).top(y).width(width).height(height));
     }
 
     @Override

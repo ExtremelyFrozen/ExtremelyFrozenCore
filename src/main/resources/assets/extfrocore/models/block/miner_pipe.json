@@ -2,8 +2,8 @@
 	"parent": "block/block",
 	"textures": {
 		"particle": "#side",
-		"side": "gtceu:block/pipe/miner_pipe",
-		"end": "gtceu:block/pipe/pipe_normal_in"
+		"side": "extfrocore:block/pipe/miner_pipe",
+		"end": "extfrocore:block/pipe/pipe_normal_in"
 	},
 	"elements": [
 		{

@@ -8,10 +8,7 @@ import com.extfro.extfrocore.api.cover.CoverDefinition;
 import com.extfro.extfrocore.api.cover.IUICover;
 import com.extfro.extfrocore.api.cover.filter.FilterHandler;
 import com.extfro.extfrocore.api.gui.GuiTextures;
-import com.extfro.extfrocore.api.gui.widget.ColorBlockWidget;
-import com.extfro.extfrocore.api.gui.widget.ConfirmTextInputWidget;
 import com.extfro.extfrocore.api.gui.widget.EnumSelectorWidget;
-import com.extfro.extfrocore.api.gui.widget.ToggleButtonWidget;
 import com.extfro.extfrocore.api.machine.ConditionalSubscriptionHandler;
 import com.extfro.extfrocore.api.machine.MachineCoverContainer;
 import com.extfro.extfrocore.api.misc.virtualregistry.EntryTypes;
@@ -26,7 +23,9 @@ import com.extfro.extfrocore.common.cover.data.ManualIOMode;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 
@@ -34,7 +33,15 @@ import com.lowdragmc.lowdraglib2.gui.ColorPattern;
 import com.lowdragmc.lowdraglib2.gui.texture.GuiTextureGroup;
 import com.lowdragmc.lowdraglib2.gui.texture.IGuiTexture;
 import com.lowdragmc.lowdraglib2.gui.texture.TextTexture;
-import com.lowdragmc.lowdraglib2.gui.widget.*;
+import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.Button;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.Label;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.ScrollerView;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.TextField;
+import com.lowdragmc.lowdraglib2.gui.ui.event.UIEvents;
+import com.lowdragmc.lowdraglib2.gui.ui.rendering.GUIContext;
+import com.lowdragmc.lowdraglib2.gui.sync.rpc.RPCEmitter;
+import com.lowdragmc.lowdraglib2.gui.sync.rpc.RPCEventBuilder;
 import lombok.Getter;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.jetbrains.annotations.Contract;
@@ -71,7 +78,7 @@ public abstract class AbstractEnderLinkCover<T extends VirtualEntry> extends Cov
     @SyncToClient
     @RerenderOnChanged
     protected IO io = IO.OUT;
-    protected VirtualEntryWidget virtualEntryWidget;
+    protected VirtualEntryElement virtualEntryElement;
     @SyncToClient
     boolean isAnyChanged = false;
 
@@ -116,7 +123,7 @@ public abstract class AbstractEnderLinkCover<T extends VirtualEntry> extends Cov
 
     @Override
     public void onUIClosed() {
-        virtualEntryWidget = null;
+        virtualEntryElement = null;
     }
 
     @Override
@@ -128,9 +135,14 @@ public abstract class AbstractEnderLinkCover<T extends VirtualEntry> extends Cov
     }
 
     @Override
-    public @NotNull Widget createUIWidget() {
-        virtualEntryWidget = new VirtualEntryWidget(this);
-        return virtualEntryWidget;
+    public boolean isWorkingEnabled() {
+        return isWorkingEnabled;
+    }
+
+    @Override
+    public @NotNull UIElement createUIElement() {
+        virtualEntryElement = new VirtualEntryElement(this);
+        return virtualEntryElement;
     }
 
     public void setIo(IO io) {
@@ -141,10 +153,22 @@ public abstract class AbstractEnderLinkCover<T extends VirtualEntry> extends Cov
         }
     }
 
+    public Permissions getPermission() {
+        return permission;
+    }
+
+    public ManualIOMode getManualIOMode() {
+        return manualIOMode;
+    }
+
+    public IO getIo() {
+        return io;
+    }
+
     public UUID getOwner() {
         if (permission == Permissions.PRIVATE && coverHolder instanceof MachineCoverContainer mcc) {
             var owner = mcc.getMachine().getOwner();
-            return owner != null ? owner.getPlayerUUID() : null;
+            return owner != null ? owner.getUUID() : null;
         }
         return null;
     }
@@ -213,7 +237,7 @@ public abstract class AbstractEnderLinkCover<T extends VirtualEntry> extends Cov
         }
 
         if (isAnyChanged) {
-            if (virtualEntryWidget != null) virtualEntryWidget.update();
+            if (virtualEntryElement != null) virtualEntryElement.update();
             isAnyChanged = false;
         }
         subscriptionHandler.updateSubscription();
@@ -232,8 +256,8 @@ public abstract class AbstractEnderLinkCover<T extends VirtualEntry> extends Cov
         return null;
     }
 
-    protected abstract Widget addVirtualEntryWidget(VirtualEntry entry, int x, int y, int width, int height,
-                                                    boolean canClick);
+    protected abstract UIElement addVirtualEntryWidget(VirtualEntry entry, int x, int y, int width, int height,
+                                                       boolean canClick);
 
     protected abstract String getUITitle();
 
@@ -241,12 +265,20 @@ public abstract class AbstractEnderLinkCover<T extends VirtualEntry> extends Cov
         return VirtualEntry.parseColor(this.colorStr);
     }
 
+    protected static String entryColorStr(VirtualEntry entry) {
+        return entry.getColorStr();
+    }
+
+    protected static String entryDescription(VirtualEntry entry) {
+        return entry.getDescription();
+    }
+
     @Override
     public CompoundTag copyConfig(CompoundTag tag) {
         tag.putString("colorStr", colorStr);
-        tag.putInt("permission", getPermission().ordinal());
-        tag.putInt("io", getIo().ordinal());
-        tag.putInt("manualIO", getManualIOMode().ordinal());
+        tag.putInt("permission", permission.ordinal());
+        tag.putInt("io", io.ordinal());
+        tag.putInt("manualIO", manualIOMode.ordinal());
         return super.copyConfig(tag);
     }
 
@@ -262,10 +294,10 @@ public abstract class AbstractEnderLinkCover<T extends VirtualEntry> extends Cov
     protected enum Permissions implements EnumSelectorWidget.SelectableEnum {
 
         PUBLIC("cover.ender_fluid_link.private.tooltip.disabled",
-                GuiTextures.BUTTON_PUBLIC_PRIVATE.getSubTexture(0, 0, 1, 0.5)),
+                GuiTextures.BUTTON_PUBLIC_PRIVATE),
 
         PRIVATE("cover.ender_fluid_link.private.tooltip.enabled",
-                GuiTextures.BUTTON_PUBLIC_PRIVATE.getSubTexture(0, 0.5, 1, 0.5));
+                GuiTextures.BUTTON_PUBLIC_PRIVATE);
 
         @Getter
         private final String tooltip;
@@ -276,9 +308,19 @@ public abstract class AbstractEnderLinkCover<T extends VirtualEntry> extends Cov
             this.tooltip = tooltip;
             this.icon = icon;
         }
+
+        @Override
+        public String getTooltip() {
+            return tooltip;
+        }
+
+        @Override
+        public IGuiTexture getIcon() {
+            return icon;
+        }
     }
 
-    protected static class VirtualEntryWidget extends WidgetGroup {
+    protected static class VirtualEntryElement extends UIElement {
 
         private static final int WIDGET_BOARD = 20;
         private static final int GROUP_WIDTH = 176;
@@ -286,94 +328,109 @@ public abstract class AbstractEnderLinkCover<T extends VirtualEntry> extends Cov
         private static final int BUTTON_SIZE = 16;
         private final AbstractEnderLinkCover<?> cover;
         private final MutableBoolean showChannels;
-        private final WidgetGroup mainGroup;
-        private final WidgetGroup mainChannelGroup;
-        private final DraggableScrollableWidgetGroup channelsGroup; // client only
+        private final UIElement mainGroup;
+        private final UIElement mainChannelGroup;
+        private final ScrollerView channelsGroup;
+        private final RPCEmitter setChannelRpc;
+        private final RPCEmitter requestChannelsRpc;
+        private final RPCEmitter clearDescriptionRpc;
 
-        VirtualEntryWidget(AbstractEnderLinkCover<?> cover) {
-            super(0, 0, GROUP_WIDTH, 137);
+        VirtualEntryElement(AbstractEnderLinkCover<?> cover) {
             this.cover = cover;
             this.showChannels = new MutableBoolean(false);
-            mainGroup = new WidgetGroup(0, 0, GROUP_WIDTH, 137);
-            channelsGroup = new DraggableScrollableWidgetGroup(0, 20, 170, 110)
-                    .setYScrollBarWidth(2).setYBarStyle(null, ColorPattern.T_WHITE.rectTexture().setRadius(1));
-            mainChannelGroup = new WidgetGroup(10, 20, 156, 20);
+            this.layout(layout -> layout.width(GROUP_WIDTH).height(137));
+            mainGroup = element(0, 0, GROUP_WIDTH, 137);
+            channelsGroup = new ScrollerView();
+            channelsGroup.layout(layout -> layout.left(0).top(20).width(170).height(110));
+            channelsGroup.viewPort(view -> view.style(style -> style.backgroundTexture(IGuiTexture.EMPTY)));
+            channelsGroup.verticalScroller(scroller -> {
+                scroller.scrollContainer(container -> container.style(style ->
+                        style.backgroundTexture(ColorPattern.T_GRAY.rectTexture())));
+                scroller.scrollBar(bar -> bar.buttonStyle(style -> style
+                        .baseTexture(ColorPattern.T_WHITE.rectTexture())
+                        .hoverTexture(ColorPattern.T_WHITE.rectTexture())
+                        .pressedTexture(ColorPattern.T_WHITE.rectTexture())));
+            });
+            mainChannelGroup = element(10, 20, 156, 20);
+            setChannelRpc = addRPCEvent(RPCEventBuilder.simple(String.class, cover::setChannelName));
+            requestChannelsRpc = addRPCEvent(RPCEventBuilder.simple(Boolean.class, CompoundTag.class, this::requestChannels));
+            clearDescriptionRpc = addRPCEvent(RPCEventBuilder.simple(String.class, this::clearDescription));
             initWidgets();
         }
 
         public void update() {
-            if (isRemote()) return;
-            widgets.clear();
-            mainGroup.widgets.clear();
-            channelsGroup.widgets.clear();
-            mainChannelGroup.widgets.clear();
+            if (cover.isRemote()) return;
+            clearAllChildren();
+            mainGroup.clearAllChildren();
+            channelsGroup.clearAllScrollViewChildren();
+            mainChannelGroup.clearAllChildren();
             initWidgets();
-            this.detectAndSendChanges();
         }
 
         private void initWidgets() {
             int currentX = 0;
-            final var titleGroup = new WidgetGroup(10, 5, GROUP_WIDTH, 20);
+            final var titleGroup = element(10, 5, GROUP_WIDTH, 20);
 
-            this.addWidget(titleGroup);
-            this.addWidget(mainGroup);
-            this.addWidget(channelsGroup.setVisible(false));
+            this.addChild(titleGroup);
+            this.addChild(mainGroup);
+            channelsGroup.setVisible(false);
+            this.addChild(channelsGroup);
 
-            titleGroup.addWidget(createToggleButton());
-            titleGroup.addWidget(new LabelWidget(15, 3, cover.getUITitle()));
+            titleGroup.addChild(createToggleButton());
+            titleGroup.addChild(label(15, 3, 130, 10, Component.translatable(cover.getUITitle())));
 
-            var toggleButtonWidget = createToggleButtonForPrivacy(currentX);
-            mainChannelGroup.addWidget(toggleButtonWidget);
+            var privacyButton = createToggleButtonForPrivacy(currentX);
+            mainChannelGroup.addChild(privacyButton);
             currentX += WIDGET_BOARD + 2;
-            mainChannelGroup.addWidget(createColorBlockWidget(currentX));
+            mainChannelGroup.addChild(createColorBlockElement(currentX));
             currentX += WIDGET_BOARD + 2;
-            mainChannelGroup.addWidget(createConfirmTextInputWidget(currentX));
+            mainChannelGroup.addChild(createConfirmTextInputElement(currentX));
 
-            mainChannelGroup.addWidget(new ConfirmTextInputWidget(0, WIDGET_BOARD + 2, GROUP_WIDTH - WIDGET_BOARD,
-                    WIDGET_BOARD, cover.getEntry().getDescription(), cover.getEntry()::setDescription,
-                    t -> t == null ? "" : t, null).setTooltip("cover.ender_fluid_link.tooltip.channel_description"));
+            mainChannelGroup.addChild(confirmTextInput(0, WIDGET_BOARD + 2, GROUP_WIDTH - WIDGET_BOARD,
+                    WIDGET_BOARD, entryDescription(cover.getEntry()), text -> cover.getEntry().setDescription(text),
+                    t -> t == null ? "" : t, null, "cover.ender_fluid_link.tooltip.channel_description"));
 
-            mainGroup.addWidget(mainChannelGroup);
-            mainGroup.addWidget(createWorkingEnabledButton());
+            mainGroup.addChild(mainChannelGroup);
+            mainGroup.addChild(createWorkingEnabledButton());
             addEnumSelectorWidgets();
-            mainGroup.addWidget(
+            mainGroup.addChild(
                     cover.addVirtualEntryWidget(cover.getEntry(), 146, WIDGET_BOARD, WIDGET_BOARD, WIDGET_BOARD, true));
 
             if (cover.getFilterHandler() != null) {
-                mainGroup.addWidget(cover.getFilterHandler().createFilterSlotUI(117, 108));
-                mainGroup.addWidget(cover.getFilterHandler().createFilterConfigUI(10, 72, 156, 60));
+                mainGroup.addChild(cover.getFilterHandler().createFilterSlotUI(117, 108));
+                mainGroup.addChild(cover.getFilterHandler().createFilterConfigUI(10, 72, 156, 60));
             }
         }
 
         @Contract(" -> new")
-        private @NotNull ToggleButtonWidget createToggleButton() {
-            return (ToggleButtonWidget) new ToggleButtonWidget(0, 0, 12, 12, showChannels::getValue, cd -> {
+        private @NotNull Button createToggleButton() {
+            Button button = button(0, 0, 12, 12, GuiTextures.BUTTON_LIST);
+            button.setOnClick(event -> {
                 showChannels.setValue(!showChannels.getValue());
                 mainGroup.setVisible(showChannels.isFalse());
                 channelsGroup.setVisible(showChannels.isTrue());
                 requestUpdate();
-            }).setTexture(
-                    new GuiTextureGroup(GuiTextures.TOGGLE_BUTTON_BACK.getSubTexture(0, 0, 1, 0.5),
-                            GuiTextures.BUTTON_LIST),
-                    new GuiTextureGroup(GuiTextures.TOGGLE_BUTTON_BACK.getSubTexture(0, 0.5, 1, 0.5),
-                            GuiTextures.BUTTON_LIST))
-                    .setHoverTooltips("cover.ender_fluid_link.tooltip.list_button");
+            });
+            button.style(style -> style.tooltips("cover.ender_fluid_link.tooltip.list_button"));
+            return button;
         }
 
         @Contract("_ -> new")
-        private @NotNull Widget createToggleButtonForPrivacy(int currentX) {
+        private @NotNull UIElement createToggleButtonForPrivacy(int currentX) {
             return new EnumSelectorWidget<>(currentX, 0,
                     WIDGET_BOARD, WIDGET_BOARD, Permissions.values(), cover.permission, cover::setPermission);
         }
 
-        private ColorBlockWidget createColorBlockWidget(int currentX) {
-            return new ColorBlockWidget(currentX, 0, WIDGET_BOARD, WIDGET_BOARD).setColorSupplier(cover::getColor);
+        private ColorBlockElement createColorBlockElement(int currentX) {
+            ColorBlockElement element = new ColorBlockElement(cover::getColor);
+            element.layout(layout -> layout.left(currentX).top(0).width(WIDGET_BOARD).height(WIDGET_BOARD));
+            return element;
         }
 
-        private ConfirmTextInputWidget createConfirmTextInputWidget(int currentX) {
+        private UIElement createConfirmTextInputElement(int currentX) {
             int GROUP_X = 10;
             int textInputWidth = (GROUP_WIDTH - GROUP_X * 2) - currentX - WIDGET_BOARD - 2;
-            return new ConfirmTextInputWidget(currentX, 0, textInputWidth, WIDGET_BOARD, cover.colorStr,
+            return confirmTextInput(currentX, 0, textInputWidth, WIDGET_BOARD, cover.colorStr,
                     cover::setChannelName, text -> {
                         if (text == null || !COLOR_INPUT_PATTERN.matcher(text).matches()) {
                             return VirtualTank.DEFAULT_COLOR;
@@ -384,146 +441,195 @@ public abstract class AbstractEnderLinkCover<T extends VirtualEntry> extends Cov
                             text += "F".repeat(8 - text.length());
                         }
                         return text;
-                    }).setTooltip("cover.ender_fluid_link.tooltip.channel_name");
+                    }, "cover.ender_fluid_link.tooltip.channel_name");
         }
 
         @Contract(" -> new")
-        private @NotNull ToggleButtonWidget createWorkingEnabledButton() {
-            return new ToggleButtonWidget(116, 82, WIDGET_BOARD, WIDGET_BOARD, GuiTextures.BUTTON_POWER,
-                    cover::isWorkingEnabled, cover::setWorkingEnabled);
+        private @NotNull Button createWorkingEnabledButton() {
+            Button button = button(116, 82, WIDGET_BOARD, WIDGET_BOARD, GuiTextures.BUTTON_POWER);
+            button.setOnServerClick(event -> cover.setWorkingEnabled(!cover.isWorkingEnabled()));
+            return button;
         }
 
         private void addEnumSelectorWidgets() {
-            mainGroup.addWidget(new EnumSelectorWidget<>(146, 82, WIDGET_BOARD, WIDGET_BOARD, List.of(IO.IN, IO.OUT),
+            mainGroup.addChild(new EnumSelectorWidget<>(146, 82, WIDGET_BOARD, WIDGET_BOARD, List.of(IO.IN, IO.OUT),
                     cover.io, cover::setIo));
-            mainGroup.addWidget(new EnumSelectorWidget<>(146, 107, WIDGET_BOARD, WIDGET_BOARD, ManualIOMode.VALUES,
+            mainGroup.addChild(new EnumSelectorWidget<>(146, 107, WIDGET_BOARD, WIDGET_BOARD, ManualIOMode.VALUES,
                     cover.manualIOMode, cover::setManualIOMode)
-                    .setHoverTooltips("cover.universal.manual_import_export.mode.description"));
+                    .style(style -> style.tooltips("cover.universal.manual_import_export.mode.description")));
         }
 
         private void addChannelWidgets(List<? extends VirtualEntry> entries) {
-            channelsGroup.clearAllWidgets();
+            channelsGroup.clearAllScrollViewChildren();
             int y = 1;
-            SelectableWidgetGroup selectedWidget = null;
-            for (var entry : entries.stream().sorted(Comparator.comparing(VirtualEntry::getColorStr)).toList()) {
-                SelectableWidgetGroup channelWidget = createChannelWidget(entry, 10, y);
-                if (cover.getChannelName(entry).equals(cover.getChannelName())) {
-                    selectedWidget = channelWidget;
-                }
-                channelsGroup.addWidget(channelWidget);
+            for (var entry : entries.stream().sorted(Comparator.comparing(AbstractEnderLinkCover::entryColorStr)).toList()) {
+                channelsGroup.addScrollViewChild(createChannelWidget(entry, 10, y,
+                        cover.getChannelName(entry).equals(cover.getChannelName())));
                 y += 22;
             }
-            channelsGroup.setSelected(selectedWidget);
-            if (selectedWidget != null) selectedWidget.onSelected();
-            channelsGroup.setClientSideWidget();
         }
 
-        private @NotNull SelectableWidgetGroup createChannelWidget(@NotNull VirtualEntry entry, int x, int y) {
+        private @NotNull UIElement createChannelWidget(@NotNull VirtualEntry entry, int x, int y, boolean selected) {
             int currentX = 0;
             int MARGIN = 2;
             int availableWidth = TOTAL_WIDTH - (BUTTON_SIZE + MARGIN) * 3;
 
             final MutableBoolean canSelect = new MutableBoolean(false);
-            var des = entry.getDescription();
-            TextBoxWidget textBoxWidget = new TextBoxWidget(BUTTON_SIZE + MARGIN,
-                    !des.isEmpty() ? 0 : 4, availableWidth, List.of(entry.getColorStr())).setCenter(true);
-            SelectableWidgetGroup channelGroup = new SelectableWidgetGroup(x, y, TOTAL_WIDTH, BUTTON_SIZE) {
-
-                @Override
-                public boolean allowSelected(double mouseX, double mouseY, int button) {
-                    return canSelect.getValue() && super.allowSelected(mouseX, mouseY, button);
-                }
-            };
-            channelGroup.setOnSelected(group -> {
+            var des = entryDescription(entry);
+            UIElement channelGroup = element(x, y, TOTAL_WIDTH, BUTTON_SIZE);
+            if (selected) {
+                channelGroup.style(style -> style.backgroundTexture(ColorPattern.T_GRAY.rectTexture()));
+            }
+            channelGroup.addEventListener(UIEvents.MOUSE_DOWN, event -> {
+                if (!canSelect.getValue()) return;
                 if (cover.getChannelName().equals(cover.getChannelName(entry))) return;
-                writeClientAction(0, buffer -> {
-                    // send new channel name to server
-                    String newChannelColorStr = entry.getColorStr();
-                    buffer.writeUtf(newChannelColorStr);
-                });
-                playButtonClickSound();
-            }).setSelectedTexture(1, -1);
+                setChannelRpc.send(entryColorStr(entry));
+            });
 
             // Color block
-            ColorBlockWidget colorBlockWidget = new ColorBlockWidget(currentX, 0, BUTTON_SIZE, BUTTON_SIZE)
-                    .setCurrentColor(VirtualEntry.parseColor(entry.getColorStr()));
-            channelGroup.addWidget(colorBlockWidget);
+            ColorBlockElement colorBlockElement = new ColorBlockElement(() -> VirtualEntry.parseColor(entryColorStr(entry)));
+            colorBlockElement.layout(layout -> layout.left(currentX).top(0).width(BUTTON_SIZE).height(BUTTON_SIZE));
+            channelGroup.addChild(colorBlockElement);
             currentX += BUTTON_SIZE + MARGIN;
 
             // Text box
-            channelGroup.addWidget(textBoxWidget);
+            channelGroup.addChild(label(BUTTON_SIZE + MARGIN, !des.isEmpty() ? 0 : 4, availableWidth, 8,
+                    Component.literal(entryColorStr(entry))));
             currentX += availableWidth + MARGIN;
             if (!des.isEmpty()) {
                 var desText = new TextTexture(ChatFormatting.DARK_GRAY + des).setDropShadow(false);
                 desText.setType(TextTexture.TextType.ROLL).setRollSpeed(0.7f);
-                channelGroup.addWidget(new ImageWidget(BUTTON_SIZE + MARGIN, 10, availableWidth, 8, desText));
+                channelGroup.addChild(textureElement(BUTTON_SIZE + MARGIN, 10, availableWidth, 8, desText));
             }
 
             // Slot
-            Widget slotWidget = cover.addVirtualEntryWidget(entry, currentX, 0, BUTTON_SIZE, BUTTON_SIZE, false);
-            channelGroup.addWidget(slotWidget);
+            UIElement slotElement = cover.addVirtualEntryWidget(entry, currentX, 0, BUTTON_SIZE, BUTTON_SIZE, false);
+            channelGroup.addChild(slotElement);
             currentX += BUTTON_SIZE + MARGIN;
 
             // Clear Description button
-            channelGroup.addWidget(
-                    new ButtonWidget(currentX, 0, BUTTON_SIZE, BUTTON_SIZE, GuiTextures.BUTTON_CLEAR_GRID, press -> {
-                        writeClientAction(200, buffer -> buffer.writeUtf(cover.getChannelName(entry)));
-                        requestUpdate();
-                    }) {
-
-                        @Override
-                        public boolean isMouseOverElement(double mouseX, double mouseY) {
-                            var isOver = super.isMouseOverElement(mouseX, mouseY);
-                            if (canSelect.getValue() == isOver) canSelect.setValue(!isOver);
-                            return isOver;
-                        }
-                    }.appendHoverTooltips("cover.ender_fluid_link.tooltip.clear_button"));
+            Button clear = button(currentX, 0, BUTTON_SIZE, BUTTON_SIZE, GuiTextures.BUTTON_CLEAR_GRID);
+            clear.setOnClick(event -> {
+                clearDescriptionRpc.send(cover.getChannelName(entry));
+                requestUpdate();
+            });
+            clear.addEventListener(UIEvents.MOUSE_ENTER, event -> canSelect.setValue(false));
+            clear.addEventListener(UIEvents.MOUSE_LEAVE, event -> canSelect.setValue(true));
+            clear.style(style -> style.tooltips("cover.ender_fluid_link.tooltip.clear_button"));
+            channelGroup.addChild(clear);
+            canSelect.setValue(true);
 
             return channelGroup;
         }
 
         private void requestUpdate() {
-            writeClientAction(100, buffer -> buffer.writeBoolean(showChannels.isTrue()));
+            requestChannelsRpc.send(this::readChannels, showChannels.isTrue());
         }
 
-        @Override
-        public void handleClientAction(int id, RegistryFriendlyByteBuf buffer) {
-            super.handleClientAction(id, buffer);
-            if (id == 0) {
-                String newChannelColorStr = buffer.readUtf();
-                cover.setChannelName(newChannelColorStr);
-            } else if (id == 100) {
-                if (!buffer.readBoolean()) return;
-                var entries = VirtualEnderRegistry.getInstance().getEntryNames(cover.getOwner(), cover.getEntryType())
-                        .stream().map(name -> VirtualEnderRegistry.getInstance().getEntry(cover.getOwner(),
-                                cover.getEntryType(), name))
-                        .sorted(Comparator.comparing(VirtualEntry::getColorStr));
-                writeUpdateInfo(101, buf -> {
-                    var list = entries.toList();
-                    buf.writeVarInt(list.size());
-                    for (var entry : list) {
-                        buf.writeNbt(entry.serializeNBT(buf.registryAccess()));
-                    }
-                });
-            } else if (id == 200) {
-                String channelName = buffer.readUtf();
-                VirtualEnderRegistry.getInstance().getEntry(cover.getOwner(), cover.getEntryType(), channelName)
-                        .setDescription("");
+        private CompoundTag requestChannels(boolean enabled) {
+            CompoundTag tag = new CompoundTag();
+            if (!enabled) return tag;
+            var entries = VirtualEnderRegistry.getInstance().getEntryNames(cover.getOwner(), cover.getEntryType())
+                    .stream().map(name -> VirtualEnderRegistry.getInstance().getEntry(cover.getOwner(),
+                            cover.getEntryType(), name))
+                    .sorted(Comparator.comparing(AbstractEnderLinkCover::entryColorStr))
+                    .toList();
+            ListTag list = new ListTag();
+            for (VirtualEntry entry : entries) {
+                list.add(entry.serializeNBT(cover.coverHolder.getLevel().registryAccess()));
             }
+            tag.put("entries", list);
+            return tag;
         }
 
-        @Override
-        public void readUpdateInfo(int id, RegistryFriendlyByteBuf buffer) {
-            super.readUpdateInfo(id, buffer);
-            if (id == 101) {
-                int size = buffer.readVarInt();
-                List<VirtualEntry> entries = new ArrayList<>();
-                for (int i = 0; i < size; i++) {
-                    VirtualEntry entry = cover.getEntryType().createInstance();
-                    entry.deserializeNBT(buffer.registryAccess(), Objects.requireNonNull(buffer.readNbt()));
-                    entries.add(entry);
+        private void readChannels(CompoundTag tag) {
+            List<VirtualEntry> entries = new ArrayList<>();
+            ListTag list = tag.getList("entries", Tag.TAG_COMPOUND);
+            for (int i = 0; i < list.size(); i++) {
+                VirtualEntry entry = cover.getEntryType().createInstance();
+                entry.deserializeNBT(cover.coverHolder.getLevel().registryAccess(), list.getCompound(i));
+                entries.add(entry);
+            }
+            addChannelWidgets(entries);
+        }
+
+        private void clearDescription(String channelName) {
+            VirtualEnderRegistry.getInstance().getEntry(cover.getOwner(), cover.getEntryType(), channelName)
+                    .setDescription("");
+        }
+
+        private static UIElement element(int x, int y, int width, int height) {
+            return new UIElement().layout(layout -> layout.left(x).top(y).width(width).height(height));
+        }
+
+        private static Label label(int x, int y, int width, int height, Component text) {
+            Label label = new Label();
+            label.setValue(text);
+            label.layout(layout -> layout.left(x).top(y).width(width).height(height));
+            label.textStyle(style -> style.textColor(0x404040).textShadow(false));
+            return label;
+        }
+
+        private static UIElement textureElement(int x, int y, int width, int height, IGuiTexture texture) {
+            return element(x, y, width, height).style(style -> style.backgroundTexture(texture));
+        }
+
+        private static Button button(int x, int y, int width, int height, IGuiTexture icon) {
+            Button button = new Button().noText();
+            button.layout(layout -> layout.left(x).top(y).width(width).height(height));
+            IGuiTexture texture = new GuiTextureGroup(GuiTextures.VANILLA_BUTTON, icon);
+            button.buttonStyle(style -> style.baseTexture(texture).hoverTexture(texture).pressedTexture(texture));
+            return button;
+        }
+
+        private static UIElement confirmTextInput(int x, int y, int width, int height, String text,
+                                                  java.util.function.Consumer<String> textResponder,
+                                                  @Nullable java.util.function.Function<String, String> validator,
+                                                  @Nullable java.util.function.Function<String, String> returnValidator,
+                                                  String tooltip) {
+            UIElement group = element(x, y, width, height);
+            TextField textField = new TextField();
+            textField.layout(layout -> layout.left(1).top(1).width(width - height - 4).height(height - 2));
+            textField.style(style -> style.background(GuiTextures.DISPLAY).tooltips(tooltip));
+            textField.textFieldStyle(style -> style.textColor(0x404040).textShadow(false));
+            textField.setAnyString();
+            if (validator != null) {
+                textField.setTextValidator(candidate -> Objects.equals(validator.apply(candidate), candidate));
+            }
+            textField.setText(text, false);
+            group.addChild(textField);
+            RPCEmitter confirmRpc = group.addRPCEvent(RPCEventBuilder.simple(String.class, value -> {
+                if (returnValidator != null) {
+                    value = returnValidator.apply(value);
                 }
-                addChannelWidgets(entries);
+                textResponder.accept(value);
+            }));
+            Button confirm = button(width - height, 0, height, height, GuiTextures.BUTTON_CHECK);
+            confirm.setOnClick(event -> confirmRpc.send(textField.getValue()));
+            group.addChild(confirm);
+            return group;
+        }
+
+        private static class ColorBlockElement extends UIElement {
+
+            private static boolean showAlpha = false;
+            private final java.util.function.IntSupplier colorSupplier;
+
+            private ColorBlockElement(java.util.function.IntSupplier colorSupplier) {
+                this.colorSupplier = colorSupplier;
+                addEventListener(UIEvents.MOUSE_DOWN, event -> showAlpha = !showAlpha);
+            }
+
+            @Override
+            public void drawBackgroundAdditional(GUIContext guiContext) {
+                int color = colorSupplier.getAsInt();
+                int opaqueColor = showAlpha ? color : color | 0xFF000000;
+                guiContext.graphics.fill((int) getPositionX() + 1, (int) getPositionY() + 1,
+                        (int) (getPositionX() + getSizeWidth() - 1),
+                        (int) (getPositionY() + getSizeHeight() - 1), opaqueColor);
+                guiContext.graphics.renderOutline((int) getPositionX() + 1, (int) getPositionY() + 1,
+                        (int) getSizeWidth() - 2, (int) getSizeHeight() - 2, 0xFF000000);
+                super.drawBackgroundAdditional(guiContext);
             }
         }
     }

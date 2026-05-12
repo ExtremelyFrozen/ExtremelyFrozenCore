@@ -5,7 +5,6 @@ import com.extfro.extfrocore.api.cover.CoverDefinition;
 import com.extfro.extfrocore.api.cover.filter.FilterHandler;
 import com.extfro.extfrocore.api.cover.filter.FilterHandlers;
 import com.extfro.extfrocore.api.cover.filter.ItemFilter;
-import com.extfro.extfrocore.api.gui.widget.SlotWidget;
 import com.extfro.extfrocore.api.misc.virtualregistry.EntryTypes;
 import com.extfro.extfrocore.api.misc.virtualregistry.VirtualEnderRegistry;
 import com.extfro.extfrocore.api.misc.virtualregistry.VirtualEntry;
@@ -21,8 +20,10 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.items.IItemHandler;
 
-import com.lowdragmc.lowdraglib2.gui.widget.Widget;
-import com.lowdragmc.lowdraglib2.gui.widget.WidgetGroup;
+import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.ItemSlot;
+import com.lowdragmc.lowdraglib2.gui.ui.rendering.GUIContext;
+import com.lowdragmc.lowdraglib2.gui.util.DrawerHelper;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -127,12 +128,46 @@ public class EnderItemLinkCover extends AbstractEnderLinkCover<VirtualItemStorag
     }
 
     @Override
-    protected Widget addVirtualEntryWidget(VirtualEntry entry, int x, int y, int width, int height, boolean canClick) {
-        WidgetGroup group = new WidgetGroup(x, y, width, height);
+    protected UIElement addVirtualEntryWidget(VirtualEntry entry, int x, int y, int width, int height, boolean canClick) {
+        UIElement group = new UIElement().layout(layout -> layout.left(x).top(y).width(width).height(height));
         for (int i = 0; i < ((VirtualItemStorage) entry).getHandler().getSlots(); i++) {
-            group.addWidget(new SlotWidget(((VirtualItemStorage) entry).getHandler(), i, 8 * i, 0, canClick, canClick));
+            if (canClick) {
+                ItemSlot slot = new ItemSlot().bind(((VirtualItemStorage) entry).getHandler(), i);
+                slot.layout(layout -> layout.left(8 * i).top(0).width(width).height(height));
+                group.addChild(slot);
+            } else {
+                ItemPreviewElement slot = new ItemPreviewElement(((VirtualItemStorage) entry).getHandler(), i);
+                slot.layout(layout -> layout.left(8 * i).top(0).width(width).height(height));
+                group.addChild(slot);
+            }
         }
         return group;
+    }
+
+    private static class ItemPreviewElement extends UIElement {
+
+        private final IItemHandler handler;
+        private final int slot;
+
+        private ItemPreviewElement(IItemHandler handler, int slot) {
+            this.handler = handler;
+            this.slot = slot;
+        }
+
+        @Override
+        public void drawBackgroundAdditional(GUIContext guiContext) {
+            ItemStack stack = handler.getStackInSlot(slot);
+            if (!stack.isEmpty()) {
+                float width = getContentWidth();
+                float height = getContentHeight();
+                guiContext.pose.pushPose();
+                guiContext.pose.scale(width / 16f, height / 16f, 1);
+                guiContext.pose.translate(getContentX() * 16 / width, getContentY() * 16 / height, -200);
+                DrawerHelper.drawItemStack(guiContext.graphics, stack, 0, 0, guiContext.elementColor, null);
+                guiContext.pose.popPose();
+            }
+            super.drawBackgroundAdditional(guiContext);
+        }
     }
 
     @Override

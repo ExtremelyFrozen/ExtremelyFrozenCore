@@ -7,9 +7,6 @@ import com.extfro.extfrocore.api.cover.CoverBehavior;
 import com.extfro.extfrocore.api.cover.CoverDefinition;
 import com.extfro.extfrocore.api.cover.IUICover;
 import com.extfro.extfrocore.api.gui.GuiTextures;
-import com.extfro.extfrocore.api.gui.widget.IntInputWidget;
-import com.extfro.extfrocore.api.gui.widget.PhantomSlotWidget;
-import com.extfro.extfrocore.api.gui.widget.ToggleButtonWidget;
 import com.extfro.extfrocore.api.machine.MachineCoverContainer;
 import com.extfro.extfrocore.api.sync_system.annotations.SaveField;
 import com.extfro.extfrocore.api.sync_system.annotations.SyncToClient;
@@ -19,31 +16,34 @@ import com.extfro.extfrocore.common.cover.data.ControllerMode;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.inventory.ClickType;
-import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 
 import com.lowdragmc.lowdraglib2.gui.texture.GuiTextureGroup;
+import com.lowdragmc.lowdraglib2.gui.texture.IGuiTexture;
 import com.lowdragmc.lowdraglib2.gui.texture.TextTexture;
-import com.lowdragmc.lowdraglib2.gui.widget.ButtonWidget;
-import com.lowdragmc.lowdraglib2.gui.widget.LabelWidget;
-import com.lowdragmc.lowdraglib2.gui.widget.Widget;
-import com.lowdragmc.lowdraglib2.gui.widget.WidgetGroup;
+import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.Button;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.ItemSlot;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.Label;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.TextField;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class MachineControllerCover extends CoverBehavior implements IUICover {
 
     private CustomItemStackHandler sideCoverSlot;
-    private ButtonWidget modeButton;
+    private Button modeButton;
 
     @SaveField
     @Getter
@@ -63,6 +63,10 @@ public class MachineControllerCover extends CoverBehavior implements IUICover {
     @Accessors(fluent = true)
     @SaveField
     private boolean preventPowerFail = false;
+
+    public boolean preventPowerFail() {
+        return preventPowerFail;
+    }
 
     public MachineControllerCover(CoverDefinition definition, ICoverable coverHolder, Direction attachedSide) {
         super(definition, coverHolder, attachedSide);
@@ -194,46 +198,83 @@ public class MachineControllerCover extends CoverBehavior implements IUICover {
     //////////////////////////////////////
 
     @Override
-    public Widget createUIWidget() {
+    public UIElement createUIElement() {
         if (controllerMode != null && getControllable(controllerMode.side) == null) {
             setControllerMode(null);
         }
-        WidgetGroup group = new WidgetGroup(0, 0, 176, 95);
+        UIElement group = new UIElement().layout(layout -> layout.width(176).height(95));
 
-        group.addWidget(new LabelWidget(10, 5, "cover.machine_controller.title"));
-        group.addWidget(new IntInputWidget(10, 20, 131, 20,
-                this::getMinRedstoneStrength, this::setMinRedstoneStrength).setMin(1).setMax(15));
-
-        modeButton = new ButtonWidget(10, 45, 131, 20,
-                new GuiTextureGroup(GuiTextures.VANILLA_BUTTON),
-                cd -> selectNextMode());
-        group.addWidget(modeButton);
-
-        // Inverted Mode Toggle:
-        group.addWidget(new ToggleButtonWidget(
-                146, 20, 20, 20,
-                GuiTextures.INVERT_REDSTONE_BUTTON, this::isInverted, this::setInverted)
-                .isMultiLang()
-                .setTooltipText("cover.machine_controller.invert"));
-
-        group.addWidget(new LabelWidget(10, 72, "cover.machine_controller.suspend_powerfail"));
-        group.addWidget(new ToggleButtonWidget(147, 68, 18, 18, GuiTextures.BUTTON_POWER,
-                this::preventPowerFail, (data) -> {
-                    preventPowerFail = data;
-                }));
-
-        sideCoverSlot = new CustomItemStackHandler(1);
-        group.addWidget(new PhantomSlotWidget(sideCoverSlot, 0, 147, 46) {
-
-            @Override
-            public ItemStack slotClickPhantom(Slot slot, int mouseButton, ClickType clickTypeIn, ItemStack stackHeld) {
-                return sideCoverSlot.getStackInSlot(0);
+        group.addChild(label(10, 5, "cover.machine_controller.title", 156));
+        TextField redstoneInput = new TextField();
+        redstoneInput.layout(layout -> layout.left(10).top(20).width(131).height(20));
+        redstoneInput.style(style -> style.background(GuiTextures.DISPLAY));
+        redstoneInput.textFieldStyle(style -> style.textColor(0x404040).textShadow(false));
+        redstoneInput.setNumbersOnlyInt(1, 15);
+        redstoneInput.setText(String.valueOf(minRedstoneStrength));
+        redstoneInput.setTextResponder(value -> {
+            if (!value.isBlank()) {
+                setMinRedstoneStrength(Integer.parseInt(value));
             }
         });
+        group.addChild(redstoneInput);
+
+        modeButton = new Button().noText();
+        modeButton.layout(layout -> layout.left(10).top(45).width(131).height(20));
+        modeButton.setOnServerClick(event -> selectNextMode());
+        group.addChild(modeButton);
+
+        group.addChild(toggleButton(146, 20, 20, 20,
+                GuiTextures.INVERT_REDSTONE_BUTTON, () -> isInverted, this::setInverted,
+                "cover.machine_controller.invert"));
+
+        group.addChild(label(10, 72, "cover.machine_controller.suspend_powerfail", 130));
+        group.addChild(toggleButton(147, 68, 18, 18, GuiTextures.BUTTON_POWER,
+                () -> preventPowerFail, data -> {
+                    preventPowerFail = data;
+                    updateAll();
+                }, null));
+
+        sideCoverSlot = new CustomItemStackHandler(1);
+        ItemSlot sideSlot = new ItemSlot().bind(sideCoverSlot, 0);
+        sideSlot.layout(layout -> layout.left(147).top(46).width(18).height(18));
+        sideSlot.style(style -> style.background(GuiTextures.SLOT));
+        sideSlot.slotStyle(style -> style.acceptQuickMove(false));
+        sideSlot.xeiPhantom();
+        sideSlot.setActive(false);
+        group.addChild(sideSlot);
 
         updateUI();
 
         return group;
+    }
+
+    private Label label(int x, int y, String translationKey, int width) {
+        Label label = new Label();
+        label.setValue(Component.translatable(translationKey));
+        label.layout(layout -> layout.left(x).top(y).width(width).height(10));
+        label.textStyle(style -> style.textColor(0x404040).textShadow(false));
+        return label;
+    }
+
+    private Button toggleButton(int x, int y, int width, int height, IGuiTexture icon, BooleanSupplier getter,
+                                Consumer<Boolean> setter, @Nullable String tooltipPrefix) {
+        Button button = new Button().noText();
+        button.layout(layout -> layout.left(x).top(y).width(width).height(height));
+        Consumer<Button> update = b -> {
+            IGuiTexture texture = new GuiTextureGroup(GuiTextures.VANILLA_BUTTON.copy()
+                    .setColor(getter.getAsBoolean() ? 0xffa0ffa0 : -1), icon);
+            b.buttonStyle(style -> style.baseTexture(texture).hoverTexture(texture).pressedTexture(texture));
+            if (tooltipPrefix != null) {
+                b.style(style -> style.tooltips(Component.translatable(tooltipPrefix + "." +
+                        (getter.getAsBoolean() ? "enabled" : "disabled"))));
+            }
+        };
+        update.accept(button);
+        button.setOnServerClick(event -> {
+            setter.accept(!getter.getAsBoolean());
+            update.accept(button);
+        });
+        return button;
     }
 
     private void selectNextMode() {
@@ -258,9 +299,11 @@ public class MachineControllerCover extends CoverBehavior implements IUICover {
             return;
         }
 
-        modeButton.setButtonTexture(new GuiTextureGroup(
+        IGuiTexture texture = new GuiTextureGroup(
                 GuiTextures.VANILLA_BUTTON,
-                new TextTexture(controllerMode != null ? controllerMode.localeName : ControllerMode.nullLocaleName)));
+                new TextTexture(controllerMode != null ? controllerMode.localeName : ControllerMode.nullLocaleName)
+                        .setWidth(131));
+        modeButton.buttonStyle(style -> style.baseTexture(texture).hoverTexture(texture).pressedTexture(texture));
     }
 
     private void updateCoverSlot() {

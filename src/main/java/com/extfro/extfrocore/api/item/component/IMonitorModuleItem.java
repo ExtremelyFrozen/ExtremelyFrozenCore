@@ -7,7 +7,7 @@ import com.extfro.extfrocore.common.machine.multiblock.electric.monitor.MonitorG
 
 import net.minecraft.world.item.ItemStack;
 
-import com.lowdragmc.lowdraglib2.gui.widget.Widget;
+import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
 
 public interface IMonitorModuleItem extends IItemComponent {
 
@@ -17,7 +17,7 @@ public interface IMonitorModuleItem extends IItemComponent {
 
     IMonitorRenderer getRenderer(ItemStack stack);
 
-    Widget createUIWidget(ItemStack stack, CentralMonitorMachine machine, MonitorGroup group);
+    UIElement createUIWidget(ItemStack stack, CentralMonitorMachine machine, MonitorGroup group);
 
     default String getType() {
         return "unknown";

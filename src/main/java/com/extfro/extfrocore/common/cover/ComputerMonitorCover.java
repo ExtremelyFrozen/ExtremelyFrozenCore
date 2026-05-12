@@ -5,7 +5,7 @@ import com.extfro.extfrocore.api.capability.ICoverable;
 import com.extfro.extfrocore.api.cover.CoverBehavior;
 import com.extfro.extfrocore.api.cover.CoverDefinition;
 import com.extfro.extfrocore.api.cover.IUICover;
-import com.extfro.extfrocore.api.gui.widget.IntInputWidget;
+import com.extfro.extfrocore.api.gui.GuiTextures;
 import com.extfro.extfrocore.api.machine.TickableSubscription;
 import com.extfro.extfrocore.api.machine.feature.IDataStickInteractable;
 import com.extfro.extfrocore.api.placeholder.IPlaceholderInfoProviderCover;
@@ -32,8 +32,12 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 
-import com.lowdragmc.lowdraglib2.gui.texture.ResourceBorderTexture;
-import com.lowdragmc.lowdraglib2.gui.widget.*;
+import com.lowdragmc.lowdraglib2.gui.texture.GuiTextureGroup;
+import com.lowdragmc.lowdraglib2.gui.texture.IGuiTexture;
+import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.Button;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.ItemSlot;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.TextField;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -103,6 +107,34 @@ public class ComputerMonitorCover extends CoverBehavior
                         this, null, new MultiLineComponent(text), placeholderUUID));
     }
 
+    public List<MutableComponent> getText() {
+        return text;
+    }
+
+    public int getUpdateInterval() {
+        return updateInterval;
+    }
+
+    public void setUpdateInterval(int updateInterval) {
+        this.updateInterval = updateInterval;
+    }
+
+    public long getTicksSincePlaced() {
+        return ticksSincePlaced;
+    }
+
+    public List<MutableComponent> getCreateDisplayTargetBuffer() {
+        return createDisplayTargetBuffer;
+    }
+
+    public List<MutableComponent> getComputerCraftTextBuffer() {
+        return computerCraftTextBuffer;
+    }
+
+    public UUID getPlaceholderUUID() {
+        return placeholderUUID;
+    }
+
     public void setDisplayTargetBufferLine(int line, MutableComponent component) {
         createDisplayTargetBuffer.set(line, component);
     }
@@ -123,84 +155,110 @@ public class ComputerMonitorCover extends CoverBehavior
     }
 
     @Override
-    public Widget createUIWidget() {
+    public UIElement createUIElement() {
         int textFieldWidth = 160, horizontalPadding = 10, verticalPadding = 2;
-        final WidgetGroup group = new WidgetGroup(0, 0, 2 * textFieldWidth + 3 * horizontalPadding, 150);
-        final WidgetGroup mainPage = new WidgetGroup(0, 0, 2 * textFieldWidth + 3 * horizontalPadding, 150);
-        final WidgetGroup formatStringArgsPage = new WidgetGroup(0, 0, 2 * textFieldWidth + 3 * horizontalPadding, 150);
+        final UIElement group = new UIElement()
+                .layout(layout -> layout.width(2 * textFieldWidth + 3 * horizontalPadding).height(150));
+        final UIElement mainPage = new UIElement()
+                .layout(layout -> layout.width(2 * textFieldWidth + 3 * horizontalPadding).height(150));
+        final UIElement formatStringArgsPage = new UIElement()
+                .layout(layout -> layout.width(2 * textFieldWidth + 3 * horizontalPadding).height(150));
         for (int i = 0; i < 8; i++) {
-            TextFieldWidget formatStringInput = new TextFieldWidget();
-            formatStringInput.setSize(textFieldWidth, 15);
-            formatStringInput.setSelfPosition(horizontalPadding + textFieldWidth / 2,
-                    10 + verticalPadding + i * (15 + verticalPadding));
-            formatStringInput.setHoverTooltips(GTStringUtils.toImmutable(
-                    LangHandler.getMultiLang("gtceu.gui.computer_monitor_cover.main_textbox_tooltip", i + 1)));
             int finalI = i;
             if (i >= formatStringLines.size()) formatStringLines.add("");
-            formatStringInput.setCurrentString(formatStringLines.get(i));
-            formatStringInput.setTextResponder((s) -> formatStringLines.set(finalI, s));
-            mainPage.addWidget(formatStringInput);
-            SlotWidget slot = new com.extfro.extfrocore.api.gui.widget.SlotWidget(
-                    itemStackHandler,
-                    i,
-                    horizontalPadding + 50,
-                    20 * i);
-            slot.setBackgroundTexture(SlotWidget.ITEM_SLOT_TEXTURE);
-            slot.setHoverTooltips(GTStringUtils
-                    .toImmutable(LangHandler.getMultiLang("gtceu.gui.computer_monitor_cover.slot_tooltip", i + 1)));
-            mainPage.addWidget(slot);
+            TextField formatStringInput = textField(
+                    horizontalPadding + textFieldWidth / 2,
+                    10 + verticalPadding + i * (15 + verticalPadding),
+                    textFieldWidth, 15, formatStringLines.get(i),
+                    s -> formatStringLines.set(finalI, s));
+            formatStringInput.style(style -> style.tooltips(LangHandler
+                    .getMultiLang("gtceu.gui.computer_monitor_cover.main_textbox_tooltip", i + 1)
+                    .toArray(Component[]::new)));
+            mainPage.addChild(formatStringInput);
+
+            ItemSlot slot = new ItemSlot().bind(itemStackHandler, i);
+            slot.layout(layout -> layout.left(horizontalPadding + 50).top(20 * finalI).width(18).height(18));
+            slot.style(style -> style.background(GuiTextures.SLOT).tooltips(LangHandler
+                    .getMultiLang("gtceu.gui.computer_monitor_cover.slot_tooltip", i + 1)
+                    .toArray(Component[]::new)));
+            mainPage.addChild(slot);
         }
         for (int i = 0; i < 8; i++) {
-            TextFieldWidget formatStringArgsInput = new TextFieldWidget();
-            formatStringArgsInput.setSize(textFieldWidth, 15);
-            formatStringArgsInput.setSelfPosition(textFieldWidth / 2 + horizontalPadding,
-                    10 + verticalPadding + i * (15 + verticalPadding));
-            formatStringArgsInput.setHoverTooltips(GTStringUtils.toImmutable(
-                    LangHandler.getMultiLang("gtceu.gui.computer_monitor_cover.second_page_textbox_tooltip",
-                            GTStringUtils.getIntOrderingSuffix(i + 1))));
-
             int finalI = i;
             if (i >= formatStringArgs.size()) formatStringArgs.add("");
-            formatStringArgsInput.setCurrentString(formatStringArgs.get(i));
-            formatStringArgsInput.setTextResponder((s) -> formatStringArgs.set(finalI, s));
-            formatStringArgsPage.addWidget(formatStringArgsInput);
+            TextField formatStringArgsInput = textField(
+                    textFieldWidth / 2 + horizontalPadding,
+                    10 + verticalPadding + i * (15 + verticalPadding),
+                    textFieldWidth, 15, formatStringArgs.get(i),
+                    s -> formatStringArgs.set(finalI, s));
+            formatStringArgsInput.style(style -> style.tooltips(LangHandler
+                    .getMultiLang("gtceu.gui.computer_monitor_cover.second_page_textbox_tooltip",
+                            GTStringUtils.getIntOrderingSuffix(i + 1))
+                    .toArray(Component[]::new)));
+            formatStringArgsPage.addChild(formatStringArgsInput);
         }
-        ButtonWidget switchToFormatStringArgsPageButton = new ButtonWidget(
+        Button switchToFormatStringArgsPageButton = button(
                 horizontalPadding + 50,
                 10 * (15 + verticalPadding) + verticalPadding,
-                20, 20,
-                new ResourceBorderTexture(),
-                clickData -> {
-                    group.clearAllWidgets();
-                    group.addWidget(formatStringArgsPage);
-                });
-        ButtonWidget switchBack = new ButtonWidget(
+                20, 20, GuiTextures.BUTTON_RIGHT);
+        switchToFormatStringArgsPageButton.setOnClick(event -> {
+            group.clearAllChildren();
+            group.addChild(formatStringArgsPage);
+        });
+        Button switchBack = button(
                 horizontalPadding + 50,
                 10 * (15 + verticalPadding) + verticalPadding,
-                20, 20,
-                new ResourceBorderTexture(),
-                clickData -> {
-                    group.clearAllWidgets();
-                    group.addWidget(mainPage);
-                });
-        mainPage.addWidget(PlaceholderHandler.getPlaceholderHandlerUI(""));
-        // TextFieldWidget searchBox = new TextFieldWidget(280, 0, 80, 15, null, onSearch);
-        // searchBox.setHoverTooltips("Search");
-        // mainPage.addWidget(searchBox);
-        IntInputWidget updateIntervalInput = new IntInputWidget(0, 0, 60, 20, this::getUpdateInterval,
-                this::setUpdateInterval);
-        updateIntervalInput.setMin(1);
-        updateIntervalInput.setMax(60 * 20);
-        updateIntervalInput
-                .setHoverTooltips(Component.translatable("gtceu.gui.computer_monitor_cover.update_interval"));
-        mainPage.addWidget(updateIntervalInput);
-        switchToFormatStringArgsPageButton
-                .setHoverTooltips(Component.translatable("gtceu.gui.computer_monitor_cover.edit_blank_placeholders"));
-        switchBack.setHoverTooltips(Component.translatable("gtceu.gui.computer_monitor_cover.edit_displayed_text"));
-        mainPage.addWidget(switchToFormatStringArgsPageButton);
-        formatStringArgsPage.addWidget(switchBack);
-        group.addWidget(mainPage);
+                20, 20, GuiTextures.BUTTON_LEFT);
+        switchBack.setOnClick(event -> {
+            group.clearAllChildren();
+            group.addChild(mainPage);
+        });
+        UIElement placeholderReference = PlaceholderHandler.getPlaceholderHandlerUI("");
+        placeholderReference.layout(layout -> layout.left(280).top(0).width(160).height(215));
+        mainPage.addChild(placeholderReference);
+        TextField updateIntervalInput = intInput(0, 0, 60, 20, updateInterval, 1, 60 * 20, this::setUpdateInterval);
+        updateIntervalInput.style(style -> style.tooltips(
+                Component.translatable("gtceu.gui.computer_monitor_cover.update_interval")));
+        mainPage.addChild(updateIntervalInput);
+        switchToFormatStringArgsPageButton.style(style -> style.tooltips(
+                Component.translatable("gtceu.gui.computer_monitor_cover.edit_blank_placeholders")));
+        switchBack.style(style -> style.tooltips(
+                Component.translatable("gtceu.gui.computer_monitor_cover.edit_displayed_text")));
+        mainPage.addChild(switchToFormatStringArgsPageButton);
+        formatStringArgsPage.addChild(switchBack);
+        group.addChild(mainPage);
         return group;
+    }
+
+    private TextField textField(int x, int y, int width, int height, String value,
+                                java.util.function.Consumer<String> responder) {
+        TextField field = new TextField();
+        field.layout(layout -> layout.left(x).top(y).width(width).height(height));
+        field.style(style -> style.background(GuiTextures.DISPLAY));
+        field.textFieldStyle(style -> style.textColor(0x404040).textShadow(false));
+        field.setAnyString();
+        field.setText(value);
+        field.setTextResponder(responder);
+        return field;
+    }
+
+    private TextField intInput(int x, int y, int width, int height, int value, int min, int max,
+                               java.util.function.Consumer<Integer> responder) {
+        TextField field = textField(x, y, width, height, String.valueOf(value), text -> {
+            if (!text.isBlank()) {
+                responder.accept(Integer.parseInt(text));
+            }
+        });
+        field.setNumbersOnlyInt(min, max);
+        return field;
+    }
+
+    private Button button(int x, int y, int width, int height, IGuiTexture icon) {
+        Button button = new Button().noText();
+        button.layout(layout -> layout.left(x).top(y).width(width).height(height));
+        IGuiTexture texture = new GuiTextureGroup(GuiTextures.VANILLA_BUTTON, icon);
+        button.buttonStyle(style -> style.baseTexture(texture).hoverTexture(texture).pressedTexture(texture));
+        return button;
     }
 
     @Override

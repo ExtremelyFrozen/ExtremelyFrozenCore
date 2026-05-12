@@ -1,6 +1,6 @@
 {
-	"parent": "gtceu:block/overlay/front_all",
+	"parent": "extfrocore:block/overlay/front_all",
 	"textures": {
-		"overlay": "gtceu:block/overlay/machine/overlay_monitor"
+		"overlay": "extfrocore:block/overlay/machine/overlay_monitor"
 	}
 }

@@ -26,7 +26,10 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
 
 import com.lowdragmc.lowdraglib2.gui.ui.ModularUI;
-import com.lowdragmc.lowdraglib2.gui.widget.*;
+import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.Label;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.ScrollerView;
+import com.lowdragmc.lowdraglib2.gui.util.ClickData;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 
@@ -138,16 +141,35 @@ public class WorkableElectricMultiblockMachine extends WorkableMultiblockMachine
     }
 
     @Override
-    public Widget createUIWidget() {
-        var group = new WidgetGroup(0, 0, 182 + 8, 117 + 8);
-        group.addWidget(new DraggableScrollableWidgetGroup(4, 4, 182, 117).setBackground(getScreenTexture())
-                .addWidget(new LabelWidget(4, 5, self().getBlockState().getBlock().getDescriptionId()))
-                .addWidget(new ComponentPanelWidget(4, 17, this::addDisplayText)
-                        .textSupplier(this.getLevel().isClientSide ? null : this::addDisplayText)
-                        .setMaxWidthLimit(200)
-                        .clickHandler(this::handleDisplayClick)));
-        group.setBackground(GuiTextures.BACKGROUND_INVERSE);
+    public UIElement createUIWidget() {
+        var group = new UIElement().layout(layout -> layout.width(190).height(125))
+                .style(style -> style.background(GuiTextures.BACKGROUND_INVERSE));
+        var screen = new ScrollerView();
+        screen.layout(layout -> layout.left(4).top(4).width(182).height(117));
+        screen.style(style -> style.background(getScreenTexture()));
+
+        var title = label(4, 5, 174, 10, Component.translatable(self().getBlockState().getBlock().getDescriptionId()));
+        screen.addScrollViewChild(title);
+
+        List<Component> displayText = new ArrayList<>();
+        addDisplayText(displayText);
+        int y = 17;
+        for (Component component : displayText) {
+            Label line = label(4, y, 174, 10, component);
+            line.style(style -> style.tooltips(component));
+            screen.addScrollViewChild(line);
+            y += 10;
+        }
+        group.addChild(screen);
         return group;
+    }
+
+    protected Label label(int x, int y, int width, int height, Component component) {
+        Label label = new Label();
+        label.setValue(component);
+        label.layout(layout -> layout.left(x).top(y).width(width).height(height));
+        label.textStyle(style -> style.textColor(0x404040).textShadow(false));
+        return label;
     }
 
     @Override

@@ -26,18 +26,18 @@ public class AutoOutputItemConfigHandler implements IDirectionalConfigHandler {
 
     private static final IGuiTexture TEXTURE_OFF = new GuiTextureGroup(
             GuiTextures.VANILLA_BUTTON,
-            CroppedTexture.of("gtceu:textures/gui/icon/io_config/output_config_item_modes.png", 0, 0, 1, 1 / 3f));
+            CroppedTexture.of("extfrocore:textures/gui/icon/io_config/output_config_item_modes.png", 0, 0, 1, 1 / 3f));
     private static final IGuiTexture TEXTURE_OUTPUT = new GuiTextureGroup(
             GuiTextures.VANILLA_BUTTON,
-            CroppedTexture.of("gtceu:textures/gui/icon/io_config/output_config_item_modes.png", 0, 1 / 3f, 1, 1 / 3f));
+            CroppedTexture.of("extfrocore:textures/gui/icon/io_config/output_config_item_modes.png", 0, 1 / 3f, 1, 1 / 3f));
     private static final IGuiTexture TEXTURE_AUTO = new GuiTextureGroup(
             GuiTextures.VANILLA_BUTTON,
-            CroppedTexture.of("gtceu:textures/gui/icon/io_config/output_config_item_modes.png", 0, 2 / 3f, 1, 1 / 3f));
+            CroppedTexture.of("extfrocore:textures/gui/icon/io_config/output_config_item_modes.png", 0, 2 / 3f, 1, 1 / 3f));
     private static final IGuiTexture ALLOW_INPUT_OFF = new GuiTextureGroup(
-            CroppedTexture.of("gtceu:textures/gui/widget/toggle_button_background.png", 0, 0, 1, 0.5f),
+            CroppedTexture.of("extfrocore:textures/gui/widget/toggle_button_background.png", 0, 0, 1, 0.5f),
             GuiTextures.BUTTON_ITEM_OUTPUT);
     private static final IGuiTexture ALLOW_INPUT_ON = new GuiTextureGroup(
-            CroppedTexture.of("gtceu:textures/gui/widget/toggle_button_background.png", 0, 0.5f, 1, 0.5f),
+            CroppedTexture.of("extfrocore:textures/gui/widget/toggle_button_background.png", 0, 0.5f, 1, 0.5f),
             GuiTextures.BUTTON_ITEM_OUTPUT);
 
     private final AutoOutputTrait trait;

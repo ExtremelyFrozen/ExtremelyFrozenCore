@@ -5,7 +5,6 @@ import com.extfro.extfrocore.api.blockentity.BlockEntityCreationInfo;
 import com.extfro.extfrocore.api.capability.*;
 import com.extfro.extfrocore.api.capability.compat.FeCompat;
 import com.extfro.extfrocore.api.gui.GuiTextures;
-import com.extfro.extfrocore.api.gui.widget.SlotWidget;
 import com.extfro.extfrocore.api.machine.TieredEnergyMachine;
 import com.extfro.extfrocore.api.machine.feature.IFancyUIMachine;
 import com.extfro.extfrocore.api.machine.property.GTMachineModelProperties;
@@ -24,9 +23,7 @@ import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.neoforged.neoforge.energy.IEnergyStorage;
 
 import com.lowdragmc.lowdraglib2.gui.texture.GuiTextureGroup;
-import com.lowdragmc.lowdraglib2.gui.widget.Widget;
-import com.lowdragmc.lowdraglib2.gui.widget.WidgetGroup;
-import com.lowdragmc.lowdraglib2.math.Position;
+import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
 import lombok.Getter;
 import lombok.Setter;
 import org.jetbrains.annotations.Nullable;
@@ -118,38 +115,41 @@ public class ChargerMachine extends TieredEnergyMachine implements IControllable
     //////////////////////////////////////
 
     @Override
-    public Widget createUIWidget() {
+    public UIElement createUIWidget() {
         int rowSize = (int) Math.sqrt(inventorySize);
         int colSize = rowSize;
         if (inventorySize == 8) {
             rowSize = 4;
             colSize = 2;
         }
-        var template = new WidgetGroup(0, 0, 18 * rowSize + 8, 18 * colSize + 8);
-        template.setBackground(GuiTextures.BACKGROUND_INVERSE);
+        int templateWidth = 18 * rowSize + 8;
+        int templateHeight = 18 * colSize + 8;
+        var template = new UIElement();
+        template.layout(layout -> layout.width(templateWidth).height(templateHeight));
+        template.style(style -> style.background(GuiTextures.BACKGROUND_INVERSE));
         int index = 0;
         for (int y = 0; y < colSize; y++) {
             for (int x = 0; x < rowSize; x++) {
-                template.addWidget(new SlotWidget(chargerInventory, index++, 4 + x * 18, 4 + y * 18, true, true)
-                        .setBackgroundTexture(new GuiTextureGroup(GuiTextures.SLOT, GuiTextures.CHARGER_OVERLAY)));
+                template.addChild(itemSlot(chargerInventory, index++, 4 + x * 18, 4 + y * 18,
+                        new GuiTextureGroup(GuiTextures.SLOT, GuiTextures.CHARGER_OVERLAY), true, true));
             }
         }
 
-        var editableUI = createEnergyBar();
-        var energyBar = editableUI.createDefault();
-
-        var group = new WidgetGroup(0, 0,
-                Math.max(energyBar.getSize().width + template.getSize().width + 4 + 8, 172),
-                Math.max(template.getSize().height + 8, energyBar.getSize().height + 8));
-        var size = group.getSize();
-        energyBar.setSelfPosition(new Position(3, (size.height - energyBar.getSize().height) / 2));
-        template.setSelfPosition(new Position(
-                (size.width - energyBar.getSize().width - 4 - template.getSize().width) / 2 + 2 +
-                        energyBar.getSize().width + 2,
-                (size.height - template.getSize().height) / 2));
-        group.addWidget(energyBar);
-        group.addWidget(template);
-        editableUI.setupUI(group, this);
+        var energyBar = createEnergyBar(this);
+        int energyBarWidth = 18;
+        int energyBarHeight = 60;
+        int groupWidth = Math.max(energyBarWidth + templateWidth + 4 + 8, 172);
+        int groupHeight = Math.max(templateHeight + 8, energyBarHeight + 8);
+        var group = new UIElement();
+        group.layout(layout -> layout.width(groupWidth).height(groupHeight));
+        energyBar.layout(layout -> layout.left(3).top((groupHeight - energyBarHeight) / 2).width(energyBarWidth).height(energyBarHeight));
+        template.layout(layout -> layout
+                .left((groupWidth - energyBarWidth - 4 - templateWidth) / 2 + 2 + energyBarWidth + 2)
+                .top((groupHeight - templateHeight) / 2)
+                .width(templateWidth)
+                .height(templateHeight));
+        group.addChild(energyBar);
+        group.addChild(template);
         return group;
     }
 

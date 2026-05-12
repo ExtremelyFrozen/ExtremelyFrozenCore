@@ -1,5 +1,5 @@
 {
-	"parent": "gtceu:block/cube/tinted/all",
+	"parent": "extfrocore:block/cube/tinted/all",
 	"elements": [
 		{
 			"from": [0, 0, 0],

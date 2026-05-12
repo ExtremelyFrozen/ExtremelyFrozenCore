@@ -4,9 +4,8 @@ import com.extfro.extfrocore.api.capability.ICoverable;
 import com.extfro.extfrocore.api.cover.CoverDefinition;
 import com.extfro.extfrocore.api.cover.filter.FluidFilter;
 import com.extfro.extfrocore.api.cover.filter.SimpleFluidFilter;
+import com.extfro.extfrocore.api.gui.GuiTextures;
 import com.extfro.extfrocore.api.gui.widget.EnumSelectorWidget;
-import com.extfro.extfrocore.api.gui.widget.IntInputWidget;
-import com.extfro.extfrocore.api.gui.widget.NumberInputWidget;
 import com.extfro.extfrocore.api.sync_system.annotations.SaveField;
 import com.extfro.extfrocore.api.sync_system.annotations.SyncToClient;
 import com.extfro.extfrocore.api.transfer.fluid.IFluidHandlerModifiable;
@@ -20,7 +19,8 @@ import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler;
 
-import com.lowdragmc.lowdraglib2.gui.widget.WidgetGroup;
+import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.TextField;
 import it.unimi.dsi.fastutil.objects.Object2LongMaps;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
@@ -42,7 +42,7 @@ public class AdvancedFluidVoidingCover extends FluidVoidingCover {
     @Getter
     private BucketMode transferBucketMode = BucketMode.MILLI_BUCKET;
 
-    private @Nullable NumberInputWidget<Integer> stackSizeInput;
+    private @Nullable TextField stackSizeInput;
     private @Nullable EnumSelectorWidget<BucketMode> stackSizeBucketModeInput;
 
     public AdvancedFluidVoidingCover(CoverDefinition definition, ICoverable coverHolder, Direction attachedSide) {
@@ -106,7 +106,7 @@ public class AdvancedFluidVoidingCover extends FluidVoidingCover {
         syncDataHolder.markClientSyncFieldDirty("transferBucketMode");
 
         if (stackSizeInput == null) return;
-        stackSizeInput.setValue(getCurrentBucketModeTransferSize());
+        stackSizeInput.setText(String.valueOf(getCurrentBucketModeTransferSize()));
     }
 
     //////////////////////////////////////
@@ -119,19 +119,27 @@ public class AdvancedFluidVoidingCover extends FluidVoidingCover {
     }
 
     @Override
-    protected void buildAdditionalUI(WidgetGroup group) {
-        group.addWidget(
+    protected void buildVoidingAdditionalUI(UIElement group) {
+        group.addChild(
                 new EnumSelectorWidget<>(146, 20, 20, 20, VoidingMode.values(), voidingMode, this::setVoidingMode));
 
-        this.stackSizeInput = new IntInputWidget(35, 20, 84, 20,
-                this::getCurrentBucketModeTransferSize, this::setCurrentBucketModeTransferSize).setMin(1)
-                .setMax(Integer.MAX_VALUE);
+        this.stackSizeInput = new TextField();
+        this.stackSizeInput.layout(layout -> layout.left(35).top(20).width(84).height(20));
+        this.stackSizeInput.style(style -> style.background(GuiTextures.DISPLAY));
+        this.stackSizeInput.textFieldStyle(style -> style.textColor(0x404040).textShadow(false));
+        this.stackSizeInput.setNumbersOnlyInt(1, Integer.MAX_VALUE);
+        this.stackSizeInput.setText(String.valueOf(getCurrentBucketModeTransferSize()));
+        this.stackSizeInput.setTextResponder(value -> {
+            if (!value.isBlank()) {
+                setCurrentBucketModeTransferSize(Integer.parseInt(value));
+            }
+        });
         configureStackSizeInput();
-        group.addWidget(this.stackSizeInput);
+        group.addChild(this.stackSizeInput);
 
         this.stackSizeBucketModeInput = new EnumSelectorWidget<>(121, 20, 20, 20, BucketMode.values(),
                 transferBucketMode, this::setTransferBucketMode);
-        group.addWidget(this.stackSizeBucketModeInput);
+        group.addChild(this.stackSizeBucketModeInput);
     }
 
     private int getCurrentBucketModeTransferSize() {
@@ -157,7 +165,9 @@ public class AdvancedFluidVoidingCover extends FluidVoidingCover {
             return;
 
         this.stackSizeInput.setVisible(shouldShowStackSize());
+        this.stackSizeInput.setActive(shouldShowStackSize());
         this.stackSizeBucketModeInput.setVisible(shouldShowStackSize());
+        this.stackSizeBucketModeInput.setActive(shouldShowStackSize());
     }
 
     private boolean shouldShowStackSize() {
@@ -172,9 +182,9 @@ public class AdvancedFluidVoidingCover extends FluidVoidingCover {
 
     @Override
     public CompoundTag copyConfig(CompoundTag tag) {
-        tag.putInt("voidingMode", getVoidingMode().ordinal());
-        tag.putInt("voidSize", getGlobalTransferSizeMillibuckets());
-        tag.putInt("voidBucketMode", getTransferBucketMode().ordinal());
+        tag.putInt("voidingMode", voidingMode.ordinal());
+        tag.putInt("voidSize", globalTransferSizeMillibuckets);
+        tag.putInt("voidBucketMode", transferBucketMode.ordinal());
         return super.copyConfig(tag);
     }
 

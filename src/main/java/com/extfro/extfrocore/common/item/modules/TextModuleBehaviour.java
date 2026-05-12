@@ -12,7 +12,6 @@ import com.extfro.extfrocore.common.data.item.GTDataComponents;
 import com.extfro.extfrocore.common.item.datacomponents.TextLineList;
 import com.extfro.extfrocore.common.machine.multiblock.electric.CentralMonitorMachine;
 import com.extfro.extfrocore.common.machine.multiblock.electric.monitor.MonitorGroup;
-import com.extfro.extfrocore.common.network.packets.SCPacketMonitorGroupNBTChange;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
@@ -20,20 +19,16 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
-import net.neoforged.neoforge.network.PacketDistributor;
 
-import com.lowdragmc.lowdraglib2.gui.widget.ButtonWidget;
-import com.lowdragmc.lowdraglib2.gui.widget.TextFieldWidget;
-import com.lowdragmc.lowdraglib2.gui.widget.Widget;
-import com.lowdragmc.lowdraglib2.gui.widget.WidgetGroup;
-import com.lowdragmc.lowdraglib2.gui.widget.codeeditor.CodeEditorWidget;
+import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.Button;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.TextField;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.codeeditor.CodeEditor;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public class TextModuleBehaviour implements IMonitorModuleItem, IAddInformation {
@@ -53,7 +48,8 @@ public class TextModuleBehaviour implements IMonitorModuleItem, IAddInformation 
                         null,
                         null,
                         stack.get(GTDataComponents.PLACEHOLDER_UUID)));
-        stack.update(GTDataComponents.TEXT_LINE_LIST, TextLineList.EMPTY, lines -> lines.withLines(text.toImmutable()));
+        TextLineList previous = stack.getOrDefault(GTDataComponents.TEXT_LINE_LIST, TextLineList.EMPTY);
+        stack.set(GTDataComponents.TEXT_LINE_LIST, new TextLineList(text.toImmutable(), previous.scale()));
     }
 
     @Override
@@ -68,58 +64,51 @@ public class TextModuleBehaviour implements IMonitorModuleItem, IAddInformation 
     }
 
     @Override
-    public Widget createUIWidget(ItemStack stack, CentralMonitorMachine machine, MonitorGroup group) {
-        WidgetGroup builder = new WidgetGroup();
-        CodeEditorWidget editor = new CodeEditorWidget(0, 0, 120, 80);
-        // editor.codeEditor.setLanguageDefinition(PlaceholderHandler.LANG_DEFINITION);
-        TextFieldWidget scaleInput = new TextFieldWidget(
-                -50, 47,
-                40, 10,
-                null,
-                null);
-        ButtonWidget saveButton = new ButtonWidget(-40, 22, 20, 20, click -> {
-            if (!click.isRemote) return;
+    public UIElement createUIWidget(ItemStack stack, CentralMonitorMachine machine, MonitorGroup group) {
+        UIElement builder = new UIElement().layout(layout -> layout.width(260).height(165));
+        CodeEditor editor = new CodeEditor();
+        editor.layout(layout -> layout.left(0).top(0).width(120).height(80));
+        editor.style(style -> style.background(GuiTextures.DISPLAY));
+        editor.textAreaStyle(style -> style.textColor(0x404040).textShadow(false));
+        // editor.setLanguage(PlaceholderHandler.LANG_DEFINITION);
+
+        TextField scaleInput = new TextField();
+        scaleInput.layout(layout -> layout.left(-50).top(47).width(40).height(10));
+        scaleInput.style(style -> style.background(GuiTextures.DISPLAY)
+                .tooltips(Component.translatable("gtceu.gui.central_monitor.text_scale")));
+        scaleInput.textFieldStyle(style -> style.textColor(0x404040).textShadow(false));
+        scaleInput.setNumbersOnlyFloat(.0001f, 1000f);
+
+        Button saveButton = new Button().noText();
+        saveButton.layout(layout -> layout.left(-40).top(22).width(20).height(20));
+        saveButton.buttonStyle(style -> style.baseTexture(GuiTextures.BUTTON_CHECK)
+                .hoverTexture(GuiTextures.BUTTON_CHECK)
+                .pressedTexture(GuiTextures.BUTTON_CHECK));
+        saveButton.setOnServerClick(click -> {
             List<Component> lines = editor.getLines().stream()
                     .map(Component::literal)
                     .collect(Collectors.toList());
             float scale = 1.0f;
             try {
-                scale = Float.parseFloat(scaleInput.getCurrentString());
+                scale = Float.parseFloat(scaleInput.getValue());
             } catch (NumberFormatException ignored) {}
             stack.set(GTDataComponents.FORMAT_STRING_LIST, new TextLineList(lines, scale));
-            PacketDistributor.sendToServer(new SCPacketMonitorGroupNBTChange(stack, group, machine));
         });
-        saveButton.setButtonTexture(GuiTextures.BUTTON_CHECK);
-        List<Boolean> tmp = new ArrayList<>();
-        Supplier<String> scaleInputSupplier = () -> {
-            if (tmp.isEmpty()) {
-                tmp.add(true);
-            } else {
-                scaleInput.setTextSupplier(null);
-            }
-            if (!stack.has(GTDataComponents.FORMAT_STRING_LIST)) {
-                stack.update(GTDataComponents.FORMAT_STRING_LIST, TextLineList.EMPTY,
-                        lines -> lines.withScale(1.0f));
-                PacketDistributor.sendToServer(new SCPacketMonitorGroupNBTChange(stack, group, machine));
-                return "1";
-            }
-            // noinspection DataFlowIssue
-            return String.valueOf(Mth.clamp(stack.get(GTDataComponents.FORMAT_STRING_LIST).scale(), .0001f, 1000f));
-        };
-        scaleInput.setTextSupplier(scaleInputSupplier);
-        scaleInput.setHoverTooltips(Component.translatable("gtceu.gui.central_monitor.text_scale"));
+        scaleInput.setText(String.valueOf(Mth.clamp(
+                stack.getOrDefault(GTDataComponents.FORMAT_STRING_LIST, TextLineList.EMPTY).scale(),
+                .0001f, 1000f)));
         List<String> formatStringLines = stack.getOrDefault(GTDataComponents.FORMAT_STRING_LIST, TextLineList.EMPTY)
                 .lines()
                 .stream()
                 .map(Component::getString)
                 .toList();
         editor.setLines(formatStringLines);
-        builder.addWidget(editor);
-        builder.addWidget(saveButton);
-        Widget placeholderReference = PlaceholderHandler.getPlaceholderHandlerUI("");
-        builder.addWidget(scaleInput);
-        placeholderReference.setSelfPosition(-100, -50);
-        builder.addWidget(placeholderReference);
+        builder.addChild(editor);
+        builder.addChild(saveButton);
+        UIElement placeholderReference = PlaceholderHandler.getPlaceholderHandlerUI("");
+        builder.addChild(scaleInput);
+        placeholderReference.layout(layout -> layout.left(-100).top(-50));
+        builder.addChild(placeholderReference);
         return builder;
     }
 
@@ -137,7 +126,8 @@ public class TextModuleBehaviour implements IMonitorModuleItem, IAddInformation 
     }
 
     public void setScale(ItemStack stack, float scale) {
-        stack.update(GTDataComponents.TEXT_LINE_LIST, TextLineList.EMPTY, lines -> lines.withScale(scale));
+        TextLineList previous = stack.getOrDefault(GTDataComponents.TEXT_LINE_LIST, TextLineList.EMPTY);
+        stack.set(GTDataComponents.TEXT_LINE_LIST, new TextLineList(previous.lines(), scale));
     }
 
     public void setPlaceholderText(ItemStack stack, String text) {
@@ -145,8 +135,8 @@ public class TextModuleBehaviour implements IMonitorModuleItem, IAddInformation 
                 .map(Component::literal)
                 .map(Component.class::cast)
                 .toList();
-        stack.update(GTDataComponents.FORMAT_STRING_LIST, TextLineList.EMPTY,
-                formatStringList -> formatStringList.withLines(lines));
+        TextLineList previous = stack.getOrDefault(GTDataComponents.FORMAT_STRING_LIST, TextLineList.EMPTY);
+        stack.set(GTDataComponents.FORMAT_STRING_LIST, new TextLineList(lines, previous.scale()));
     }
 
     public String getPlaceholderText(ItemStack stack) {

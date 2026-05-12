@@ -57,6 +57,20 @@ public abstract class DetectorCover extends CoverBehavior implements IControllab
         syncDataHolder.markClientSyncFieldDirty("isInverted");
     }
 
+    @Override
+    public boolean isWorkingEnabled() {
+        return isWorkingEnabled;
+    }
+
+    @Override
+    public void setWorkingEnabled(boolean isWorkingEnabled) {
+        this.isWorkingEnabled = isWorkingEnabled;
+    }
+
+    public boolean isInverted() {
+        return isInverted;
+    }
+
     protected boolean shouldUpdate() {
         return forceUpdate || this.coverHolder.getOffsetTimer() % 20 == 0;
     }

@@ -2081,7 +2081,7 @@
 	"cover.storage.title": "収納カバー",
 	"cover.tag_filter.info.0": "§b複雑な表現も受け入れる",
 	"cover.tag_filter.info.1": "§6a & b§r = AND",
-	"cover.tag_filter.info.10": "§b例: §6*dusts/gold | (gtceu:circuits & !*lv)",
+	"cover.tag_filter.info.10": "§b例: §6*dusts/gold | (extfrocore:circuits & !*lv)",
 	"cover.tag_filter.info.11": "これは全ての金の粉、またはLVを除く全ての回路に一致します。",
 	"cover.tag_filter.info.2": "§6a | b§r = OR",
 	"cover.tag_filter.info.3": "§6a ^ b§r = XOR",

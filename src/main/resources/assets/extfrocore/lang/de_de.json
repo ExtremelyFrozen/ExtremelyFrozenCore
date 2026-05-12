@@ -2114,7 +2114,7 @@
 	"cover.storage.title": "Aufbewahrungsabdeckung",
 	"cover.tag_filter.info.0": "§bAkzeptiert komplexe Ausdrücke",
 	"cover.tag_filter.info.1": "§6a & b§r = UND",
-	"cover.tag_filter.info.10": "§bBeispiel: §6*Stäube/Gold | (gtceu:schaltungen & !*lv)",
+	"cover.tag_filter.info.10": "§bBeispiel: §6*Stäube/Gold | (extfrocore:schaltungen & !*lv)",
 	"cover.tag_filter.info.11": "Dies entspricht allen Goldstäuben oder allen Schaltkreisen außer LV",
 	"cover.tag_filter.info.2": "§6a | b§r = ODER",
 	"cover.tag_filter.info.3": "§6a ^ b§r = XOR",

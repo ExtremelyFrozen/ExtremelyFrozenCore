@@ -2,7 +2,7 @@
 	"parent": "block/cube_bottom_top",
 	"textures": {
 		"bottom": "#side",
-		"side": "gtceu:block/casings/gcym/shock_proof_cutting_casing",
-		"top": "gtceu:block/casings/unique/slicing_blades"
+		"side": "extfrocore:block/casings/gcym/shock_proof_cutting_casing",
+		"top": "extfrocore:block/casings/unique/slicing_blades"
 	}
 }

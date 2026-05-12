@@ -20,6 +20,6 @@ public enum VoidingMode implements EnumSelectorWidget.SelectableEnum {
     VoidingMode(String tooltip, String textureName, int maxStackSize) {
         this.tooltip = tooltip;
         this.maxStackSize = maxStackSize;
-        this.icon = SpriteTexture.of("gtceu:textures/gui/icon/voiding_mode/" + textureName + ".png");
+        this.icon = SpriteTexture.of("extfrocore:textures/gui/icon/voiding_mode/" + textureName + ".png");
     }
 }

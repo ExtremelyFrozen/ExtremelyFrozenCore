@@ -8,6 +8,7 @@ import com.extfro.extfrocore.api.recipe.GTRecipe;
 import com.extfro.extfrocore.api.sync_system.annotations.SaveField;
 import com.extfro.extfrocore.api.transfer.fluid.CustomFluidTank;
 import com.extfro.extfrocore.integration.ae2.gui.widget.list.AEListGridWidget;
+import com.extfro.extfrocore.integration.ae2.gui.AEUIHelper;
 import com.extfro.extfrocore.integration.ae2.utils.KeyStorage;
 import com.extfro.extfrocore.utils.GTMath;
 
@@ -17,9 +18,7 @@ import net.neoforged.neoforge.fluids.crafting.SizedFluidIngredient;
 
 import appeng.api.config.Actionable;
 import appeng.api.stacks.AEFluidKey;
-import com.lowdragmc.lowdraglib2.gui.widget.LabelWidget;
-import com.lowdragmc.lowdraglib2.gui.widget.Widget;
-import com.lowdragmc.lowdraglib2.gui.widget.WidgetGroup;
+import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collections;
@@ -86,16 +85,13 @@ public class MEOutputHatchPartMachine extends MEHatchPartMachine {
     ///////////////////////////////
 
     @Override
-    public Widget createUIWidget() {
-        WidgetGroup group = new WidgetGroup(0, 0, 170, 65);
-        // ME Network status
-        group.addWidget(new LabelWidget(5, 0, () -> this.isOnline ?
-                "gtceu.gui.me_network.online" :
-                "gtceu.gui.me_network.offline"));
-        group.addWidget(new LabelWidget(5, 10, "gtceu.gui.waiting_list"));
-        // display list
-        group.addWidget(new AEListGridWidget.Fluid(5, 20, 3, this.internalBuffer));
-
+    public UIElement createUIWidget() {
+        UIElement group = AEUIHelper.group(0, 0, 170, 65);
+        group.addChild(AEUIHelper.label(5, 0, () -> this.isOnline ?
+                Component.translatable("gtceu.gui.me_network.online") :
+                Component.translatable("gtceu.gui.me_network.offline")));
+        group.addChild(AEUIHelper.label(5, 10, "gtceu.gui.waiting_list"));
+        group.addChild(new AEListGridWidget.Fluid(5, 20, 3, this.internalBuffer));
         return group;
     }
 

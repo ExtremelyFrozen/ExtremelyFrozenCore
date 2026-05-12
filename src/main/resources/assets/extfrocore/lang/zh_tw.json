@@ -2043,7 +2043,7 @@
 	"cover.storage.title": "儲存覆蓋板",
 	"cover.tag_filter.info.0": "§b接受複雜表示式",
 	"cover.tag_filter.info.1": "& = 且（AND）",
-	"cover.tag_filter.info.10": "§b使用範例：§6*dusts/gold | (gtceu:circuits & !*lv)",
+	"cover.tag_filter.info.10": "§b使用範例：§6*dusts/gold | (extfrocore:circuits & !*lv)",
 	"cover.tag_filter.info.11": "這將匹配所有種類的金粉或LV以外的電路",
 	"cover.tag_filter.info.2": "丨= 或（OR）",
 	"cover.tag_filter.info.3": "^ = 異或（XOR）",

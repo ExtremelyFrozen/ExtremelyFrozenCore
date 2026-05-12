@@ -37,6 +37,18 @@ public abstract class VirtualEntry implements INBTSerializable<CompoundTag> {
         this.colorStr = Integer.toHexString(color).toUpperCase(Locale.ROOT);
     }
 
+    public @NotNull String getDescription() {
+        return description;
+    }
+
+    public void setDescription(@NotNull String description) {
+        this.description = description;
+    }
+
+    public String getColorStr() {
+        return colorStr;
+    }
+
     public static int parseColor(String colorString) {
         if (colorString.length() < 8) {
             throw new IllegalArgumentException("Invalid color string: " + colorString);

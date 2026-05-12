@@ -7,26 +7,29 @@ import com.extfro.extfrocore.api.cover.filter.FilterHandler;
 import com.extfro.extfrocore.api.cover.filter.FilterHandlers;
 import com.extfro.extfrocore.api.cover.filter.FluidFilter;
 import com.extfro.extfrocore.api.gui.GuiTextures;
-import com.extfro.extfrocore.api.gui.widget.IntInputWidget;
-import com.extfro.extfrocore.api.gui.widget.ToggleButtonWidget;
 import com.extfro.extfrocore.api.sync_system.annotations.SaveField;
 import com.extfro.extfrocore.api.sync_system.annotations.SyncToClient;
+import com.extfro.extfrocore.data.lang.LangHandler;
 
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler;
 
-import com.lowdragmc.lowdraglib2.gui.widget.LabelWidget;
-import com.lowdragmc.lowdraglib2.gui.widget.TextBoxWidget;
-import com.lowdragmc.lowdraglib2.gui.widget.Widget;
-import com.lowdragmc.lowdraglib2.gui.widget.WidgetGroup;
-import com.lowdragmc.lowdraglib2.utils.LocalizationUtils;
+import com.lowdragmc.lowdraglib2.gui.texture.GuiTextureGroup;
+import com.lowdragmc.lowdraglib2.gui.texture.IGuiTexture;
+import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.Button;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.Label;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.TextField;
 import lombok.Getter;
 
+import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 import java.util.List;
 
 import static com.extfro.extfrocore.utils.RedstoneUtil.computeLatchedRedstoneBetweenValues;
@@ -112,36 +115,69 @@ public class AdvancedFluidDetectorCover extends FluidDetectorCover implements IU
     //////////////////////////////////////
 
     @Override
-    public Widget createUIWidget() {
-        WidgetGroup group = new WidgetGroup(0, 0, 176, 170);
-        group.addWidget(new LabelWidget(10, 5, "cover.advanced_fluid_detector.label"));
-
-        group.addWidget(new TextBoxWidget(10, 55, 65,
-                List.of(LocalizationUtils.format("cover.advanced_fluid_detector.min"))));
-
-        group.addWidget(new TextBoxWidget(10, 80, 65,
-                List.of(LocalizationUtils.format("cover.advanced_fluid_detector.max"))));
-
-        group.addWidget(new IntInputWidget(80, 50, 176 - 80 - 10, 20, this::getMinValue, this::setMinValue));
-        group.addWidget(new IntInputWidget(80, 75, 176 - 80 - 10, 20, this::getMaxValue, this::setMaxValue));
+    public UIElement createUIElement() {
+        UIElement group = new UIElement().layout(layout -> layout.width(176).height(170));
+        group.addChild(label(10, 5, "cover.advanced_fluid_detector.label", 156));
+        group.addChild(label(10, 55, "cover.advanced_fluid_detector.min", 65));
+        group.addChild(label(10, 80, "cover.advanced_fluid_detector.max", 65));
+        group.addChild(intInput(80, 50, 176 - 80 - 10, minValue, this::setMinValue));
+        group.addChild(intInput(80, 75, 176 - 80 - 10, maxValue, this::setMaxValue));
 
         // Invert Redstone Output Toggle:
-        group.addWidget(new ToggleButtonWidget(
-                9, 20, 20, 20,
-                GuiTextures.INVERT_REDSTONE_BUTTON, this::isInverted, this::setInverted)
-                .isMultiLang()
-                .setTooltipText("cover.advanced_fluid_detector.invert"));
+        group.addChild(toggleButton(9, 20, 20, 20,
+                GuiTextures.INVERT_REDSTONE_BUTTON, this::isInverted, this::setInverted,
+                "cover.advanced_fluid_detector.invert"));
 
-        group.addWidget(
-                new ToggleButtonWidget(31, 21, 18, 18, GuiTextures.BUTTON_LOCK, this::isLatched, this::setLatched)
-                        .setShouldUseBaseBackground()
-                        .isMultiLang()
-                        .setTooltipText("cover.advanced_detector.latch"));
+        group.addChild(toggleButton(31, 21, 18, 18,
+                GuiTextures.BUTTON_LOCK, () -> isLatched, this::setLatched,
+                "cover.advanced_detector.latch"));
 
-        group.addWidget(filterHandler.createFilterSlotUI(148, 100));
-        group.addWidget(filterHandler.createFilterConfigUI(10, 100, 156, 60));
+        group.addChild(filterHandler.createFilterSlotUI(148, 100));
+        group.addChild(filterHandler.createFilterConfigUI(10, 100, 156, 60));
 
         return group;
+    }
+
+    private Label label(int x, int y, String translationKey, int width) {
+        Label label = new Label();
+        label.setValue(Component.translatable(translationKey));
+        label.layout(layout -> layout.left(x).top(y).width(width).height(10));
+        label.textStyle(style -> style.textColor(0x404040).textShadow(false));
+        return label;
+    }
+
+    private TextField intInput(int x, int y, int width, int value, Consumer<Integer> setter) {
+        TextField field = new TextField();
+        field.layout(layout -> layout.left(x).top(y).width(width).height(20));
+        field.style(style -> style.background(GuiTextures.DISPLAY));
+        field.textFieldStyle(style -> style.textColor(0x404040).textShadow(false));
+        field.setNumbersOnlyInt(0, Integer.MAX_VALUE);
+        field.setText(String.valueOf(value));
+        field.setTextResponder(text -> {
+            if (!text.isBlank()) {
+                setter.accept(Integer.parseInt(text));
+            }
+        });
+        return field;
+    }
+
+    private Button toggleButton(int x, int y, int width, int height, IGuiTexture icon, BooleanSupplier getter,
+                                Consumer<Boolean> setter, String tooltipPrefix) {
+        Button button = new Button().noText();
+        button.layout(layout -> layout.left(x).top(y).width(width).height(height));
+        Consumer<Button> update = b -> {
+            IGuiTexture texture = new GuiTextureGroup(GuiTextures.VANILLA_BUTTON.copy()
+                    .setColor(getter.getAsBoolean() ? 0xffa0ffa0 : -1), icon);
+            b.buttonStyle(style -> style.baseTexture(texture).hoverTexture(texture).pressedTexture(texture));
+            b.style(style -> style.tooltips(LangHandler.getMultiLang(tooltipPrefix + "." +
+                    (getter.getAsBoolean() ? "enabled" : "disabled")).toArray(Component[]::new)));
+        };
+        update.accept(button);
+        button.setOnServerClick(event -> {
+            setter.accept(!getter.getAsBoolean());
+            update.accept(button);
+        });
+        return button;
     }
 
     @Override

@@ -1,6 +1,6 @@
 {
 	"ldlib": {
-		"connection": "gtceu:block/casings/unique/crushing_wheels_active_ctm"
+		"connection": "extfrocore:block/casings/unique/crushing_wheels_active_ctm"
 	},
 	"animation": {
 		"interpolate": false,

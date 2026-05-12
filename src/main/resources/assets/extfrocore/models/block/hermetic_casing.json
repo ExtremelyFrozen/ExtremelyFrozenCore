@@ -2,7 +2,7 @@
 	"parent": "block/block",
 	"textures": {
 		"particle": "#bot_side",
-		"top_side": "gtceu:block/casings/hermetic_casing/hermetic_casing_overlay"
+		"top_side": "extfrocore:block/casings/hermetic_casing/hermetic_casing_overlay"
 	},
 	"elements": [
 		{

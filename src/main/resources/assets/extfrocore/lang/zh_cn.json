@@ -2101,7 +2101,7 @@
 	"cover.storage.title": "存储覆盖板",
 	"cover.tag_filter.info.0": "§b接受复杂表达式",
 	"cover.tag_filter.info.1": "§6a & b§r = 且（AND）",
-	"cover.tag_filter.info.10": "§b使用范例：§6*dusts/gold | (gtceu:circuits & !*lv)",
+	"cover.tag_filter.info.10": "§b使用范例：§6*dusts/gold | (extfrocore:circuits & !*lv)",
 	"cover.tag_filter.info.11": "这将匹配所有种类的金粉或LV以外的电路",
 	"cover.tag_filter.info.2": "§6a | b§r = 或（OR）",
 	"cover.tag_filter.info.3": "§6a ^ b§r = 异或（XOR）",

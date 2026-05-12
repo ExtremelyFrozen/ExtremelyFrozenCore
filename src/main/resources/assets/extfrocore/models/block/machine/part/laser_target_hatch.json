@@ -3,9 +3,9 @@
 	"parent": "block/block",
 	"textures": {
 		"particle": "#side",
-		"overlay_laser": "gtceu:block/overlay/machine/overlay_laser_base",
-		"overlay_laser_target": "gtceu:block/overlay/machine/overlay_laser_target",
-		"overlay_laser_target_emissive": "gtceu:block/overlay/machine/overlay_laser_target_emissive"
+		"overlay_laser": "extfrocore:block/overlay/machine/overlay_laser_base",
+		"overlay_laser_target": "extfrocore:block/overlay/machine/overlay_laser_target",
+		"overlay_laser_target_emissive": "extfrocore:block/overlay/machine/overlay_laser_target_emissive"
 	},
 	"elements": [
 		{

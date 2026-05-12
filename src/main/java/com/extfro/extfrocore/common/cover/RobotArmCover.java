@@ -6,7 +6,6 @@ import com.extfro.extfrocore.api.cover.CoverDefinition;
 import com.extfro.extfrocore.api.cover.filter.ItemFilter;
 import com.extfro.extfrocore.api.cover.filter.SimpleItemFilter;
 import com.extfro.extfrocore.api.gui.widget.EnumSelectorWidget;
-import com.extfro.extfrocore.api.gui.widget.IntInputWidget;
 import com.extfro.extfrocore.api.sync_system.annotations.SaveField;
 import com.extfro.extfrocore.api.sync_system.annotations.SyncToClient;
 import com.extfro.extfrocore.common.cover.data.TransferMode;
@@ -18,7 +17,8 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.items.IItemHandler;
 
-import com.lowdragmc.lowdraglib2.gui.widget.WidgetGroup;
+import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.TextField;
 import lombok.Getter;
 import lombok.Setter;
 import org.jetbrains.annotations.NotNull;
@@ -39,7 +39,7 @@ public class RobotArmCover extends ConveyorCover {
     protected int globalTransferLimit;
     protected int itemsTransferBuffered;
 
-    private IntInputWidget stackSizeInput;
+    private TextField stackSizeInput;
 
     public RobotArmCover(CoverDefinition definition, ICoverable coverHolder, Direction attachedSide, int tier,
                          int maxTransferRate) {
@@ -49,6 +49,18 @@ public class RobotArmCover extends ConveyorCover {
 
     public RobotArmCover(CoverDefinition definition, ICoverable coverHolder, Direction attachedSide, int tier) {
         this(definition, coverHolder, attachedSide, tier, CONVEYOR_SCALING.applyAsInt(tier));
+    }
+
+    public TransferMode getTransferMode() {
+        return transferMode;
+    }
+
+    public int getGlobalTransferLimit() {
+        return globalTransferLimit;
+    }
+
+    public void setGlobalTransferLimit(int globalTransferLimit) {
+        this.globalTransferLimit = globalTransferLimit;
     }
 
     @Override
@@ -160,15 +172,15 @@ public class RobotArmCover extends ConveyorCover {
     }
 
     @Override
-    protected void buildAdditionalUI(WidgetGroup group) {
-        group.addWidget(
+    protected void buildAdditionalUI(UIElement group) {
+        group.addChild(
                 new EnumSelectorWidget<>(146, 45, 20, 20, TransferMode.values(), transferMode, this::setTransferMode));
 
-        this.stackSizeInput = new IntInputWidget(64, 45, 80, 20,
-                () -> globalTransferLimit, val -> globalTransferLimit = val);
+        this.stackSizeInput = intInput(64, 45, 80, globalTransferLimit, 1, transferMode.maxStackSize,
+                val -> globalTransferLimit = val);
         configureStackSizeInput();
 
-        group.addWidget(this.stackSizeInput);
+        group.addChild(this.stackSizeInput);
     }
 
     public void setTransferMode(TransferMode transferMode) {
@@ -196,8 +208,7 @@ public class RobotArmCover extends ConveyorCover {
             return;
 
         this.stackSizeInput.setVisible(shouldShowStackSize());
-        this.stackSizeInput.setMin(1);
-        this.stackSizeInput.setMax(this.transferMode.maxStackSize);
+        this.stackSizeInput.setNumbersOnlyInt(1, this.transferMode.maxStackSize);
     }
 
     private boolean shouldShowStackSize() {

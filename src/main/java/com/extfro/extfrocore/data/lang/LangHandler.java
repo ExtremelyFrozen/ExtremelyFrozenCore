@@ -383,7 +383,7 @@ public class LangHandler {
                         §6$§r for untagged
                         §bTags come in the form 'namespace:tag/subtype'.
                         The 'c:' namespace is assumed if one isn't provided.
-                        §bExample: §6*dusts/gold | (gtceu:circuits & !*lv)
+                        §bExample: §6*dusts/gold | (extfrocore:circuits & !*lv)
                         This matches all gold dusts or all circuits except LV ones""");
         provider.add("cover.tag_filter.test_slot.info",
                 "Insert a item to test if it matches the filter expression");

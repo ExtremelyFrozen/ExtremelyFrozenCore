@@ -7,15 +7,13 @@ import com.extfro.extfrocore.client.renderer.monitor.MonitorImageRenderer;
 import com.extfro.extfrocore.common.data.item.GTDataComponents;
 import com.extfro.extfrocore.common.machine.multiblock.electric.CentralMonitorMachine;
 import com.extfro.extfrocore.common.machine.multiblock.electric.monitor.MonitorGroup;
-import com.extfro.extfrocore.common.network.packets.SCPacketMonitorGroupNBTChange;
 
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.network.PacketDistributor;
 
-import com.lowdragmc.lowdraglib2.gui.widget.ButtonWidget;
-import com.lowdragmc.lowdraglib2.gui.widget.TextFieldWidget;
-import com.lowdragmc.lowdraglib2.gui.widget.Widget;
-import com.lowdragmc.lowdraglib2.gui.widget.WidgetGroup;
+import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.Button;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.TextField;
 
 public class ImageModuleBehaviour implements IMonitorModuleItem {
 
@@ -25,20 +23,26 @@ public class ImageModuleBehaviour implements IMonitorModuleItem {
     }
 
     @Override
-    public Widget createUIWidget(ItemStack stack, CentralMonitorMachine machine, MonitorGroup group) {
-        WidgetGroup builder = new WidgetGroup();
-        TextFieldWidget textField = new TextFieldWidget(0, 0, 100, 10, null, null);
-        textField.setCurrentString(stack.getOrDefault(GTDataComponents.IMAGE_MODULE_URL, null));
+    public UIElement createUIWidget(ItemStack stack, CentralMonitorMachine machine, MonitorGroup group) {
+        UIElement builder = new UIElement().layout(layout -> layout.width(120).height(42));
+        TextField textField = new TextField();
+        textField.layout(layout -> layout.left(0).top(0).width(100).height(14));
+        textField.style(style -> style.background(GuiTextures.DISPLAY));
+        textField.textFieldStyle(style -> style.textColor(0x404040).textShadow(false)
+                .placeholder(Component.literal("URL")));
+        textField.setAnyString();
+        textField.setText(stack.getOrDefault(GTDataComponents.IMAGE_MODULE_URL, ""));
 
-        ButtonWidget saveButton = new ButtonWidget(-40, 22, 20, 20, click -> {
-            if (!click.isRemote) return;
-
-            stack.set(GTDataComponents.IMAGE_MODULE_URL, textField.getCurrentString());
-            PacketDistributor.sendToServer(new SCPacketMonitorGroupNBTChange(stack, group, machine));
+        Button saveButton = new Button().noText();
+        saveButton.layout(layout -> layout.left(-40).top(22).width(20).height(20));
+        saveButton.buttonStyle(style -> style.baseTexture(GuiTextures.BUTTON_CHECK)
+                .hoverTexture(GuiTextures.BUTTON_CHECK)
+                .pressedTexture(GuiTextures.BUTTON_CHECK));
+        saveButton.setOnServerClick(click -> {
+            stack.set(GTDataComponents.IMAGE_MODULE_URL, textField.getValue());
         });
-        saveButton.setButtonTexture(GuiTextures.BUTTON_CHECK);
-        builder.addWidget(textField);
-        builder.addWidget(saveButton);
+        builder.addChild(textField);
+        builder.addChild(saveButton);
         return builder;
     }
 

@@ -4,8 +4,8 @@ import com.extfro.extfrocore.api.capability.ICoverable;
 import com.extfro.extfrocore.api.cover.CoverDefinition;
 import com.extfro.extfrocore.api.cover.filter.ItemFilter;
 import com.extfro.extfrocore.api.cover.filter.SimpleItemFilter;
+import com.extfro.extfrocore.api.gui.GuiTextures;
 import com.extfro.extfrocore.api.gui.widget.EnumSelectorWidget;
-import com.extfro.extfrocore.api.gui.widget.IntInputWidget;
 import com.extfro.extfrocore.api.sync_system.annotations.SaveField;
 import com.extfro.extfrocore.api.sync_system.annotations.SyncToClient;
 import com.extfro.extfrocore.common.cover.data.VoidingMode;
@@ -16,7 +16,8 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.items.IItemHandler;
 
-import com.lowdragmc.lowdraglib2.gui.widget.WidgetGroup;
+import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.TextField;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 
@@ -33,7 +34,7 @@ public class AdvancedItemVoidingCover extends ItemVoidingCover {
     @Getter
     protected int globalVoidingLimit = 1;
 
-    private IntInputWidget stackSizeInput;
+    private TextField stackSizeInput;
 
     public AdvancedItemVoidingCover(CoverDefinition definition, ICoverable coverHolder, Direction attachedSide) {
         super(definition, coverHolder, attachedSide);
@@ -111,15 +112,24 @@ public class AdvancedItemVoidingCover extends ItemVoidingCover {
     }
 
     @Override
-    protected void buildAdditionalUI(WidgetGroup group) {
-        group.addWidget(
+    protected void buildVoidingAdditionalUI(UIElement group) {
+        group.addChild(
                 new EnumSelectorWidget<>(146, 20, 20, 20, VoidingMode.values(), voidingMode, this::setVoidingMode));
 
-        this.stackSizeInput = new IntInputWidget(64, 20, 80, 20,
-                () -> globalVoidingLimit, val -> globalVoidingLimit = val);
+        this.stackSizeInput = new TextField();
+        this.stackSizeInput.layout(layout -> layout.left(64).top(20).width(80).height(20));
+        this.stackSizeInput.style(style -> style.background(GuiTextures.DISPLAY));
+        this.stackSizeInput.textFieldStyle(style -> style.textColor(0x404040).textShadow(false));
+        this.stackSizeInput.setNumbersOnlyInt(1, voidingMode.maxStackSize);
+        this.stackSizeInput.setText(String.valueOf(globalVoidingLimit));
+        this.stackSizeInput.setTextResponder(value -> {
+            if (!value.isBlank()) {
+                globalVoidingLimit = Math.max(1, Math.min(voidingMode.maxStackSize, Integer.parseInt(value)));
+            }
+        });
         configureStackSizeInput();
 
-        group.addWidget(this.stackSizeInput);
+        group.addChild(this.stackSizeInput);
     }
 
     @Override
@@ -136,8 +146,9 @@ public class AdvancedItemVoidingCover extends ItemVoidingCover {
             return;
 
         this.stackSizeInput.setVisible(shouldShowStackSize());
-        this.stackSizeInput.setMin(1);
-        this.stackSizeInput.setMax(this.voidingMode.maxStackSize);
+        this.stackSizeInput.setActive(shouldShowStackSize());
+        this.stackSizeInput.setNumbersOnlyInt(1, this.voidingMode.maxStackSize);
+        this.stackSizeInput.setText(String.valueOf(Math.max(1, Math.min(globalVoidingLimit, this.voidingMode.maxStackSize))));
     }
 
     private boolean shouldShowStackSize() {
@@ -152,8 +163,8 @@ public class AdvancedItemVoidingCover extends ItemVoidingCover {
 
     @Override
     public CompoundTag copyConfig(CompoundTag tag) {
-        tag.putInt("voidingMode", getVoidingMode().ordinal());
-        tag.putInt("voidSize", getGlobalVoidingLimit());
+        tag.putInt("voidingMode", voidingMode.ordinal());
+        tag.putInt("voidSize", globalVoidingLimit);
         return super.copyConfig(tag);
     }
 

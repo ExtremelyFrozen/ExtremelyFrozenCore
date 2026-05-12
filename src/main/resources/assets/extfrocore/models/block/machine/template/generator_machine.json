@@ -1,8 +1,8 @@
 {
-	"parent": "gtceu:block/machine/template/sided/sided",
+	"parent": "extfrocore:block/machine/template/sided/sided",
 	"textures": {
-		"overlay_energy_io": "gtceu:block/overlay/machine/overlay_energy_1a_in",
-		"overlay_energy_tint": "gtceu:block/overlay/machine/overlay_energy_1a_tinted"
+		"overlay_energy_io": "extfrocore:block/overlay/machine/overlay_energy_1a_in",
+		"overlay_energy_tint": "extfrocore:block/overlay/machine/overlay_energy_1a_tinted"
 	},
 	"elements": [
 		{

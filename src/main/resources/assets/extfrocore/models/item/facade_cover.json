@@ -1,9 +1,9 @@
 {
-	"loader": "gtceu:facade",
+	"loader": "extfrocore:facade",
 	"default_model": {
 		"parent": "block/block",
 		"textures": {
-			"side": "gtceu:block/cover/cover_back_plate"
+			"side": "extfrocore:block/cover/cover_back_plate"
 		},
 		"elements": [
 			{

@@ -4,10 +4,10 @@
 		"particle": "#side",
 		"south": "#back",
 
-		"bottom": "gtceu:block/casings/hpca/computer_casing/bottom",
-		"top": "gtceu:block/casings/hpca/computer_casing/top",
-		"front": "gtceu:block/casings/hpca/computer_casing/front",
-		"back": "gtceu:block/casings/hpca/computer_casing/back",
-		"side": "gtceu:block/casings/hpca/computer_casing/side"
+		"bottom": "extfrocore:block/casings/hpca/computer_casing/bottom",
+		"top": "extfrocore:block/casings/hpca/computer_casing/top",
+		"front": "extfrocore:block/casings/hpca/computer_casing/front",
+		"back": "extfrocore:block/casings/hpca/computer_casing/back",
+		"side": "extfrocore:block/casings/hpca/computer_casing/side"
 	}
 }

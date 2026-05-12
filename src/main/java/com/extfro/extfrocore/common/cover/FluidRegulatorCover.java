@@ -5,8 +5,6 @@ import com.extfro.extfrocore.api.cover.CoverDefinition;
 import com.extfro.extfrocore.api.cover.filter.FluidFilter;
 import com.extfro.extfrocore.api.cover.filter.SimpleFluidFilter;
 import com.extfro.extfrocore.api.gui.widget.EnumSelectorWidget;
-import com.extfro.extfrocore.api.gui.widget.IntInputWidget;
-import com.extfro.extfrocore.api.gui.widget.NumberInputWidget;
 import com.extfro.extfrocore.api.sync_system.annotations.SaveField;
 import com.extfro.extfrocore.api.sync_system.annotations.SyncToClient;
 import com.extfro.extfrocore.api.transfer.fluid.IFluidHandlerModifiable;
@@ -20,7 +18,8 @@ import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler.FluidAction;
 
-import com.lowdragmc.lowdraglib2.gui.widget.WidgetGroup;
+import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.TextField;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 
@@ -43,7 +42,7 @@ public class FluidRegulatorCover extends PumpCover {
     protected int globalTransferLimit;
     protected int fluidTransferBuffered = 0;
 
-    private NumberInputWidget<Integer> transferSizeInput;
+    private TextField transferSizeInput;
     private EnumSelectorWidget<BucketMode> transferBucketModeInput;
 
     public FluidRegulatorCover(CoverDefinition definition, ICoverable coverHolder, Direction attachedSide, int tier,
@@ -156,11 +155,11 @@ public class FluidRegulatorCover extends PumpCover {
         if (transferSizeInput == null) return;
 
         if (oldMultiplier > newMultiplier) {
-            transferSizeInput.setValue(getCurrentBucketModeTransferSize());
+            transferSizeInput.setText(String.valueOf(getCurrentBucketModeTransferSize()), false);
         }
-        this.transferSizeInput.setMax(MAX_STACK_SIZE / this.transferBucketMode.multiplier);
+        this.transferSizeInput.setNumbersOnlyInt(0, MAX_STACK_SIZE / this.transferBucketMode.multiplier);
         if (newMultiplier > oldMultiplier) {
-            transferSizeInput.setValue(getCurrentBucketModeTransferSize());
+            transferSizeInput.setText(String.valueOf(getCurrentBucketModeTransferSize()), false);
         }
     }
 
@@ -202,19 +201,18 @@ public class FluidRegulatorCover extends PumpCover {
     }
 
     @Override
-    protected void buildAdditionalUI(WidgetGroup group) {
-        group.addWidget(
+    protected void buildAdditionalUI(UIElement group) {
+        group.addChild(
                 new EnumSelectorWidget<>(146, 45, 20, 20, TransferMode.values(), transferMode, this::setTransferMode));
 
-        this.transferSizeInput = new IntInputWidget(35, 45, 84, 20,
-                this::getCurrentBucketModeTransferSize, this::setCurrentBucketModeTransferSize).setMin(0)
-                .setMax(Integer.MAX_VALUE);
+        this.transferSizeInput = intInput(35, 45, 84, getCurrentBucketModeTransferSize(),
+                0, Integer.MAX_VALUE, this::setCurrentBucketModeTransferSize);
         configureTransferSizeInput();
-        group.addWidget(this.transferSizeInput);
+        group.addChild(this.transferSizeInput);
 
         this.transferBucketModeInput = new EnumSelectorWidget<>(121, 45, 20, 20, BucketMode.values(),
                 transferBucketMode, this::setTransferBucketMode);
-        group.addWidget(this.transferBucketModeInput);
+        group.addChild(this.transferBucketModeInput);
     }
 
     private int getCurrentBucketModeTransferSize() {

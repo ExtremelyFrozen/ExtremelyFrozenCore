@@ -1,5 +1,5 @@
 {
-	"parent": "gtceu:block/overlay/only/front",
+	"parent": "extfrocore:block/overlay/only/front",
 	"elements": [
 		{
 			"from": [0, 0, -0.01],

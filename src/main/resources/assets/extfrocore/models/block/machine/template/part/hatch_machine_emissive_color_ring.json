@@ -1,5 +1,5 @@
 {
-	"parent": "gtceu:block/machine/template/part/hatch_machine_color_ring",
+	"parent": "extfrocore:block/machine/template/part/hatch_machine_color_ring",
 	"elements": [
 		{
 			"from": [0, 0, 0],

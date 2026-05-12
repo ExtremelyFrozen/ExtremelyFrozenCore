@@ -1,6 +1,6 @@
 {
 	"ldlib": {
-		"connection": "gtceu:block/lamps/purple_on_ctm"
+		"connection": "extfrocore:block/lamps/purple_on_ctm"
 	},
 	"shimmer": {
 		"bloom": false
