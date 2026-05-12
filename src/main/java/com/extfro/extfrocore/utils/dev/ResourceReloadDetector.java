@@ -21,31 +21,34 @@ import java.util.function.Supplier;
 @ApiStatus.Internal
 public class ResourceReloadDetector {
 
-    private static final Path GRADLE_DIR = findGradleDir();
+    private static final Path gradleDir = findGradleDir();
 
     @ApiStatus.Internal
     public static CompletableFuture<Void> regenerateResourcesOnReload(Supplier<CompletableFuture<Void>> reloadFuture) {
-        if (!ConfigHolder.INSTANCE.dev.autoRebuildResources || !ExtForCore.isDev() || GRADLE_DIR == null) {
+        if (!ConfigHolder.INSTANCE.dev.autoRebuildResources || !ExtForCore.isDev() || gradleDir == null) {
             return reloadFuture.get();
         }
         ProcessBuilder builder = switch (Util.getPlatform()) {
             case WINDOWS -> new ProcessBuilder("cmd.exe", "/c", "gradlew.bat", ":processResources");
             default -> new ProcessBuilder("./gradlew", ":processResources");
         };
-        builder.directory(GRADLE_DIR.toFile());
+        builder.directory(gradleDir.toFile());
         builder.inheritIO();
         Process process;
         try {
             process = builder.start();
         } catch (IOException exception) {
-            ExtForCore.LOGGER.error("Could not run ./gradlew :processResources", exception);
+            ExtForCore.LOGGER.error("Cound not run ./gradlew :processResources", exception);
+            ExtForCore.LOGGER.error("Message the ExtForCore developers about this!");
             return reloadFuture.get();
         }
-        Minecraft.getInstance().player.sendSystemMessage(Component.translatable("extfrocore.debug.resource_rebuild.start"));
+        Minecraft.getInstance().player.sendSystemMessage(Component.translatable("gtceu.debug.resource_rebuild.start"));
         Instant start = Instant.now();
+        // wait for the resource reload to finish, then send chat message, then let MC actually reload resources
         return process.toHandle().onExit()
-                .thenRun(() -> Minecraft.getInstance().player.sendSystemMessage(Component.translatable(
-                        "extfrocore.debug.resource_rebuild.done", Duration.between(start, Instant.now()))))
+                .thenRun(() -> Minecraft.getInstance().player
+                        .sendSystemMessage(Component.translatable("gtceu.debug.resource_rebuild.done",
+                                Duration.between(start, Instant.now()))))
                 .thenCompose($ -> reloadFuture.get());
     }
 

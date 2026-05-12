@@ -1,6 +1,14 @@
 package com.extfro.extfrocore.api.cover.filter;
 
+import com.extfro.extfrocore.api.gui.GuiTextures;
+import com.extfro.extfrocore.data.lang.LangHandler;
+import com.extfro.extfrocore.utils.TagExprFilter;
+
+import net.minecraft.network.chat.Component;
+
 import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.Button;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.TextField;
 import lombok.Getter;
 import org.jetbrains.annotations.Nullable;
 
@@ -23,7 +31,7 @@ public abstract class TagFilter<T, S extends Filter<T, S>> implements Filter<T, 
     protected Consumer<S> onUpdated = filter -> itemWriter.accept(filter);
 
     @Nullable
-    protected TagExpressionFilter.MatchExpr matchExpr = null;
+    protected TagExprFilter.TagExprParser.MatchExpr matchExpr = null;
 
     protected TagFilter() {}
 
@@ -33,33 +41,39 @@ public abstract class TagFilter<T, S extends Filter<T, S>> implements Filter<T, 
     }
 
     public void setFilterExpr(String filterExpr) {
-        this.tagFilterExpression = sanitizeExpression(filterExpr);
-        matchExpr = TagExpressionFilter.parseExpression(tagFilterExpression);
-        onUpdated.accept(self());
+        this.tagFilterExpression = filterExpr;
+        matchExpr = TagExprFilter.parseExpression(tagFilterExpression);
+        // noinspection unchecked
+        onUpdated.accept((S) this);
     }
 
-    @Override
+    public String getTagFilterExpression() {
+        return tagFilterExpression;
+    }
+
     public UIElement openConfigurator(int x, int y) {
-        return new UIElement().layout(layout -> {
-            layout.width(18 * 3 + 25);
-            layout.height(18 * 3);
-        });
+        UIElement group = FilterUIElements.group(x, y, 18 * 3 + 25, 18 * 3); // 80 55
+        Button info = new Button().noText();
+        info.layout(layout -> layout.left(0).top(0).width(20).height(20));
+        info.buttonStyle(style -> style.baseTexture(GuiTextures.INFO_ICON)
+                .hoverTexture(GuiTextures.INFO_ICON)
+                .pressedTexture(GuiTextures.INFO_ICON));
+        info.style(style -> style.tooltips(LangHandler.getMultiLang("cover.tag_filter.info")
+                .toArray(Component[]::new)));
+        group.addChild(info);
+
+        TextField field = new TextField();
+        field.layout(layout -> layout.left(0).top(29).width(18 * 3 + 25).height(12));
+        field.setText(tagFilterExpression);
+        field.setTextValidator(input -> input.length() <= 64);
+        field.setTextResponder(input -> setFilterExpr(normalizeFilterExpression(input)));
+        field.textFieldStyle(style -> style.textColor(0x404040).textShadow(false));
+        field.style(style -> style.background(GuiTextures.NUMBER_BACKGROUND));
+        group.addChild(field);
+        return group;
     }
 
-    @Override
-    public void setOnUpdated(Consumer<S> onUpdated) {
-        this.onUpdated = filter -> {
-            this.itemWriter.accept(filter);
-            onUpdated.accept(filter);
-        };
-    }
-
-    @SuppressWarnings("unchecked")
-    private S self() {
-        return (S) this;
-    }
-
-    protected static String sanitizeExpression(String input) {
+    private String normalizeFilterExpression(String input) {
         input = DOUBLE_WILDCARD.matcher(input).replaceAll("*");
         input = DOUBLE_AND.matcher(input).replaceAll("&");
         input = DOUBLE_OR.matcher(input).replaceAll("|");
@@ -73,9 +87,7 @@ public abstract class TagFilter<T, S extends Filter<T, S>> implements Filter<T, 
         for (int i = 0; i < input.length(); i++) {
             char c = input.charAt(i);
             if (c == ' ') {
-                if (last != '(') {
-                    builder.append(" ");
-                }
+                if (last != '(') builder.append(" ");
                 continue;
             }
             if (c == '(') {
@@ -88,7 +100,7 @@ public abstract class TagFilter<T, S extends Filter<T, S>> implements Filter<T, 
                     builder.insert(l == l2 - 1 ? l : l2, ")");
                     continue;
                 }
-                if (i > 0 && !builder.isEmpty() && builder.charAt(builder.length() - 1) == ' ') {
+                if (i > 0 && builder.charAt(builder.length() - 1) == ' ') {
                     builder.deleteCharAt(builder.length() - 1);
                 }
             } else if ((c == '&' || c == '|' || c == '^') && last == '(') {
@@ -103,10 +115,33 @@ public abstract class TagFilter<T, S extends Filter<T, S>> implements Filter<T, 
         if (unclosed > 0) {
             builder.append(")".repeat(unclosed));
         } else if (unclosed < 0) {
-            for (int i = 0; i < -unclosed; i++) {
+            unclosed = -unclosed;
+            for (int i = 0; i < unclosed; i++) {
                 builder.insert(0, "(");
             }
         }
-        return DOUBLE_SPACE.matcher(builder.toString()).replaceAll(" ");
+        return builder.toString().replaceAll(" {2,}", " ");
+    }
+
+    @Override
+    public void setOnUpdated(Consumer<S> onUpdated) {
+        this.onUpdated = filter -> {
+            this.itemWriter.accept(filter);
+            onUpdated.accept(filter);
+        };
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        TagFilter<?, ?> tagFilter = (TagFilter<?, ?>) o;
+        return tagFilterExpression.equals(tagFilter.tagFilterExpression);
+    }
+
+    @Override
+    public int hashCode() {
+        return tagFilterExpression.hashCode();
     }
 }

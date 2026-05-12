@@ -1,7 +1,7 @@
 package com.extfro.extfrocore.api.data.worldgen.bedrockfluid;
 
 import com.extfro.extfrocore.api.data.worldgen.BiomeWeightModifier;
-import com.extfro.extfrocore.api.registry.EFRegistries;
+import com.extfro.extfrocore.api.registry.GTRegistries;
 
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderGetter;
@@ -24,59 +24,50 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 import lombok.experimental.Tolerate;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class BedrockFluidDefinition {
 
+    // spotless:off
     public static final MapCodec<Pair<Integer, Integer>> YIELD = Codec.mapPair(Codec.INT.fieldOf("min"),
             Codec.INT.fieldOf("max"));
 
     public static final Codec<BedrockFluidDefinition> DIRECT_CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Codec.INT.fieldOf("weight").forGetter(BedrockFluidDefinition::getWeight),
-            YIELD.fieldOf("yield").forGetter(definition -> Pair.of(definition.minimumYield, definition.maximumYield)),
+            YIELD.fieldOf("yield").forGetter(ft -> Pair.of(ft.minimumYield, ft.maximumYield)),
             Codec.INT.fieldOf("depletion_amount").forGetter(BedrockFluidDefinition::getDepletionAmount),
             Codec.INT.fieldOf("depletion_chance").forGetter(BedrockFluidDefinition::getDepletionChance),
             Codec.INT.fieldOf("depleted_yield").forGetter(BedrockFluidDefinition::getDepletedYield),
             BuiltInRegistries.FLUID.byNameCodec().fieldOf("fluid").forGetter(BedrockFluidDefinition::getStoredFluid),
-            BiomeWeightModifier.CODEC.optionalFieldOf("weight_modifier", BiomeWeightModifier.EMPTY)
-                    .forGetter(BedrockFluidDefinition::getBiomeWeightModifier),
-            ResourceKey.codec(Registries.DIMENSION).listOf().fieldOf("dimension_filter")
-                    .forGetter(definition -> new ArrayList<>(definition.dimensionFilter)))
-            .apply(instance, BedrockFluidDefinition::new));
-    public static final Codec<Holder<BedrockFluidDefinition>> CODEC = RegistryFixedCodec.create(EFRegistries.BEDROCK_FLUID_REGISTRY);
-
+            BiomeWeightModifier.CODEC.optionalFieldOf("weight_modifier", BiomeWeightModifier.EMPTY).forGetter(BedrockFluidDefinition::getBiomeWeightModifier),
+            ResourceKey.codec(Registries.DIMENSION).listOf().fieldOf("dimension_filter").forGetter(ft -> new ArrayList<>(ft.dimensionFilter))
+    ).apply(instance, BedrockFluidDefinition::new));
+    public static final Codec<Holder<BedrockFluidDefinition>> CODEC = RegistryFixedCodec.create(GTRegistries.BEDROCK_FLUID_REGISTRY);
+    // spotless:on
     @Getter
     @Setter
-    private int weight;
+    private int weight; // weight value for determining which vein will appear
     @Getter
     @Setter
-    private int minimumYield;
+    private int minimumYield, maximumYield;// the [minimum, maximum) yields
     @Getter
     @Setter
-    private int maximumYield;
+    private int depletionAmount; // amount of fluid the vein gets drained by
     @Getter
     @Setter
-    private int depletionAmount;
+    private int depletionChance; // the chance [0, 100] that the vein will deplete by 1
     @Getter
     @Setter
-    private int depletionChance;
+    private int depletedYield; // yield after the vein is depleted
     @Getter
     @Setter
-    private int depletedYield;
+    private Fluid storedFluid; // the fluid which the vein contains
     @Getter
     @Setter
-    private Fluid storedFluid;
+    private BiomeWeightModifier biomeWeightModifier; // weighting of biomes
     @Getter
     @Setter
-    private BiomeWeightModifier biomeWeightModifier;
-    @Getter
-    @Setter
-    public Set<ResourceKey<Level>> dimensionFilter;
+    public Set<ResourceKey<Level>> dimensionFilter; // filtering of dimensions
 
     private BedrockFluidDefinition(int weight, Pair<Integer, Integer> yield,
                                    int depletionAmount, int depletionChance, int depletedYield,
@@ -107,14 +98,39 @@ public class BedrockFluidDefinition {
     }
 
     public boolean canGenerate() {
-        return getWeight() > 0 || !getBiomeWeightModifier().isEmpty();
+        return this.getWeight() > 0 || !this.getBiomeWeightModifier().isEmpty();
+    }
+
+    public int getWeight() {
+        return weight;
+    }
+
+    public Set<ResourceKey<Level>> getDimensionFilter() {
+        return dimensionFilter;
+    }
+
+    public Fluid getStoredFluid() {
+        return storedFluid;
+    }
+
+    public BiomeWeightModifier getBiomeWeightModifier() {
+        return biomeWeightModifier;
+    }
+
+    public void setWeight(int weight) {
+        this.weight = weight;
+    }
+
+    public void setBiomeWeightModifier(BiomeWeightModifier biomeWeightModifier) {
+        this.biomeWeightModifier = biomeWeightModifier;
     }
 
     public List<BiomeWeightModifier> getOriginalModifiers() {
-        if (biomeWeightModifier instanceof BiomeWeightModifier.FromList list) {
+        if (this.biomeWeightModifier instanceof BiomeWeightModifier.FromList list) {
             return list.getOriginalModifiers();
+        } else {
+            return Collections.singletonList(this.biomeWeightModifier);
         }
-        return Collections.singletonList(biomeWeightModifier);
     }
 
     public static Builder builder(HolderGetter<Biome> biomeLookup) {
@@ -123,13 +139,13 @@ public class BedrockFluidDefinition {
 
     public Builder asBuilder(HolderGetter<Biome> biomeLookup) {
         Builder builder = builder(biomeLookup);
-        builder.weight(weight);
-        builder.minimumYield(minimumYield).maximumYield(maximumYield);
-        builder.depletionAmount(depletionAmount).depletionChance(depletionChance);
-        builder.depletedYield(depletedYield);
-        builder.fluid(storedFluid);
-        builder.dimensions(dimensionFilter);
-        builder.biomes(getOriginalModifiers());
+        builder.weight(this.weight);
+        builder.minimumYield(this.minimumYield).maximumYield(this.maximumYield);
+        builder.depletionAmount(this.depletionAmount).depletionChance(this.depletionChance);
+        builder.depletedYield(this.depletedYield);
+        builder.fluid(this.storedFluid);
+        builder.dimensions(this.dimensionFilter);
+        builder.biomes(this.getOriginalModifiers());
         return builder;
     }
 
@@ -137,19 +153,17 @@ public class BedrockFluidDefinition {
     public static class Builder {
 
         @Setter
-        private int weight;
+        private int weight; // weight value for determining which vein will appear
         @Setter
-        private int minimumYield;
+        private int minimumYield, maximumYield;// the [minimum, maximum) yields
         @Setter
-        private int maximumYield;
+        private int depletionAmount; // amount of fluid the vein gets drained by
         @Setter
-        private int depletionAmount;
+        private int depletionChance = 1; // the chance [0, 100] that the vein will deplete by 1
         @Setter
-        private int depletionChance = 1;
+        private int depletedYield; // yield after the vein is depleted
         @Setter
-        private int depletedYield;
-        @Setter
-        private Fluid fluid;
+        private Fluid fluid; // the fluid which the vein contains
         @Setter
         private Set<ResourceKey<Level>> dimensions = Collections.emptySet();
         private final List<BiomeWeightModifier> biomes = new LinkedList<>();

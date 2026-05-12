@@ -1,133 +1,130 @@
 package com.extfro.extfrocore.api.machine;
 
+import com.extfro.extfrocore.api.blockentity.IGregtechBlockEntity;
 import com.extfro.extfrocore.api.capability.ICoverable;
 import com.extfro.extfrocore.api.cover.CoverBehavior;
 import com.extfro.extfrocore.api.cover.CoverDefinition;
-import com.extfro.extfrocore.api.registry.EFRegistries;
+import com.extfro.extfrocore.api.item.tool.GTToolType;
+import com.extfro.extfrocore.api.machine.trait.MachineTrait;
+import com.extfro.extfrocore.api.machine.trait.MachineTraitType;
+import com.extfro.extfrocore.api.machine.trait.feature.IFrontFacingTrait;
+import com.extfro.extfrocore.api.machine.trait.feature.IRenderingTrait;
 import com.extfro.extfrocore.api.sync_system.ISyncManaged;
-import com.extfro.extfrocore.api.sync_system.SyncTagMap;
-import com.extfro.extfrocore.api.sync_system.annotations.ClientFieldChangeListener;
+import com.extfro.extfrocore.api.sync_system.SyncDataHolder;
 import com.extfro.extfrocore.api.sync_system.annotations.RerenderOnChanged;
 import com.extfro.extfrocore.api.sync_system.annotations.SaveField;
 import com.extfro.extfrocore.api.sync_system.annotations.SyncToClient;
-import com.extfro.extfrocore.api.sync_system.holder.SyncDataHolder;
 import com.extfro.extfrocore.api.transfer.fluid.IFluidHandlerModifiable;
+import com.extfro.extfrocore.utils.GTUtil;
 
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.NbtOps;
-import net.minecraft.nbt.StringTag;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.neoforged.neoforge.items.IItemHandlerModifiable;
 
-import com.mojang.serialization.Codec;
-import com.mojang.serialization.Dynamic;
-import com.mojang.serialization.codecs.RecordCodecBuilder;
+import com.lowdragmc.lowdraglib2.gui.texture.IGuiTexture;
 import lombok.Getter;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Set;
 
-public class MachineCoverContainer implements ICoverable, ISyncManaged {
+public class MachineCoverContainer extends MachineTrait
+                                   implements IFrontFacingTrait, IRenderingTrait, ICoverable, ISyncManaged {
 
-    private static final Codec<CoverSnapshot> COVER_SNAPSHOT_CODEC = RecordCodecBuilder.create(instance -> instance
-            .group(
-                    ResourceLocation.CODEC.fieldOf("id").forGetter(CoverSnapshot::id),
-                    ItemStack.CODEC.optionalFieldOf("item", ItemStack.EMPTY).forGetter(CoverSnapshot::item),
-                    SyncTagMap.CODEC.optionalFieldOf("data", SyncTagMap.empty()).forGetter(CoverSnapshot::data))
-            .apply(instance, CoverSnapshot::new));
+    public static final MachineTraitType<MachineCoverContainer> TYPE = new MachineTraitType<>(
+            MachineCoverContainer.class);
 
     @Getter
     private final SyncDataHolder syncDataHolder = new SyncDataHolder(this);
     @Getter
     private final MetaMachine machine;
-    @SaveField
     @SyncToClient
+    @SaveField
     @RerenderOnChanged
-    private SyncTagMap covers = SyncTagMap.empty();
     private @Nullable CoverBehavior up, down, north, south, west, east;
 
     public MachineCoverContainer(MetaMachine machine) {
         this.machine = machine;
     }
 
-    @ClientFieldChangeListener(fieldName = "covers")
-    private void onCoversChanged() {
-        loadCoversFromStorage(registries(), true);
-    }
-
-    public void loadCoversFromStorage(HolderLookup.Provider registries, boolean clientSide) {
-        up = down = north = south = west = east = null;
-        SyncTagMap stored = covers;
-        for (Direction direction : ICoverable.DIRECTIONS) {
-            SyncTagMap sideTag = stored.get(direction.getName()) == null ? null :
-                    SyncTagMap.tryRead(stored.get(direction.getName()));
-            if (sideTag == null || sideTag.isEmpty()) {
-                continue;
-            }
-            CoverSnapshot snapshot = COVER_SNAPSHOT_CODEC.parse(new Dynamic<>(NbtOps.INSTANCE, sideTag.toTag()))
-                    .result()
-                    .orElse(null);
-            if (snapshot == null) {
-                continue;
-            }
-            CoverDefinition definition = EFRegistries.COVERS.get(snapshot.id());
-            if (definition == null) {
-                continue;
-            }
-            CoverBehavior cover = definition.createCoverBehavior(this, direction);
-            cover.setAttachItem(snapshot.item());
-            cover.getSyncDataHolder().deserializeData(registries, snapshot.data(), clientSide);
-            setCoverAtSideRaw(cover, direction);
-        }
-        covers = createStoredCovers(registries);
-    }
-
-    private void refreshStoredCovers() {
-        covers = createStoredCovers(registries());
-    }
-
-    private SyncTagMap createStoredCovers(HolderLookup.Provider registries) {
-        SyncTagMap tag = SyncTagMap.empty();
-        for (Direction direction : ICoverable.DIRECTIONS) {
-            CoverBehavior cover = getCoverAtSide(direction);
-            if (cover == null) {
-                tag.put(direction.getName(), SyncTagMap.empty().toTag());
-                continue;
-            }
-            ResourceLocation id = EFRegistries.COVERS.getKey(cover.coverDefinition);
-            if (id == null) {
-                tag.put(direction.getName(), SyncTagMap.empty().toTag());
-                continue;
-            }
-            SyncTagMap sideTag = SyncTagMap.empty();
-            sideTag.put("id", StringTag.valueOf(id.toString()));
-            sideTag.put("item", ItemStack.CODEC.encodeStart(registries.createSerializationContext(NbtOps.INSTANCE),
-                    cover.getAttachItem()).getOrThrow());
-            SyncTagMap coverData = cover.getSyncDataHolder().serializeToSaveData(registries);
-            coverData.merge(cover.getSyncDataHolder().serializeFullClientSyncData(registries));
-            sideTag.put("data", coverData.toTag());
-            tag.put(direction.getName(), sideTag.toTag());
-        }
-        return tag;
-    }
-
-    private HolderLookup.Provider registries() {
-        return machine.getLevel() == null ? EFRegistries.builtinRegistry() : machine.getLevel().registryAccess();
+    @Override
+    public MachineTraitType<?> getTraitType() {
+        return TYPE;
     }
 
     @Override
-    public MetaMachine getHolder() {
+    public IGregtechBlockEntity getHolder() {
         return machine;
+    }
+
+    @Override
+    public void onMachineLoad() {
+        onLoad();
+    }
+
+    @Override
+    public void onMachineUnload() {
+        onUnload();
+    }
+
+    @Override
+    public void onMachineDestroyed() {
+        for (Direction direction : GTUtil.DIRECTIONS) {
+            removeCover(direction, null);
+        }
+    }
+
+    @Override
+    public boolean shouldRenderGridOverlay(Player player, BlockPos pos, BlockState state, ItemStack held,
+                                           Set<GTToolType> toolTypes) {
+        for (CoverBehavior cover : getCovers()) {
+            if (cover.shouldRenderGrid(player, pos, state, held, toolTypes)) return true;
+        }
+        return false;
+    }
+
+    @Override
+    public @Nullable IGuiTexture getGridOverlayIcon(Player player, BlockPos pos, BlockState state,
+                                                    Set<GTToolType> toolTypes, Direction side) {
+        var cover = getCoverAtSide(side);
+        if (cover != null) {
+            return cover.sideTips(player, pos, state, toolTypes, ItemStack.EMPTY, side);
+        }
+        return null;
+    }
+
+    @Override
+    public boolean isValidFrontFace(Direction direction) {
+        if (hasCover(direction)) {
+            // noinspection DataFlowIssue
+            var coverDefinition = getCoverAtSide(direction).coverDefinition;
+            var behaviour = coverDefinition.createCoverBehavior(this, getFrontFacing());
+            return behaviour.canAttach();
+        }
+        return true;
+    }
+
+    @Override
+    public void onMachineNeighborChanged(Block block, BlockPos fromPos, boolean isMoving) {
+        onNeighborChanged(block, fromPos, isMoving);
     }
 
     @Override
     public boolean canPlaceCoverOnSide(CoverDefinition definition, Direction side) {
         ArrayList<VoxelShape> collisionList = new ArrayList<>();
         machine.addCollisionBoundingBox(collisionList);
-        return !ICoverable.doesCoverCollide(side, collisionList, getCoverPlateThickness());
+        // noinspection RedundantIfStatement
+        if (ICoverable.doesCoverCollide(side, collisionList, getCoverPlateThickness())) {
+            // cover collision box overlaps with machine collision box
+            return false;
+        }
+
+        return true;
     }
 
     @Override
@@ -149,29 +146,25 @@ public class MachineCoverContainer implements ICoverable, ISyncManaged {
     public @Nullable CoverBehavior getCoverAtSide(Direction side) {
         return switch (side) {
             case UP -> up;
-            case DOWN -> down;
-            case NORTH -> north;
             case SOUTH -> south;
             case WEST -> west;
+            case DOWN -> down;
             case EAST -> east;
+            case NORTH -> north;
         };
     }
 
     @Override
     public void setCoverAtSide(@Nullable CoverBehavior coverBehavior, Direction side) {
-        setCoverAtSideRaw(coverBehavior, side);
-        refreshStoredCovers();
-    }
-
-    private void setCoverAtSideRaw(@Nullable CoverBehavior coverBehavior, Direction side) {
         switch (side) {
             case UP -> up = coverBehavior;
-            case DOWN -> down = coverBehavior;
-            case NORTH -> north = coverBehavior;
             case SOUTH -> south = coverBehavior;
             case WEST -> west = coverBehavior;
+            case DOWN -> down = coverBehavior;
             case EAST -> east = coverBehavior;
+            case NORTH -> north = coverBehavior;
         }
+        getSyncDataHolder().resyncAllFields();
     }
 
     @Override
@@ -183,17 +176,4 @@ public class MachineCoverContainer implements ICoverable, ISyncManaged {
     public @Nullable IFluidHandlerModifiable getFluidHandlerCap(@Nullable Direction side, boolean useCoverCapability) {
         return machine.getFluidHandlerCap(side, useCoverCapability);
     }
-
-    @Override
-    public void scheduleRenderUpdate() {
-        machine.scheduleRenderUpdate();
-    }
-
-    @Override
-    public void markAsChanged() {
-        refreshStoredCovers();
-        machine.markAsChanged();
-    }
-
-    private record CoverSnapshot(ResourceLocation id, ItemStack item, SyncTagMap data) {}
 }

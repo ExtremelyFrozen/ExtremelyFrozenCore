@@ -1,7 +1,9 @@
 package com.extfro.extfrocore.api.recipe;
 
+import com.extfro.extfrocore.api.gui.texture.CroppedTexture;
+import com.extfro.extfrocore.api.machine.trait.RecipeLogic;
 import com.extfro.extfrocore.api.recipe.condition.RecipeConditionType;
-import com.extfro.extfrocore.api.registry.EFRegistries;
+import com.extfro.extfrocore.api.registry.GTRegistries;
 
 import net.minecraft.nbt.NbtAccounter;
 import net.minecraft.nbt.NbtOps;
@@ -11,6 +13,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.RegistryOps;
 
 import com.google.gson.JsonObject;
+import com.lowdragmc.lowdraglib2.gui.texture.IGuiTexture;
 import com.mojang.datafixers.Products;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.JsonOps;
@@ -26,13 +29,14 @@ import java.util.function.Function;
 @Accessors(chain = true)
 public abstract class RecipeCondition<T extends RecipeCondition<T>> {
 
-    public static final Codec<RecipeCondition<?>> CODEC = EFRegistries.RECIPE_CONDITIONS.byNameCodec()
+    public static final Codec<RecipeCondition<?>> CODEC = GTRegistries.RECIPE_CONDITIONS.byNameCodec()
             .dispatch(RecipeCondition::getType, RecipeConditionType::getCodec);
 
-    public static <RC extends RecipeCondition<RC>> Products.P1<RecordCodecBuilder.Mu<RC>, Boolean> isReverse(
-                                                                                                             RecordCodecBuilder.Instance<RC> instance) {
-        return instance.group(Codec.BOOL.optionalFieldOf("reverse", false).forGetter(value -> value.isReverse));
+    // spotless:off
+    public static <RC extends RecipeCondition<RC>> Products.P1<RecordCodecBuilder.Mu<RC>, Boolean> isReverse(RecordCodecBuilder.Instance<RC> instance) {
+        return instance.group(Codec.BOOL.optionalFieldOf("reverse", false).forGetter(val -> val.isReverse));
     }
+    // spotless:on
 
     public static <RC extends RecipeCondition<RC>> MapCodec<RC> simpleCodec(Function<Boolean, RC> function) {
         return RecordCodecBuilder.mapCodec(instance -> isReverse(instance).apply(instance, function));
@@ -53,7 +57,15 @@ public abstract class RecipeCondition<T extends RecipeCondition<T>> {
     public abstract RecipeConditionType<T> getType();
 
     public String getTranslationKey() {
-        return "extfrocore.recipe.condition." + EFRegistries.RECIPE_CONDITIONS.getKey(getType()).getPath();
+        return "gtceu.recipe.condition." + getType();
+    }
+
+    public IGuiTexture getInValidTexture() {
+        return CroppedTexture.of("gtceu:textures/gui/condition/" + getType() + ".png", 0, 0, 1, 0.5f);
+    }
+
+    public IGuiTexture getValidTexture() {
+        return CroppedTexture.of("gtceu:textures/gui/condition/" + getType() + ".png", 0, 0.5f, 1, 0.5f);
     }
 
     public boolean isOr() {
@@ -62,23 +74,23 @@ public abstract class RecipeCondition<T extends RecipeCondition<T>> {
 
     public abstract Component getTooltips();
 
-    public boolean check(@NotNull MachineRecipe recipe, @NotNull RecipeLogicContext context) {
-        boolean test = testCondition(recipe, context);
+    public boolean check(@NotNull GTRecipe recipe, @NotNull RecipeLogic recipeLogic) {
+        boolean test = testCondition(recipe, recipeLogic);
         return test != isReverse;
     }
 
-    protected abstract boolean testCondition(@NotNull MachineRecipe recipe, @NotNull RecipeLogicContext context);
+    protected abstract boolean testCondition(@NotNull GTRecipe recipe, @NotNull RecipeLogic recipeLogic);
 
     public abstract T createTemplate();
 
     @NotNull
     public final JsonObject serialize() {
-        var ops = RegistryOps.create(JsonOps.INSTANCE, EFRegistries.builtinRegistry());
+        var ops = RegistryOps.create(JsonOps.INSTANCE, GTRegistries.builtinRegistry());
         return CODEC.encodeStart(ops, this).getOrThrow().getAsJsonObject();
     }
 
     public static RecipeCondition<?> deserialize(@NotNull JsonObject config) {
-        var ops = RegistryOps.create(JsonOps.INSTANCE, EFRegistries.builtinRegistry());
+        var ops = RegistryOps.create(JsonOps.INSTANCE, GTRegistries.builtinRegistry());
         return CODEC.decode(ops, config).getOrThrow().getFirst();
     }
 

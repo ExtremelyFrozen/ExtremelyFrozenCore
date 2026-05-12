@@ -1,6 +1,0 @@
-{
-	"parent": "extfrocore:block/cube/tinted/all_0",
-	"textures": {
-		"all": "extfrocore:block/material_sets/powder/frame"
-	}
-}

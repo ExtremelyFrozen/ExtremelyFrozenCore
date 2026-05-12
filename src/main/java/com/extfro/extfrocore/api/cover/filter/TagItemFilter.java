@@ -1,6 +1,7 @@
 package com.extfro.extfrocore.api.cover.filter;
 
-import com.extfro.extfrocore.api.sync_system.SyncedComponents;
+import com.extfro.extfrocore.common.data.item.GTDataComponents;
+import com.extfro.extfrocore.utils.TagExprFilter;
 
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -12,19 +13,18 @@ public class TagItemFilter extends TagFilter<ItemStack, ItemFilter> implements I
 
     private final Object2BooleanMap<Item> cache = new Object2BooleanOpenHashMap<>();
 
-    public TagItemFilter(String filterExpr) {
+    protected TagItemFilter(String filterExpr) {
         setFilterExpr(filterExpr);
     }
 
     public static TagItemFilter loadFilter(ItemStack itemStack) {
-        String expr = itemStack.getOrDefault(SyncedComponents.TAG_FILTER_EXPRESSION.get(), "");
-        TagItemFilter filter = new TagItemFilter(expr);
-        filter.itemWriter = updated -> itemStack.set(SyncedComponents.TAG_FILTER_EXPRESSION.get(),
-                ((TagItemFilter) updated).tagFilterExpression);
-        return filter;
+        var expr = itemStack.getOrDefault(GTDataComponents.TAG_FILTER_EXPRESSION, "");
+        var handler = new TagItemFilter(expr);
+        handler.itemWriter = filter -> itemStack.set(GTDataComponents.TAG_FILTER_EXPRESSION,
+                ((TagItemFilter) filter).tagFilterExpression);
+        return handler;
     }
 
-    @Override
     public void setFilterExpr(String filterExpr) {
         cache.clear();
         super.setFilterExpr(filterExpr);
@@ -32,15 +32,14 @@ public class TagItemFilter extends TagFilter<ItemStack, ItemFilter> implements I
 
     @Override
     public boolean test(ItemStack itemStack) {
-        if (tagFilterExpression.isEmpty()) {
-            return false;
+        if (tagFilterExpression.isEmpty()) return false;
+        if (cache.containsKey(itemStack.getItem())) return cache.getOrDefault(itemStack.getItem(), false);
+        if (TagExprFilter.tagsMatch(matchExpr, itemStack)) {
+            cache.put(itemStack.getItem(), true);
+            return true;
         }
-        if (cache.containsKey(itemStack.getItem())) {
-            return cache.getOrDefault(itemStack.getItem(), false);
-        }
-        boolean result = TagExpressionFilter.tagsMatch(matchExpr, itemStack);
-        cache.put(itemStack.getItem(), result);
-        return result;
+        cache.put(itemStack.getItem(), false);
+        return false;
     }
 
     @Override

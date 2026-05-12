@@ -14,11 +14,21 @@ public interface IFilteredHandler<K> extends Predicate<K> {
     int LOW = Integer.MIN_VALUE / 2;
     int LOWEST = Integer.MIN_VALUE;
 
+    /**
+     * Test an ingredient for filtering & priority.
+     *
+     * @param ingredient the ingredient
+     * @return {@code true} if the input argument matches the predicate,
+     *         otherwise {@code false}
+     */
     @Override
     default boolean test(K ingredient) {
         return true;
     }
 
+    /**
+     * The priority of this recipe handler.
+     */
     default int getPriority() {
         return NORMAL;
     }

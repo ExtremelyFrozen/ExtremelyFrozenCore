@@ -1,11 +1,12 @@
 package com.extfro.extfrocore.api.recipe.chance.logic;
 
 import com.extfro.extfrocore.ExtForCore;
+import com.extfro.extfrocore.api.EFValues;
 import com.extfro.extfrocore.api.capability.recipe.RecipeCapability;
 import com.extfro.extfrocore.api.recipe.chance.boost.ChanceBoostFunction;
 import com.extfro.extfrocore.api.recipe.content.Content;
 import com.extfro.extfrocore.api.recipe.content.ContentModifier;
-import com.extfro.extfrocore.api.registry.EFRegistries;
+import com.extfro.extfrocore.api.registry.GTRegistries;
 
 import net.minecraft.network.chat.Component;
 
@@ -21,10 +22,15 @@ import org.jetbrains.annotations.Unmodifiable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
 
+/**
+ * Logic for determining which chanced outputs should be produced from a list
+ */
 public abstract class ChanceLogic {
 
+    /**
+     * Chanced Output Logic where any ingredients succeeding their roll will be produced
+     */
     public static final ChanceLogic OR = new ChanceLogic("or") {
 
         @Override
@@ -35,12 +41,14 @@ public abstract class ChanceLogic {
             ImmutableList.Builder<Content> builder = ImmutableList.builder();
             for (Content entry : chancedEntries) {
                 int maxChance = entry.maxChance;
+
+                // OR Chanced outputs are deterministic
+                // If a large batch is being done we can calculate how many we expect to get.
+                // Add the guaranteed part of that to the list, then roll for the remaining chanced part.
                 int newChance = getChance(entry, boostFunction, recipeTier, chanceTier);
                 int totalChance = times * newChance;
                 int guaranteed = totalChance / maxChance;
-                if (guaranteed > 0) {
-                    builder.add(entry.copyChanced(cap, ContentModifier.multiplier(guaranteed)));
-                }
+                if (guaranteed > 0) builder.add(entry.copyChanced(cap, ContentModifier.multiplier(guaranteed)));
                 newChance = totalChance % maxChance;
 
                 int cached = getCachedChance(entry, cache);
@@ -57,7 +65,7 @@ public abstract class ChanceLogic {
 
         @Override
         public @NotNull Component getTranslation() {
-            return Component.translatable("extfrocore.chance_logic.or");
+            return Component.translatable("gtceu.chance_logic.or");
         }
 
         @Override
@@ -66,6 +74,9 @@ public abstract class ChanceLogic {
         }
     };
 
+    /**
+     * Chanced Output Logic where all ingredients must succeed their roll in order for any to be produced
+     */
     public static final ChanceLogic AND = new ChanceLogic("and") {
 
         @Override
@@ -80,11 +91,8 @@ public abstract class ChanceLogic {
                     int newChance = getChance(entry, boostFunction, recipeTier, chanceTier);
                     int cached = getCachedChance(entry, cache);
                     int chance = newChance + cached;
-                    if (passesChance(chance, entry.maxChance)) {
-                        newChance -= entry.maxChance;
-                    } else {
-                        failed = true;
-                    }
+                    if (passesChance(chance, entry.maxChance)) newChance -= entry.maxChance;
+                    else failed = true;
                     updateCachedChance(entry.content, cache, newChance / 2 + cached);
                     if (failed) break;
                 }
@@ -95,7 +103,7 @@ public abstract class ChanceLogic {
 
         @Override
         public @NotNull Component getTranslation() {
-            return Component.translatable("extfrocore.chance_logic.and");
+            return Component.translatable("gtceu.chance_logic.and");
         }
 
         @Override
@@ -104,6 +112,10 @@ public abstract class ChanceLogic {
         }
     };
 
+    /**
+     * Chanced Output Logic where only the first ingredient succeeding its roll will be produced
+     * Deprecated following the rewrite of XOR
+     */
     @Deprecated
     public static final ChanceLogic FIRST = new ChanceLogic("first") {
 
@@ -133,7 +145,7 @@ public abstract class ChanceLogic {
 
         @Override
         public @NotNull Component getTranslation() {
-            return Component.translatable("extfrocore.chance_logic.first");
+            return Component.translatable("gtceu.chance_logic.first");
         }
 
         @Override
@@ -142,6 +154,9 @@ public abstract class ChanceLogic {
         }
     };
 
+    /**
+     * Chanced Output Logic where only one of the ingredients will be output, in a manner weighted to the input chances
+     */
     public static final ChanceLogic XOR = new ChanceLogic("xor") {
 
         @Override
@@ -149,12 +164,14 @@ public abstract class ChanceLogic {
                                                          @NotNull @Unmodifiable List<@NotNull Content> chancedEntries,
                                                          @NotNull ChanceBoostFunction boostFunction, int recipeTier,
                                                          int chanceTier, @Nullable Object2IntMap<?> cache, int times) {
+            // Have to set up a system where all chances are set to be out of 10000
             IntList chancesOutOfTenThousand = new IntArrayList();
-            for (Content entry : chancedEntries) {
-                if (entry.maxChance == getMaxChancedValue()) {
-                    chancesOutOfTenThousand.add(entry.chance);
+
+            for (Content orig : chancedEntries) {
+                if (orig.maxChance == getMaxChancedValue()) {
+                    chancesOutOfTenThousand.add(orig.chance);
                 } else {
-                    chancesOutOfTenThousand.add((int) ((entry.chance / (float) entry.maxChance) * getMaxChancedValue()));
+                    chancesOutOfTenThousand.add((int) ((orig.chance / (float) orig.maxChance) * getMaxChancedValue()));
                 }
             }
 
@@ -162,40 +179,46 @@ public abstract class ChanceLogic {
             for (int chance : chancesOutOfTenThousand) {
                 chanceTotal += chance;
             }
-            if (chanceTotal != getMaxChancedValue() && chanceTotal > 0) {
-                int remaining = getMaxChancedValue();
+
+            // Here, if the newly calculated chances don't add up to 10000, they're renormalized
+            if (chanceTotal != getMaxChancedValue()) {
+                int chanceTotalDecremented = getMaxChancedValue();
                 for (int i = 0; i < chancesOutOfTenThousand.size(); i++) {
                     int newChance = (int) (chancesOutOfTenThousand.getInt(i) *
                             ((float) getMaxChancedValue() / (float) chanceTotal));
+                    // last chance ends up being set to the remainder in case things don't line up
                     if (i == chancesOutOfTenThousand.size() - 1) {
-                        chancesOutOfTenThousand.set(i, remaining);
+                        chancesOutOfTenThousand.set(i, chanceTotalDecremented);
                     } else {
                         chancesOutOfTenThousand.set(i, newChance);
                     }
-                    remaining -= newChance;
+                    chanceTotalDecremented -= newChance;
                 }
             }
 
+            // Finally, generate a new Content list with the changes
             List<Content> normalizedEntries = new ArrayList<>();
             for (int i = 0; i < chancesOutOfTenThousand.size(); i++) {
-                Content original = chancedEntries.get(i);
-                normalizedEntries.add(new Content(original.content, chancesOutOfTenThousand.getInt(i),
-                        getMaxChancedValue(), original.tierChanceBoost));
+                normalizedEntries.add(new Content(chancedEntries.get(i).content, chancesOutOfTenThousand.getInt(i),
+                        getMaxChancedValue(), chancedEntries.get(i).tierChanceBoost));
             }
 
+            // Use the new, normalized list for the logic
             ImmutableList.Builder<Content> builder = ImmutableList.builder();
+            // for high run counts: calculate guaranteed rolls
             int nonGuaranteedTimes = times;
             if (times > 1) {
                 for (Content entry : normalizedEntries) {
                     int newChance = getChance(entry, boostFunction, recipeTier, chanceTier);
                     int totalChance = times * newChance;
-                    int guaranteed = totalChance / getMaxChancedValue();
+                    int guaranteed = totalChance / 10000;
                     if (guaranteed > 0) {
                         builder.add(entry.copyChanced(cap, ContentModifier.multiplier(guaranteed)));
                         nonGuaranteedTimes -= guaranteed;
                     }
                 }
             }
+            // roll for non-guaranteed
             for (int i = 0; i < nonGuaranteedTimes; ++i) {
                 Content selected = null;
                 int maxChance = getMaxChancedValue();
@@ -218,7 +241,7 @@ public abstract class ChanceLogic {
 
         @Override
         public @NotNull Component getTranslation() {
-            return Component.translatable("extfrocore.chance_logic.xor");
+            return Component.translatable("gtceu.chance_logic.xor");
         }
 
         @Override
@@ -227,6 +250,9 @@ public abstract class ChanceLogic {
         }
     };
 
+    /**
+     * Chanced Output Logic where nothing is produced
+     */
     public static final ChanceLogic NONE = new ChanceLogic("none") {
 
         @Override
@@ -239,7 +265,7 @@ public abstract class ChanceLogic {
 
         @Override
         public @NotNull Component getTranslation() {
-            return Component.translatable("extfrocore.chance_logic.none");
+            return Component.translatable("gtceu.chance_logic.none");
         }
 
         @Override
@@ -249,42 +275,87 @@ public abstract class ChanceLogic {
     };
 
     public ChanceLogic(String id) {
-        EFRegistries.register(EFRegistries.CHANCE_LOGICS, ExtForCore.id(id), this);
+        GTRegistries.register(GTRegistries.CHANCE_LOGICS, ExtForCore.id(id), this);
     }
 
+    /**
+     * @param entry         the entry to get the complete chance for
+     * @param boostFunction the function boosting the entry's chance
+     * @param recipeTier    the base tier of the recipe
+     * @param chanceTier    the tier the recipe is run at
+     * @return the total chance for the entry
+     */
     static int getChance(@NotNull Content entry, @NotNull ChanceBoostFunction boostFunction, int recipeTier,
                          int chanceTier) {
         return boostFunction.getBoostedChance(entry, recipeTier, chanceTier);
     }
 
+    /**
+     * @param chance the chance to check
+     * @return if the roll with the chance is successful
+     */
     static boolean passesChance(int chance, int maxChance) {
         return chance >= maxChance;
     }
 
+    /**
+     * @return the upper bound for rolling chances
+     */
     public static int getMaxChancedValue() {
         return 10_000;
     }
 
+    /**
+     * @param entry the current entry
+     * @param cache the cache of previously rolled chances, can be null
+     * @return the cached chance, otherwise a random initial chance
+     *         between 0 and {@link Content#maxChance} (exclusive)
+     */
     static int getCachedChance(Content entry, @Nullable Object2IntMap<?> cache) {
-        if (cache == null || !cache.containsKey(entry.content)) {
-            return ThreadLocalRandom.current().nextInt(entry.maxChance);
-        }
+        if (cache == null || !cache.containsKey(entry.content))
+            return EFValues.RNG.nextInt(entry.maxChance);
+
         return cache.getInt(entry.content);
     }
 
-    @SuppressWarnings({ "unchecked", "rawtypes" })
+    /**
+     * @param ingredient the key used for the cache
+     * @param cache      the cache of previously rolled chances, can be null
+     * @param chance     the chance to update the cache with
+     */
     static void updateCachedChance(Object ingredient, @Nullable Object2IntMap<?> cache, int chance) {
-        if (cache != null) {
-            ((Object2IntMap) cache).put(ingredient, chance);
-        }
+        if (cache == null) return;
+        // noinspection unchecked,rawtypes
+        ((Object2IntMap) cache).put(ingredient, chance);
     }
 
+    /**
+     * Roll the chance and attempt to produce the output
+     *
+     * @param chancedEntries the list of entries to roll
+     * @param boostFunction  the function to boost the entries' chances
+     * @param recipeTier     the base tier of the recipe
+     * @param chanceTier     the tier the recipe is run at
+     * @param cache          the cache of previously rolled chances, can be null
+     * @param times          the number of times to roll
+     * @return a list of the produced outputs, empty if roll fails
+     */
     public abstract @Unmodifiable List<@NotNull Content> roll(RecipeCapability<?> cap,
                                                               @NotNull @Unmodifiable List<@NotNull Content> chancedEntries,
                                                               @NotNull ChanceBoostFunction boostFunction,
                                                               int recipeTier, int chanceTier,
                                                               @Nullable Object2IntMap<?> cache, int times);
 
+    /**
+     * Roll the chance and attempt to produce the output
+     *
+     * @param chancedEntries the list of entries to roll
+     * @param boostFunction  the function to boost the entries' chances
+     * @param recipeTier     the base tier of the recipe
+     * @param chanceTier     the tier the recipe is run at
+     * @param times          the number of times to roll
+     * @return a list of the produced outputs
+     */
     @Unmodifiable
     public List<@NotNull Content> roll(RecipeCapability<?> cap,
                                        @NotNull @Unmodifiable List<@NotNull Content> chancedEntries,

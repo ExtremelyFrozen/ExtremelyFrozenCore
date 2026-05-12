@@ -1,16 +1,21 @@
 package com.extfro.extfrocore.api.recipe.content;
 
+import com.extfro.extfrocore.api.recipe.ingredient.SizedIngredientExtensions;
+
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.crafting.FluidIngredient;
 import net.neoforged.neoforge.fluids.crafting.SizedFluidIngredient;
 
 import com.mojang.serialization.Codec;
+import lombok.experimental.ExtensionMethod;
 
+@ExtensionMethod(SizedIngredientExtensions.class)
 public class SerializerFluidIngredient implements IContentSerializer<SizedFluidIngredient> {
 
     public static final SizedFluidIngredient EMPTY = new SizedFluidIngredient(FluidIngredient.empty(), 1);
-    public static final SerializerFluidIngredient INSTANCE = new SerializerFluidIngredient();
+
+    public static SerializerFluidIngredient INSTANCE = new SerializerFluidIngredient();
 
     private SerializerFluidIngredient() {}
 
@@ -25,11 +30,11 @@ public class SerializerFluidIngredient implements IContentSerializer<SizedFluidI
     }
 
     @Override
-    public SizedFluidIngredient of(Object object) {
-        if (object instanceof SizedFluidIngredient ingredient) {
-            return new SizedFluidIngredient(ingredient.ingredient(), ingredient.amount());
+    public SizedFluidIngredient of(Object o) {
+        if (o instanceof SizedFluidIngredient ingredient) {
+            return ingredient.copy();
         }
-        if (object instanceof FluidStack stack) {
+        if (o instanceof FluidStack stack) {
             return SizedFluidIngredient.of(stack.copy());
         }
         return EMPTY;

@@ -1,5 +1,6 @@
 package com.extfro.extfrocore.api.recipe.lookup.ingredient.fluid;
 
+import com.extfro.extfrocore.api.recipe.ingredient.IntProviderFluidIngredient;
 import com.extfro.extfrocore.api.recipe.lookup.ingredient.AbstractMapIngredient;
 
 import net.minecraft.core.Holder;
@@ -34,14 +35,23 @@ public class FluidStackMapIngredient extends AbstractMapIngredient {
         return Collections.singletonList(new FluidStackMapIngredient(stack));
     }
 
+    @NotNull
+    public static List<AbstractMapIngredient> from(@NotNull IntProviderFluidIngredient ingredient) {
+        return Collections.singletonList(new FluidStackMapIngredient(ingredient.getMaxSizeStack()));
+    }
+
     @Override
     protected int hash() {
         return FluidStack.hashFluidAndComponents(stack);
     }
 
     @Override
-    public boolean equals(Object obj) {
-        return super.equals(obj) && FluidStack.isSameFluid(stack, ((FluidStackMapIngredient) obj).stack);
+    public boolean equals(Object o) {
+        if (super.equals(o)) {
+            FluidStackMapIngredient other = (FluidStackMapIngredient) o;
+            return FluidStack.isSameFluid(this.stack, other.stack);
+        }
+        return false;
     }
 
     @Override

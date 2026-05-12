@@ -33,21 +33,24 @@ public class CoverTextRenderer implements IDynamicCoverRenderer {
         poseStack.translate(3 / 16f, 3 / 16f, 0);
         poseStack.scale(TEXT_SCALE, TEXT_SCALE, TEXT_SCALE);
         int y = 0;
-        Font font = Minecraft.getInstance().font;
         for (Component s : text.get()) {
             boolean didAnything = false;
-            for (FormattedCharSequence line : font.split(s, 90)) {
-                if (y >= 90) {
-                    return;
-                }
-                font.drawInBatch(line, 0, y, 0x72e500, false, poseStack.last().pose(), buffer,
-                        Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
-                y += font.lineHeight;
+            for (FormattedCharSequence line : Minecraft.getInstance().font.split(s, 90)) {
+                if (y >= 90) return;
+                Minecraft.getInstance().font.drawInBatch(
+                        line,
+                        0, y,
+                        0x72e500,
+                        false,
+                        poseStack.last().pose(),
+                        buffer,
+                        Font.DisplayMode.NORMAL,
+                        0,
+                        LightTexture.FULL_BRIGHT);
+                y += Minecraft.getInstance().font.lineHeight;
                 didAnything = true;
             }
-            if (!didAnything) {
-                y += font.lineHeight;
-            }
+            if (!didAnything) y += Minecraft.getInstance().font.lineHeight;
         }
     }
 }

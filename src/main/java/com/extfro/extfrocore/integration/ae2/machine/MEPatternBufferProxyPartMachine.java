@@ -1,0 +1,109 @@
+package com.extfro.extfrocore.integration.ae2.machine;
+
+import com.extfro.extfrocore.api.EFValues;
+import com.extfro.extfrocore.api.blockentity.BlockEntityCreationInfo;
+import com.extfro.extfrocore.api.capability.recipe.IO;
+import com.extfro.extfrocore.api.machine.MetaMachine;
+import com.extfro.extfrocore.api.machine.feature.IDataStickInteractable;
+import com.extfro.extfrocore.api.machine.multiblock.part.TieredIOPartMachine;
+import com.extfro.extfrocore.api.machine.trait.RecipeHandlerList;
+import com.extfro.extfrocore.api.sync_system.annotations.SaveField;
+import com.extfro.extfrocore.api.sync_system.annotations.SyncToClient;
+import com.extfro.extfrocore.common.data.item.GTDataComponents;
+import com.extfro.extfrocore.integration.ae2.machine.trait.ProxySlotRecipeHandler;
+
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.phys.BlockHitResult;
+
+import com.lowdragmc.lowdraglib2.gui.ui.ModularUI;
+import lombok.Getter;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.List;
+
+public class MEPatternBufferProxyPartMachine extends TieredIOPartMachine implements IDataStickInteractable {
+
+    @Getter
+    private final ProxySlotRecipeHandler proxySlotRecipeHandler;
+
+    @SaveField
+    @Getter
+    @SyncToClient
+    private @Nullable BlockPos bufferPos;
+
+    private @Nullable MEPatternBufferPartMachine buffer = null;
+    private boolean bufferResolved = false;
+
+    public MEPatternBufferProxyPartMachine(BlockEntityCreationInfo info) {
+        super(info, EFValues.LuV, IO.IN);
+        proxySlotRecipeHandler = new ProxySlotRecipeHandler(this, MEPatternBufferPartMachine.MAX_PATTERN_COUNT);
+    }
+
+    @Override
+    public void onLoad() {
+        super.onLoad();
+        if (!isRemote()) this.setBuffer(bufferPos);
+    }
+
+    @Override
+    public List<RecipeHandlerList> getRecipeHandlers() {
+        return proxySlotRecipeHandler.getProxySlotHandlers();
+    }
+
+    public void setBuffer(@Nullable BlockPos pos) {
+        bufferResolved = true;
+        var level = getLevel();
+        if (level == null || pos == null) {
+            buffer = null;
+        } else if (MetaMachine.getMachine(level, pos) instanceof MEPatternBufferPartMachine machine) {
+            bufferPos = pos;
+            buffer = machine;
+            machine.addProxy(this);
+            if (!isRemote()) proxySlotRecipeHandler.updateProxy(machine);
+        } else {
+            buffer = null;
+        }
+        syncDataHolder.markClientSyncFieldDirty("bufferPos");
+    }
+
+    @Nullable
+    public MEPatternBufferPartMachine getBuffer() {
+        if (!bufferResolved) setBuffer(bufferPos);
+        return buffer;
+    }
+
+    @Override
+    public boolean shouldOpenUI(Player player, InteractionHand hand, BlockHitResult hit) {
+        return getBuffer() != null;
+    }
+
+    @Override
+    public ModularUI createUI(Player entityPlayer) {
+        assert getBuffer() != null; // UI should never be able to be opened when buffer is null
+        return getBuffer().createUI(entityPlayer);
+    }
+
+    @Override
+    public void onMachineDestroyed() {
+        super.onMachineDestroyed();
+        var buf = getBuffer();
+        if (buf != null) {
+            buf.removeProxy(this);
+            proxySlotRecipeHandler.clearProxy();
+        }
+    }
+
+    @Override
+    public InteractionResult onDataStickUse(Player player, ItemStack dataStick) {
+        BlockPos bufferPos = dataStick.get(GTDataComponents.DATA_COPY_POS);
+        if (bufferPos != null) {
+            setBuffer(bufferPos);
+            return InteractionResult.SUCCESS;
+        }
+        return InteractionResult.PASS;
+    }
+}

@@ -22,7 +22,7 @@ public interface FilterHandlers {
 
             @Override
             protected boolean canInsertFilterItem(ItemStack itemStack) {
-                return ItemFilter.isFilterItem(itemStack);
+                return ItemFilter.FILTERS.containsKey(itemStack.getItem());
             }
         };
     }
@@ -42,7 +42,7 @@ public interface FilterHandlers {
 
             @Override
             protected boolean canInsertFilterItem(ItemStack itemStack) {
-                return FluidFilter.isFilterItem(itemStack);
+                return FluidFilter.FILTERS.containsKey(itemStack.getItem());
             }
         };
     }

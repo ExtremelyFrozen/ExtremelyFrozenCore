@@ -1,6 +1,7 @@
 package com.extfro.extfrocore.api.cover.filter;
 
-import com.extfro.extfrocore.api.sync_system.SyncedComponents;
+import com.extfro.extfrocore.common.data.item.GTDataComponents;
+import com.extfro.extfrocore.utils.TagExprFilter;
 
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.material.Fluid;
@@ -13,19 +14,18 @@ public class TagFluidFilter extends TagFilter<FluidStack, FluidFilter> implement
 
     private final Object2BooleanMap<Fluid> cache = new Object2BooleanOpenHashMap<>();
 
-    public TagFluidFilter(String filterExpr) {
+    protected TagFluidFilter(String filterExpr) {
         setFilterExpr(filterExpr);
     }
 
     public static TagFluidFilter loadFilter(ItemStack itemStack) {
-        String expr = itemStack.getOrDefault(SyncedComponents.TAG_FILTER_EXPRESSION.get(), "");
-        TagFluidFilter filter = new TagFluidFilter(expr);
-        filter.itemWriter = updated -> itemStack.set(SyncedComponents.TAG_FILTER_EXPRESSION.get(),
-                ((TagFluidFilter) updated).tagFilterExpression);
-        return filter;
+        var expr = itemStack.getOrDefault(GTDataComponents.TAG_FILTER_EXPRESSION, "");
+        var handler = new TagFluidFilter(expr);
+        handler.itemWriter = filter -> itemStack.set(GTDataComponents.TAG_FILTER_EXPRESSION,
+                ((TagFluidFilter) filter).tagFilterExpression);
+        return handler;
     }
 
-    @Override
     public void setFilterExpr(String filterExpr) {
         cache.clear();
         super.setFilterExpr(filterExpr);
@@ -33,15 +33,14 @@ public class TagFluidFilter extends TagFilter<FluidStack, FluidFilter> implement
 
     @Override
     public boolean test(FluidStack fluidStack) {
-        if (tagFilterExpression.isEmpty()) {
-            return false;
+        if (tagFilterExpression.isEmpty()) return false;
+        if (cache.containsKey(fluidStack.getFluid())) return cache.getOrDefault(fluidStack.getFluid(), false);
+        if (TagExprFilter.tagsMatch(matchExpr, fluidStack)) {
+            cache.put(fluidStack.getFluid(), true);
+            return true;
         }
-        if (cache.containsKey(fluidStack.getFluid())) {
-            return cache.getOrDefault(fluidStack.getFluid(), false);
-        }
-        boolean result = TagExpressionFilter.tagsMatch(matchExpr, fluidStack);
-        cache.put(fluidStack.getFluid(), result);
-        return result;
+        cache.put(fluidStack.getFluid(), false);
+        return false;
     }
 
     @Override

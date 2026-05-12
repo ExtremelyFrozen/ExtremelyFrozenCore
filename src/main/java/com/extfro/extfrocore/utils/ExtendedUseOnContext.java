@@ -1,8 +1,8 @@
 package com.extfro.extfrocore.utils;
 
 import com.extfro.extfrocore.api.capability.ICoverable;
-import com.extfro.extfrocore.api.tool.EFToolType;
-import com.extfro.extfrocore.api.tool.ToolHelper;
+import com.extfro.extfrocore.api.item.tool.GTToolType;
+import com.extfro.extfrocore.api.item.tool.ToolHelper;
 
 import net.minecraft.core.Direction;
 import net.minecraft.world.InteractionHand;
@@ -22,11 +22,11 @@ public class ExtendedUseOnContext extends UseOnContext {
     private final Direction gridSide;
     @Getter
     @Unmodifiable
-    private final Set<EFToolType> toolType;
+    private final Set<GTToolType> toolType;
 
     public ExtendedUseOnContext(Player player, InteractionHand hand, BlockHitResult hitResult) {
         super(player, hand, hitResult);
-        gridSide = ICoverable.traceCoverSide(hitResult);
+        gridSide = ICoverable.determineGridSideHit(hitResult);
         toolType = ToolHelper.getToolTypes(getItemInHand());
     }
 

@@ -1,6 +1,6 @@
 {
-	"parent": "extfrocore:item/material_sets/dull/crushed",
+	"parent": "gtceu:item/material_sets/dull/crushed",
 	"textures": {
-		"layer2": "extfrocore:item/material_sets/magnetic/crushed_overlay"
+		"layer2": "gtceu:item/material_sets/magnetic/crushed_overlay"
 	}
 }

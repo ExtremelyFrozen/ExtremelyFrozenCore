@@ -2,12 +2,15 @@ package com.extfro.extfrocore.api.recipe.modifier;
 
 import com.extfro.extfrocore.api.machine.MetaMachine;
 import com.extfro.extfrocore.api.machine.trait.RecipeLogic;
-import com.extfro.extfrocore.api.recipe.MachineRecipe;
+import com.extfro.extfrocore.api.recipe.GTRecipe;
 
 import lombok.Getter;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
+/**
+ * Represents a list of RecipeModifiers that should be applied in order
+ */
 public final class RecipeModifierList implements RecipeModifier {
 
     @Getter
@@ -17,19 +20,29 @@ public final class RecipeModifierList implements RecipeModifier {
         this.modifiers = modifiers;
     }
 
+    /**
+     * Builds the final ModifierFunction by applying each RecipeModifier in order
+     * <p>
+     * The RecipeModifierList will build modifiers by keeping tracking of the recipe as each modifier is applied
+     * </p>
+     *
+     * @param machine the machine which is requesting the modifier
+     * @param recipe  the recipe - will not be mutated
+     * @return Fully composed ModifierFunction of all desired RecipeModifiers
+     */
     @Override
     @Contract(pure = true)
-    public @NotNull ModifierFunction getModifier(@NotNull MetaMachine machine, @NotNull MachineRecipe recipe) {
+    public @NotNull ModifierFunction getModifier(@NotNull MetaMachine machine, @NotNull GTRecipe recipe) {
         ModifierFunction result = ModifierFunction.IDENTITY;
-        MachineRecipe runningRecipe = recipe;
+        var runningRecipe = recipe;
         for (RecipeModifier modifier : modifiers) {
-            ModifierFunction function = modifier.getModifier(machine, runningRecipe);
-            runningRecipe = function.apply(runningRecipe);
+            var func = modifier.getModifier(machine, runningRecipe);
+            runningRecipe = func.apply(runningRecipe);
             if (runningRecipe == null) {
-                RecipeLogic.putFailureReason(machine, recipe, function.getFailReason());
+                RecipeLogic.putFailureReason(machine, recipe, func.getFailReason());
                 return ModifierFunction.NULL;
             }
-            result = function.compose(result);
+            result = func.compose(result);
         }
         return result;
     }

@@ -1,7 +1,7 @@
 package com.extfro.extfrocore.client.model.machine.multipart;
 
 import com.extfro.extfrocore.api.machine.MachineDefinition;
-import com.extfro.extfrocore.api.machine.MachineRenderState;
+import com.extfro.extfrocore.client.model.machine.MachineRenderState;
 
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.Property;
@@ -24,45 +24,49 @@ public class KeyValuePartCondition implements PartCondition {
         this.value = value;
     }
 
-    @Override
     public Predicate<MachineRenderState> getPredicate(StateDefinition<MachineDefinition, MachineRenderState> def) {
-        Property<?> property = def.getProperty(key);
+        Property<?> property = def.getProperty(this.key);
         if (property == null) {
-            throw new RuntimeException(String.format(Locale.ROOT, "Unknown property '%s' on machine '%s'", key,
-                    def.getOwner()));
-        }
-        String parsedValue = value;
-        boolean invert = !parsedValue.isEmpty() && parsedValue.charAt(0) == '!';
-        if (invert) {
-            parsedValue = parsedValue.substring(1);
-        }
-
-        List<String> values = PIPE_SPLITTER.splitToList(parsedValue);
-        if (values.isEmpty()) {
-            throw new RuntimeException(String.format(Locale.ROOT, "Empty value '%s' for property '%s' on machine '%s'",
-                    value, key, def.getOwner()));
-        }
-
-        Predicate<MachineRenderState> predicate;
-        if (values.size() == 1) {
-            predicate = getStatePredicate(def, property, parsedValue);
+            throw new RuntimeException(
+                    String.format(Locale.ROOT, "Unknown property '%s' on machine '%s'", this.key, def.getOwner()));
         } else {
-            List<Predicate<MachineRenderState>> parsed = values.stream()
-                    .map(string -> getStatePredicate(def, property, string))
-                    .toList();
-            predicate = state -> parsed.stream().anyMatch(p -> p.test(state));
+            String value = this.value;
+            boolean invert = !value.isEmpty() && value.charAt(0) == '!';
+            if (invert) {
+                value = value.substring(1);
+            }
+
+            List<String> unparsedPredicates = PIPE_SPLITTER.splitToList(value);
+            if (unparsedPredicates.isEmpty()) {
+                throw new RuntimeException(
+                        String.format(Locale.ROOT, "Empty value '%s' for property '%s' on machine '%s'",
+                                this.value, this.key, def.getOwner()));
+            } else {
+                Predicate<MachineRenderState> predicate;
+                if (unparsedPredicates.size() == 1) {
+                    predicate = this.getStatePredicate(def, property, value);
+                } else {
+                    List<Predicate<MachineRenderState>> parsed = unparsedPredicates.stream()
+                            .map((string) -> this.getStatePredicate(def, property, string))
+                            .toList();
+                    predicate = (state) -> parsed.stream().anyMatch((p) -> p.test(state));
+                }
+
+                return invert ? predicate.negate() : predicate;
+            }
         }
-        return invert ? predicate.negate() : predicate;
     }
 
     private Predicate<MachineRenderState> getStatePredicate(StateDefinition<MachineDefinition, MachineRenderState> def,
                                                             Property<?> property, String value) {
         Optional<?> optional = property.getValue(value);
         if (optional.isEmpty()) {
-            throw new RuntimeException(String.format(Locale.ROOT,
-                    "Unknown value '%s' for property '%s' on '%s' in '%s'", value, key, def.getOwner(), this.value));
+            throw new RuntimeException(
+                    String.format(Locale.ROOT, "Unknown value '%s' for property '%s' on '%s' in '%s'",
+                            value, this.key, def.getOwner(), this.value));
+        } else {
+            return (state) -> state.getValue(property).equals(optional.get());
         }
-        return state -> state.getValue(property).equals(optional.get());
     }
 
     @Override

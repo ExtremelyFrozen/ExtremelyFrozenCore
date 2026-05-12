@@ -15,6 +15,8 @@ import net.minecraft.world.level.BlockAndTintGetter;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.client.model.data.ModelData;
 
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -28,6 +30,7 @@ public interface IMachineRendererModel<T extends IMachineFeature> {
 
     MachineDefinition getDefinition();
 
+    @OnlyIn(Dist.CLIENT)
     default @NotNull List<BakedQuad> getRenderQuads(@Nullable T machine, @Nullable BlockAndTintGetter level,
                                                     @Nullable BlockPos pos, @Nullable BlockState blockState,
                                                     @Nullable Direction side, RandomSource rand,
@@ -35,9 +38,11 @@ public interface IMachineRendererModel<T extends IMachineFeature> {
         return Collections.emptyList();
     }
 
+    @OnlyIn(Dist.CLIENT)
     void render(T machine, float partialTick, PoseStack poseStack, MultiBufferSource buffer,
                 int packedLight, int packedOverlay);
 
+    @OnlyIn(Dist.CLIENT)
     default void renderByItem(ItemStack stack, ItemDisplayContext displayContext,
                               PoseStack poseStack, MultiBufferSource buffer, int packedLight, int packedOverlay) {}
 
@@ -46,7 +51,7 @@ public interface IMachineRendererModel<T extends IMachineFeature> {
     }
 
     default boolean shouldRender(T machine, Vec3 cameraPos) {
-        return Vec3.atCenterOf(machine.self().getBlockPos()).closerThan(cameraPos, getViewDistance());
+        return Vec3.atCenterOf(machine.self().getBlockPos()).closerThan(cameraPos, this.getViewDistance());
     }
 
     default int getViewDistance() {

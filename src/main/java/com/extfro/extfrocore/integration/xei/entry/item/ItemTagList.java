@@ -20,7 +20,7 @@ public final class ItemTagList implements ItemEntryList {
     private final List<ItemTagEntry> entries = new ArrayList<>();
 
     public static ItemTagList of(@NotNull TagKey<Item> tag, int amount, @NotNull DataComponentPatch componentPatch) {
-        ItemTagList list = new ItemTagList();
+        var list = new ItemTagList();
         list.add(tag, amount, componentPatch);
         return list;
     }
@@ -34,21 +34,21 @@ public final class ItemTagList implements ItemEntryList {
     }
 
     @Override
-    public List<ItemStack> getStacks() {
-        return entries.stream().flatMap(ItemTagEntry::stacks).toList();
+    public boolean isEmpty() {
+        return entries.isEmpty();
     }
 
     @Override
-    public boolean isEmpty() {
-        return entries.isEmpty();
+    public List<ItemStack> getStacks() {
+        return entries.stream()
+                .flatMap(ItemTagEntry::stacks)
+                .toList();
     }
 
     public record ItemTagEntry(@NotNull TagKey<Item> tag, int amount, @NotNull DataComponentPatch componentPatch) {
 
         public Stream<ItemStack> stacks() {
-            return BuiltInRegistries.ITEM.getTag(tag)
-                    .map(HolderSet.ListBacked::stream)
-                    .orElseGet(Stream::empty)
+            return BuiltInRegistries.ITEM.getTag(tag).map(HolderSet.ListBacked::stream).orElseGet(Stream::empty)
                     .map(holder -> new ItemStack(holder, amount, componentPatch));
         }
     }

@@ -45,11 +45,14 @@ public class ItemTagMapIngredient extends AbstractMapIngredient {
 
     @Override
     public boolean equals(Object obj) {
-        return super.equals(obj) && tag == ((ItemTagMapIngredient) obj).tag;
+        if (super.equals(obj)) {
+            return tag == ((ItemTagMapIngredient) obj).tag;
+        }
+        return false;
     }
 
     @Override
     public String toString() {
-        return "ItemTagMapIngredient{tag=" + tag.location() + "}";
+        return "ItemTagMapIngredient{" + "tag=" + tag.location() + "}";
     }
 }

@@ -1,106 +1,58 @@
 package com.extfro.extfrocore.api.recipe.lookup.ingredient;
 
 import com.extfro.extfrocore.api.capability.recipe.RecipeCapability;
-import com.extfro.extfrocore.api.recipe.lookup.ingredient.fluid.CustomFluidMapIngredient;
-import com.extfro.extfrocore.api.recipe.lookup.ingredient.fluid.FluidDataComponentMapIngredient;
-import com.extfro.extfrocore.api.recipe.lookup.ingredient.fluid.FluidStackMapIngredient;
-import com.extfro.extfrocore.api.recipe.lookup.ingredient.fluid.FluidTagMapIngredient;
-import com.extfro.extfrocore.api.recipe.lookup.ingredient.item.CustomItemMapIngredient;
-import com.extfro.extfrocore.api.recipe.lookup.ingredient.item.ItemDataComponentMapIngredient;
-import com.extfro.extfrocore.api.recipe.lookup.ingredient.item.ItemStackMapIngredient;
-import com.extfro.extfrocore.api.recipe.lookup.ingredient.item.ItemTagMapIngredient;
 
 import net.minecraft.Util;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.crafting.Ingredient;
-import net.neoforged.neoforge.common.crafting.DataComponentIngredient;
-import net.neoforged.neoforge.fluids.FluidStack;
-import net.neoforged.neoforge.fluids.crafting.DataComponentFluidIngredient;
-import net.neoforged.neoforge.fluids.crafting.SingleFluidIngredient;
-import net.neoforged.neoforge.fluids.crafting.TagFluidIngredient;
+import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 
 import com.google.common.base.Preconditions;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Manager for custom map ingredient types.
+ * <br>
+ * Addons can register their own map ingredient classes here instead of mixining into GT's initialization logic.
+ * <p>
+ * A good time to register them is in a {@link FMLCommonSetupEvent Common Setup Event},
+ * after any custom ingredient types.
+ */
 @SuppressWarnings("unchecked")
 public final class MapIngredientTypeManager {
 
-    private static final Map<Class<?>, List<? extends MapIngredientFunction<?>>> INGREDIENT_FUNCTIONS = new ConcurrentHashMap<>(7);
-    private static final Map<MapIngredientFunction<?>, Class<?>> INGREDIENT_TYPES = new ConcurrentHashMap<>(7);
-
-    private MapIngredientTypeManager() {}
-
-    static {
-        registerMapIngredient(Ingredient.class, ingredient -> {
-            List<AbstractMapIngredient> list = new ArrayList<>();
-            list.addAll(ItemTagMapIngredient.from(ingredient));
-            list.addAll(ItemStackMapIngredient.from(ingredient));
-            if (ingredient.getCustomIngredient() instanceof DataComponentIngredient componentIngredient) {
-                list.addAll(ItemDataComponentMapIngredient.from(componentIngredient));
-            }
-            list.addAll(CustomItemMapIngredient.from(ingredient));
-            return list;
-        });
-        registerMapIngredient(ItemStack.class, stack -> {
-            List<AbstractMapIngredient> list = new ArrayList<>();
-            list.addAll(ItemTagMapIngredient.from(stack));
-            list.addAll(ItemStackMapIngredient.from(stack));
-            list.addAll(ItemDataComponentMapIngredient.from(stack));
-            list.addAll(CustomItemMapIngredient.from(stack));
-            return list;
-        });
-        registerMapIngredient(DataComponentIngredient.class, ItemDataComponentMapIngredient::from);
-        registerMapIngredient(SingleFluidIngredient.class, FluidStackMapIngredient::from);
-        registerMapIngredient(TagFluidIngredient.class, FluidTagMapIngredient::from);
-        registerMapIngredient(DataComponentFluidIngredient.class, FluidDataComponentMapIngredient::from);
-        registerMapIngredient(FluidStack.class, stack -> {
-            List<AbstractMapIngredient> list = new ArrayList<>();
-            list.addAll(FluidTagMapIngredient.from(stack));
-            list.addAll(FluidStackMapIngredient.from(stack));
-            list.addAll(FluidDataComponentMapIngredient.from(stack));
-            list.addAll(CustomFluidMapIngredient.from(stack));
-            return list;
-        });
-    }
+    // spotless:off
+    private static final Map<Class<?>, List<? extends MapIngredientFunction<?>>> ingredientFunctions = new ConcurrentHashMap<>(7);
+    private static final Map<MapIngredientFunction<?>, Class<?>> ingredientTypes = new ConcurrentHashMap<>(7);
+    // spotless:on
 
     public static <T> void registerMapIngredient(Class<T> ingredientClass,
                                                  MapIngredientFunction<T> function) {
         ingredientClass = boxClass(ingredientClass);
-        List<MapIngredientFunction<T>> list = (List<MapIngredientFunction<T>>) INGREDIENT_FUNCTIONS
-                .computeIfAbsent(ingredientClass, ignored -> new ArrayList<>());
+        var list = (List<MapIngredientFunction<T>>) ingredientFunctions.computeIfAbsent(
+                ingredientClass, $ -> new ArrayList<>());
         list.add(function);
-        INGREDIENT_TYPES.put(function, ingredientClass);
+        ingredientTypes.put(function, ingredientClass);
     }
 
     @NotNull
-    public static <T> List<AbstractMapIngredient> getFrom(T object, RecipeCapability<?> capability) {
+    public static <T> List<AbstractMapIngredient> getFrom(T object, RecipeCapability<?> cap) {
         Class<? super T> objClass = (Class<? super T>) boxClass(object.getClass());
-        Class<?> stopAt = boxClass(capability.serializer.contentClass());
+        Class<?> stopAt = boxClass(cap.serializer.contentClass());
         if (!stopAt.isAssignableFrom(objClass)) {
             stopAt = Object.class;
         }
-        List<? extends MapIngredientFunction<? super T>> functions = getTypesForClass(objClass, stopAt);
-        if (functions.isEmpty()) {
-            return Objects.requireNonNullElseGet(capability.getDefaultMapIngredient(object), Collections::emptyList);
-        }
+        var functions = getTypesForClass(objClass, stopAt);
+        // this is the same as writing `object instanceof stopClass`, but it keeps track of the boxed primitives
         if (!objClass.isAssignableFrom(stopAt)) {
-            List<AbstractMapIngredient> defaults = getDefaultIngredients(object, capability, stopAt, functions);
-            if (defaults != null) {
-                return defaults;
-            }
+            var defaults = getDefaultIngredients(object, cap, stopAt, functions);
+            if (defaults != null) return defaults;
         }
 
         List<AbstractMapIngredient> values = new ArrayList<>();
-        for (MapIngredientFunction<? super T> function : functions) {
+        for (var function : functions) {
             values.addAll(function.getIngredients(object));
         }
         return values;
@@ -111,28 +63,25 @@ public final class MapIngredientTypeManager {
         Preconditions.checkArgument(stopAt.isAssignableFrom(objClass),
                 "stopAt must be a superclass of %s", objClass);
 
-        List<? extends MapIngredientFunction<?>> types = INGREDIENT_FUNCTIONS.get(objClass);
+        var types = ingredientFunctions.get(objClass);
         if (types == null && objClass != stopAt) {
             Class<? super T> superclass = objClass.getSuperclass();
-            if (superclass == null || superclass == stopAt) {
-                return Collections.emptyList();
-            }
+            if (superclass == null || superclass == stopAt) return Collections.emptyList();
             return getTypesForClass(superclass, stopAt);
         }
-        return types == null ? Collections.emptyList() : (List<MapIngredientFunction<T>>) types;
+        return (List<MapIngredientFunction<T>>) types;
     }
 
-    private static <T> @Nullable List<AbstractMapIngredient> getDefaultIngredients(
-                                                                                   T object,
-                                                                                   RecipeCapability<?> capability,
+    private static <T> @Nullable List<AbstractMapIngredient> getDefaultIngredients(T object, RecipeCapability<?> cap,
                                                                                    Class<?> stopAt,
                                                                                    List<? extends MapIngredientFunction<? super T>> functions) {
-        for (MapIngredientFunction<? super T> function : functions) {
-            if (INGREDIENT_TYPES.get(function) != stopAt) {
+        for (var function : functions) {
+            if (ingredientTypes.get(function) != stopAt) {
                 return null;
             }
         }
-        return Objects.requireNonNullElseGet(capability.getDefaultMapIngredient(object), Collections::emptyList);
+        // if the ingredient is not of the base type, and we didn't find any specific ones for it, return a default
+        return Objects.requireNonNullElseGet(cap.getDefaultMapIngredient(object), Collections::emptyList);
     }
 
     private static final Map<Class<?>, Class<?>> WRAPPERS = Util.make(new HashMap<>(9), map -> {

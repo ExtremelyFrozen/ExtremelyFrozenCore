@@ -27,7 +27,7 @@ public interface IContentSerializer<T> {
         return codec().encodeStart(provider.createSerializationContext(JsonOps.INSTANCE), content).getOrThrow();
     }
 
-    T of(Object object);
+    T of(Object o);
 
     T defaultValue();
 

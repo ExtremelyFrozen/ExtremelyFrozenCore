@@ -1,0 +1,305 @@
+package com.extfro.extfrocore.common.machine.electric;
+
+import com.extfro.extfrocore.api.EFValues;
+import com.extfro.extfrocore.api.blockentity.BlockEntityCreationInfo;
+import com.extfro.extfrocore.api.capability.GTCapabilityHelper;
+import com.extfro.extfrocore.api.capability.IControllable;
+import com.extfro.extfrocore.api.capability.IMiner;
+import com.extfro.extfrocore.api.gui.GuiTextures;
+import com.extfro.extfrocore.api.gui.WidgetUtils;
+import com.extfro.extfrocore.api.gui.editor.EditableMachineUI;
+import com.extfro.extfrocore.api.gui.editor.EditableUI;
+import com.extfro.extfrocore.api.gui.widget.SlotWidget;
+import com.extfro.extfrocore.api.machine.TickableSubscription;
+import com.extfro.extfrocore.api.machine.WorkableTieredMachine;
+import com.extfro.extfrocore.api.machine.feature.IDataInfoProvider;
+import com.extfro.extfrocore.api.machine.feature.IFancyUIMachine;
+import com.extfro.extfrocore.api.machine.trait.AutoOutputTrait;
+import com.extfro.extfrocore.api.sync_system.annotations.SaveField;
+import com.extfro.extfrocore.api.sync_system.annotations.SyncToClient;
+import com.extfro.extfrocore.api.transfer.item.CustomItemStackHandler;
+import com.extfro.extfrocore.common.item.behavior.PortableScannerBehavior;
+import com.extfro.extfrocore.common.machine.trait.miner.MinerLogic;
+import com.extfro.extfrocore.config.ConfigHolder;
+import com.extfro.extfrocore.data.lang.LangHandler;
+import com.extfro.extfrocore.utils.ExtendedUseOnContext;
+import com.extfro.extfrocore.utils.ISubscription;
+
+import net.minecraft.ChatFormatting;
+import net.minecraft.Util;
+import net.minecraft.core.Direction;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.Style;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.InteractionResult;
+
+import com.lowdragmc.lowdraglib2.gui.widget.ComponentPanelWidget;
+import com.lowdragmc.lowdraglib2.gui.widget.DraggableScrollableWidgetGroup;
+import com.lowdragmc.lowdraglib2.gui.widget.WidgetGroup;
+import com.lowdragmc.lowdraglib2.math.Position;
+import com.lowdragmc.lowdraglib2.math.Size;
+import lombok.Getter;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.function.BiFunction;
+
+public class MinerMachine extends WorkableTieredMachine
+                          implements IControllable, IFancyUIMachine, IDataInfoProvider, IMiner {
+
+    @Getter
+    @SaveField
+    protected final CustomItemStackHandler chargerInventory;
+    private final long energyPerTick;
+    @Nullable
+    protected TickableSubscription batterySubs;
+    @Nullable
+    protected ISubscription energySubs;
+
+    @SaveField
+    @SyncToClient
+    public final AutoOutputTrait autoOutput;
+
+    public MinerMachine(BlockEntityCreationInfo info, int tier, int speed, int maximumRadius, int fortune) {
+        super(info, tier,
+                new MinerLogic(fortune, speed, maximumRadius),
+                0, (tier + 1) * (tier + 1), 0, 0, ($) -> 0);
+        this.energyPerTick = EFValues.V[tier - 1];
+        this.chargerInventory = createChargerItemHandler();
+        this.autoOutput = attachTrait(AutoOutputTrait.ofItems(exportItems));
+        autoOutput.setItemOutputDirectionValidator(d -> d != Direction.DOWN);
+    }
+
+    //////////////////////////////////////
+    // ***** Initialization ******//
+    //////////////////////////////////////
+
+    protected CustomItemStackHandler createChargerItemHandler() {
+        var handler = new CustomItemStackHandler();
+        handler.setFilter(item -> GTCapabilityHelper.getElectricItem(item) != null ||
+                (ConfigHolder.INSTANCE.compat.energy.nativeEUToFE &&
+                        GTCapabilityHelper.getForgeEnergyItem(item) != null));
+        return handler;
+    }
+
+    @Override
+    public void onMachineDestroyed() {
+        super.onMachineDestroyed();
+        // Remove the miner pipes below this miner
+        chargerInventory.dropInventoryInWorld(getLevel(), getBlockPos());
+    }
+
+    @Override
+    public MinerLogic getRecipeLogic() {
+        return (MinerLogic) super.getRecipeLogic();
+    }
+
+    @Override
+    public void onLoad() {
+        super.onLoad();
+        if (!isRemote()) {
+            updateBatterySubscription();
+            energySubs = energyContainer.addChangedListener(this::updateBatterySubscription);
+            chargerInventory.setOnContentsChanged(this::updateBatterySubscription);
+        }
+    }
+
+    @Override
+    public void onUnload() {
+        super.onUnload();
+        if (energySubs != null) {
+            energySubs.unsubscribe();
+            energySubs = null;
+        }
+    }
+
+    //////////////////////////////////////
+    // ********** LOGIC **********//
+    //////////////////////////////////////
+    protected void updateBatterySubscription() {
+        if (energyContainer.dischargeOrRechargeEnergyContainers(chargerInventory, 0, true)) {
+            batterySubs = subscribeServerTick(batterySubs, this::chargeBattery);
+        } else if (batterySubs != null) {
+            batterySubs.unsubscribe();
+            batterySubs = null;
+        }
+    }
+
+    protected void chargeBattery() {
+        if (!energyContainer.dischargeOrRechargeEnergyContainers(chargerInventory, 0, false)) {
+            updateBatterySubscription();
+        }
+    }
+
+    //////////////////////////////////////
+    // *********** GUI ***********//
+    //////////////////////////////////////
+
+    public static BiFunction<ResourceLocation, Integer, EditableMachineUI> EDITABLE_UI_CREATOR = Util
+            .memoize((path, inventorySize) -> new EditableMachineUI("misc", path, () -> {
+                WidgetGroup template = createTemplate(inventorySize).createDefault();
+                SlotWidget batterySlot = createBatterySlot().createDefault();
+                batterySlot.setSelfPosition(new Position(100, 10));
+                WidgetGroup group = new WidgetGroup(0, 0, Math.max(template.getSize().width + 12, 172),
+                        template.getSize().height + 8);
+                Size size = group.getSize();
+
+                template.setSelfPosition(new Position(
+                        (size.width - 4 - template.getSize().width) / 2 + 4,
+                        (size.height - template.getSize().height) / 2));
+
+                group.addWidget(template);
+                group.addWidget(batterySlot);
+                return group;
+            }, (template, machine) -> {
+                if (machine instanceof MinerMachine minerMachine) {
+                    createTemplate(inventorySize).setupUI(template, minerMachine);
+                    createEnergyBar().setupUI(template, minerMachine);
+                    createBatterySlot().setupUI(template, minerMachine);
+                }
+            }));
+
+    protected static EditableUI<WidgetGroup, MinerMachine> createTemplate(int inventorySize) {
+        return new EditableUI<>("miner", WidgetGroup.class, () -> {
+            int rowSize = (int) Math.sqrt(inventorySize);
+            int width = rowSize * 18 + 120;
+            int height = Math.max(rowSize * 18, 80);
+            WidgetGroup group = new WidgetGroup(0, 0, width, height);
+
+            WidgetGroup slots = new WidgetGroup(120, (height - rowSize * 18) / 2, rowSize * 18, rowSize * 18);
+            for (int y = 0; y < rowSize; y++) {
+                for (int x = 0; x < rowSize; x++) {
+                    int index = y * rowSize + x;
+                    var slot = new SlotWidget();
+                    slot.initTemplate();
+                    slot.setSelfPosition(new Position(x * 18, y * 18));
+                    slot.setBackground(GuiTextures.SLOT);
+                    slot.setId("slot_" + index);
+                    slots.addWidget(slot);
+                }
+            }
+
+            var componentPanel = new ComponentPanelWidget(4, 5, list -> {});
+            componentPanel.setMaxWidthLimit(110);
+            componentPanel.setId("component_panel");
+
+            var container = new WidgetGroup(0, 0, 117, height);
+            container.addWidget(new DraggableScrollableWidgetGroup(4, 4, container.getSize().width - 8,
+                    container.getSize().height - 8)
+                    .setBackground(GuiTextures.DISPLAY)
+                    .addWidget(componentPanel));
+            container.setBackground(GuiTextures.BACKGROUND_INVERSE);
+            group.addWidget(container);
+            group.addWidget(slots);
+            return group;
+        }, (group, machine) -> {
+            WidgetUtils.widgetByIdForEach(group, "^slot_[0-9]+$", SlotWidget.class, slot -> {
+                var index = WidgetUtils.widgetIdIndex(slot);
+                if (index >= 0 && index < machine.exportItems.getSlots()) {
+                    slot.setHandlerSlot(machine.exportItems, index);
+                    slot.setCanTakeItems(true);
+                    slot.setCanPutItems(false);
+                }
+            });
+            WidgetUtils.widgetByIdForEach(group, "^component_panel$", ComponentPanelWidget.class,
+                    panel -> panel.textSupplier(machine::addDisplayText));
+        });
+    }
+
+    /**
+     * Create an energy bar widget.
+     */
+    protected static EditableUI<SlotWidget, MinerMachine> createBatterySlot() {
+        return new EditableUI<>("battery_slot", SlotWidget.class, () -> {
+            var slotWidget = new SlotWidget();
+            slotWidget.setBackground(GuiTextures.SLOT, GuiTextures.CHARGER_OVERLAY);
+            return slotWidget;
+        }, (slotWidget, machine) -> {
+            slotWidget.setHandlerSlot(machine.chargerInventory, 0);
+            slotWidget.setCanPutItems(true);
+            slotWidget.setCanTakeItems(true);
+            slotWidget.setHoverTooltips(LangHandler.getMultiLang("gtceu.gui.charger_slot.tooltip",
+                    EFValues.VNF[machine.getTier()], EFValues.VNF[machine.getTier()]).toArray(new MutableComponent[0]));
+        });
+    }
+
+    private void addDisplayText(List<Component> textList) {
+        int workingArea = IMiner.getWorkingArea(getRecipeLogic().getCurrentRadius());
+        textList.add(recipeLogic.getCustomProgressLine());
+        textList.add(Component.translatable("gtceu.machine.miner.startx", getRecipeLogic().getX()).append(" ")
+                .append(Component.translatable("gtceu.machine.miner.minex", getRecipeLogic().getMineX())));
+        textList.add(Component.translatable("gtceu.machine.miner.starty", getRecipeLogic().getY()).append(" ")
+                .append(Component.translatable("gtceu.machine.miner.miney", getRecipeLogic().getMineY())));
+        textList.add(Component.translatable("gtceu.machine.miner.startz", getRecipeLogic().getZ()).append(" ")
+                .append(Component.translatable("gtceu.machine.miner.minez", getRecipeLogic().getMineZ())));
+        textList.add(Component.translatable("gtceu.universal.tooltip.working_area", workingArea, workingArea));
+        if (getRecipeLogic().isDone())
+            textList.add(Component.translatable("gtceu.multiblock.large_miner.done")
+                    .setStyle(Style.EMPTY.withColor(ChatFormatting.GREEN)));
+        else if (getRecipeLogic().isWorking())
+            textList.add(Component.translatable("gtceu.multiblock.large_miner.working")
+                    .setStyle(Style.EMPTY.withColor(ChatFormatting.GOLD)));
+        else if (!this.isWorkingEnabled())
+            textList.add(Component.translatable("gtceu.multiblock.work_paused"));
+        if (getRecipeLogic().isInventoryFull())
+            textList.add(Component.translatable("gtceu.multiblock.large_miner.invfull")
+                    .setStyle(Style.EMPTY.withColor(ChatFormatting.RED)));
+        if (!drainInput(true))
+            textList.add(Component.translatable("gtceu.multiblock.large_miner.needspower")
+                    .setStyle(Style.EMPTY.withColor(ChatFormatting.RED)));
+    }
+
+    @Override
+    public boolean drainInput(boolean simulate) {
+        long resultEnergy = energyContainer.getEnergyStored() - energyPerTick;
+        if (resultEnergy >= 0L && resultEnergy <= energyContainer.getEnergyCapacity()) {
+            if (!simulate)
+                energyContainer.removeEnergy(energyPerTick);
+            return true;
+        }
+        return false;
+    }
+
+    //////////////////////////////////////
+    // ******* Interaction *******//
+    //////////////////////////////////////
+    @Override
+    protected InteractionResult onScrewdriverClick(ExtendedUseOnContext context) {
+        if (isRemote()) return InteractionResult.SUCCESS;
+
+        if (!this.isActive()) {
+            int currentRadius = getRecipeLogic().getCurrentRadius();
+            if (currentRadius == 1)
+                getRecipeLogic().setCurrentRadius(getRecipeLogic().getMaximumRadius());
+            else if (context.getPlayer().isShiftKeyDown())
+                getRecipeLogic().setCurrentRadius(Math.max(1, Math.round(currentRadius / 2.0f)));
+            else
+                getRecipeLogic().setCurrentRadius(Math.max(1, currentRadius - 1));
+
+            getRecipeLogic().resetArea(true);
+
+            int workingArea = IMiner.getWorkingArea(getRecipeLogic().getCurrentRadius());
+            context.getPlayer().sendSystemMessage(
+                    Component.translatable("gtceu.universal.tooltip.working_area", workingArea, workingArea));
+        } else {
+            context.getPlayer().sendSystemMessage(Component.translatable("gtceu.multiblock.large_miner.errorradius"));
+        }
+        return InteractionResult.SUCCESS;
+    }
+
+    @NotNull
+    @Override
+    public List<Component> getDataInfo(PortableScannerBehavior.DisplayMode mode) {
+        if (mode == PortableScannerBehavior.DisplayMode.SHOW_ALL ||
+                mode == PortableScannerBehavior.DisplayMode.SHOW_MACHINE_INFO) {
+            int workingArea = IMiner.getWorkingArea(getRecipeLogic().getCurrentRadius());
+            return Collections.singletonList(
+                    Component.translatable("gtceu.universal.tooltip.working_area", workingArea, workingArea));
+        }
+        return new ArrayList<>();
+    }
+}

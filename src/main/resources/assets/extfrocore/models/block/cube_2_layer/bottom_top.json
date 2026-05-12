@@ -1,5 +1,5 @@
 {
-	"parent": "extfrocore:block/cube_2_layer/default",
+	"parent": "gtceu:block/cube_2_layer/default",
 	"textures": {
 		"particle": "#bot_side",
 		"bot_down": "#bot_bottom",

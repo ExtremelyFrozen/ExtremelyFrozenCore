@@ -14,7 +14,7 @@ import java.util.List;
 public class CustomItemMapIngredient extends AbstractMapIngredient {
 
     protected ItemStack stack;
-    protected Ingredient ingredient;
+    protected Ingredient ingredient = null;
 
     public CustomItemMapIngredient(ItemStack stack) {
         this.stack = stack;
@@ -27,7 +27,8 @@ public class CustomItemMapIngredient extends AbstractMapIngredient {
 
     public static List<AbstractMapIngredient> from(Ingredient ingredient) {
         List<AbstractMapIngredient> ingredients = new ArrayList<>();
-        for (ItemStack stack : ingredient.getItems()) {
+        ItemStack[] stacks = ingredient.getItems();
+        for (ItemStack stack : stacks) {
             ingredients.add(new CustomItemMapIngredient(stack, ingredient));
         }
         return ingredients;
@@ -39,25 +40,27 @@ public class CustomItemMapIngredient extends AbstractMapIngredient {
     }
 
     @Override
-    public boolean equals(Object obj) {
-        if (super.equals(obj)) {
-            CustomItemMapIngredient other = (CustomItemMapIngredient) obj;
-            if (!ItemStack.isSameItem(stack, other.stack)) {
+    public boolean equals(Object o) {
+        if (super.equals(o)) {
+            CustomItemMapIngredient other = (CustomItemMapIngredient) o;
+            if (!ItemStack.isSameItem(this.stack, other.stack)) {
                 return false;
             }
-            if (ingredient != null) {
+            if (this.ingredient != null) {
                 if (other.ingredient != null) {
-                    for (ItemStack otherStack : other.ingredient.getItems()) {
-                        if (!ingredient.test(otherStack)) return false;
+                    for (ItemStack stack : other.ingredient.getItems()) {
+                        if (!this.ingredient.test(stack)) return false;
                     }
-                    for (ItemStack thisStack : ingredient.getItems()) {
-                        if (!other.ingredient.test(thisStack)) return false;
+                    for (ItemStack stack : this.ingredient.getItems()) {
+                        if (!other.ingredient.test(stack)) return false;
                     }
                     return true;
+                } else {
+                    return this.ingredient.test(other.stack);
                 }
-                return ingredient.test(other.stack);
+            } else if (other.ingredient != null) {
+                return other.ingredient.test(this.stack);
             }
-            return other.ingredient == null || other.ingredient.test(stack);
         }
         return false;
     }
@@ -69,7 +72,10 @@ public class CustomItemMapIngredient extends AbstractMapIngredient {
 
     @Override
     public String toString() {
-        return "CustomItemMapIngredient{item=" + stack + ", ingredient=" + ingredient + "}";
+        return "CustomMapIngredient{" +
+                "item=" + stack +
+                "ingredient=" + ingredient +
+                "}";
     }
 
     @Override

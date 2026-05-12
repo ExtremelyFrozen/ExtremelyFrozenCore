@@ -20,7 +20,7 @@ public class CycleFluidEntryHandler implements IFluidHandlerModifiable {
     private final List<FluidEntryList> entries;
 
     @Nullable
-    private List<List<FluidStack>> unwrapped;
+    private List<List<FluidStack>> unwrapped = null;
 
     public CycleFluidEntryHandler(List<FluidEntryList> entries) {
         this.entries = new ArrayList<>(entries);
@@ -37,7 +37,8 @@ public class CycleFluidEntryHandler implements IFluidHandlerModifiable {
 
     @Nullable
     private static List<FluidStack> getStacksNullable(@Nullable FluidEntryList list) {
-        return list == null ? null : list.getStacks();
+        if (list == null) return null;
+        return list.getStacks();
     }
 
     public FluidEntryList getEntry(int index) {
@@ -49,20 +50,18 @@ public class CycleFluidEntryHandler implements IFluidHandlerModifiable {
         return entries.size();
     }
 
+    @NotNull
     @Override
-    public @NotNull FluidStack getFluidInTank(int tank) {
+    public FluidStack getFluidInTank(int tank) {
         List<FluidStack> stackList = getUnwrapped().get(tank);
-        if (stackList == null || stackList.isEmpty()) {
-            return FluidStack.EMPTY;
-        }
-        int index = Math.abs((int) (System.currentTimeMillis() / 1000) % stackList.size());
-        return stackList.get(index);
+        return stackList == null || stackList.isEmpty() ? FluidStack.EMPTY :
+                stackList.get(Math.abs((int) (System.currentTimeMillis() / 1000) % stackList.size()));
     }
 
     @Override
-    public void setFluidInTank(int tank, @NotNull FluidStack stack) {
+    public void setFluidInTank(int tank, @NotNull FluidStack fluidStack) {
         if (tank >= 0 && tank < entries.size()) {
-            entries.set(tank, FluidStackList.of(stack));
+            entries.set(tank, FluidStackList.of(fluidStack));
             unwrapped = null;
         }
     }
@@ -83,18 +82,19 @@ public class CycleFluidEntryHandler implements IFluidHandlerModifiable {
     }
 
     @Override
-    public @NotNull FluidStack drain(@NotNull FluidStack resource, @NotNull FluidAction action) {
+    public boolean supportsFill(int tank) {
+        return false;
+    }
+
+    @NotNull
+    @Override
+    public FluidStack drain(@NotNull FluidStack resource, @NotNull FluidAction action) {
         return FluidStack.EMPTY;
     }
 
     @Override
     public @NotNull FluidStack drain(int maxDrain, @NotNull FluidAction action) {
         return FluidStack.EMPTY;
-    }
-
-    @Override
-    public boolean supportsFill(int tank) {
-        return false;
     }
 
     @Override

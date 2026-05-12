@@ -4,6 +4,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ItemLike;
 
 import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
+import org.apache.commons.lang3.NotImplementedException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -14,28 +15,29 @@ public interface ItemFilter extends Filter<ItemStack, ItemFilter> {
 
     Map<ItemLike, Function<ItemStack, ItemFilter>> FILTERS = new HashMap<>();
 
-    static void register(ItemLike filterItem, Function<ItemStack, ItemFilter> factory) {
-        FILTERS.put(filterItem, factory);
-    }
-
-    static boolean isFilterItem(ItemStack itemStack) {
-        return FILTERS.containsKey(itemStack.getItem());
-    }
-
     static ItemFilter loadFilter(ItemStack itemStack) {
-        Function<ItemStack, ItemFilter> factory = FILTERS.get(itemStack.getItem());
-        if (factory == null) {
-            return EMPTY;
-        }
-        return factory.apply(itemStack);
+        return FILTERS.get(itemStack.getItem()).apply(itemStack);
     }
 
+    /**
+     * Retrieves the configured item count for the supplied item.
+     *
+     * @return The amount configured for the supplied item stack.<br>
+     *         If the stack is not matched by this filter, 0 is returned instead.
+     */
     int testItemCount(ItemStack itemStack);
 
+    /**
+     * @return Whether this filter supports querying for exact item amounts.
+     */
     default boolean supportsAmounts() {
         return !isBlackList();
     }
 
+    /**
+     * An empty item filter that allows all items.<br>
+     * ONLY TO BE USED FOR ITEM MATCHING! All other functionality will throw an exception.
+     */
     ItemFilter EMPTY = new ItemFilter() {
 
         @Override
@@ -50,12 +52,12 @@ public interface ItemFilter extends Filter<ItemStack, ItemFilter> {
 
         @Override
         public UIElement openConfigurator(int x, int y) {
-            throw new UnsupportedOperationException("Not available for empty item filter");
+            throw new NotImplementedException("Not available for empty item filter");
         }
 
         @Override
         public void setOnUpdated(Consumer<ItemFilter> onUpdated) {
-            throw new UnsupportedOperationException("Not available for empty item filter");
+            throw new NotImplementedException("Not available for empty item filter");
         }
     };
 }

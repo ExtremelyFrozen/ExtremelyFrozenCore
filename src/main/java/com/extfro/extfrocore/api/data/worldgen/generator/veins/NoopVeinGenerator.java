@@ -1,6 +1,6 @@
 package com.extfro.extfrocore.api.data.worldgen.generator.veins;
 
-import com.extfro.extfrocore.api.data.worldgen.OreDefinition;
+import com.extfro.extfrocore.api.data.worldgen.GTOreDefinition;
 import com.extfro.extfrocore.api.data.worldgen.generator.VeinGenerator;
 import com.extfro.extfrocore.api.data.worldgen.ores.OreBlockPlacer;
 
@@ -27,7 +27,7 @@ public class NoopVeinGenerator extends VeinGenerator {
     }
 
     @Override
-    public Map<BlockPos, OreBlockPlacer> generate(WorldGenLevel level, RandomSource random, OreDefinition definition,
+    public Map<BlockPos, OreBlockPlacer> generate(WorldGenLevel level, RandomSource random, GTOreDefinition entry,
                                                   BlockPos origin) {
         return Collections.emptyMap();
     }

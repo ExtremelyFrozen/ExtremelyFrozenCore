@@ -2,7 +2,7 @@ package com.extfro.extfrocore.api.recipe.lookup;
 
 import com.extfro.extfrocore.ExtForCore;
 import com.extfro.extfrocore.api.capability.recipe.RecipeCapability;
-import com.extfro.extfrocore.api.recipe.MachineRecipe;
+import com.extfro.extfrocore.api.recipe.GTRecipe;
 import com.extfro.extfrocore.api.recipe.content.Content;
 import com.extfro.extfrocore.api.recipe.lookup.ingredient.AbstractMapIngredient;
 import com.extfro.extfrocore.api.recipe.lookup.ingredient.MapIngredientTypeManager;
@@ -23,47 +23,62 @@ import java.util.Map;
 @ApiStatus.Internal
 public final class StagingRecipeDB {
 
-    private final @NotNull ObjectOpenHashSet<MachineRecipe> recipes = new ObjectOpenHashSet<>();
+    private final @NotNull ObjectOpenHashSet<GTRecipe> recipes = new ObjectOpenHashSet<>();
 
-    public boolean add(@NotNull MachineRecipe recipe) {
+    /**
+     * Add a recipe to the DB
+     *
+     * @param recipe the recipe
+     * @return if successful
+     */
+    public boolean add(@NotNull GTRecipe recipe) {
         return recipes.add(recipe);
     }
 
+    /**
+     * Clear the DB
+     */
     public void clear() {
         recipes.clear();
         recipes.trim();
     }
 
+    /**
+     * Populate a DB with the contents of the staging DB
+     *
+     * @param db the db to populate
+     */
     public void populateDB(@NotNull RecipeDB db) {
-        Object2IntMap<Object> frequencies = inputFrequencies();
-        for (MachineRecipe recipe : recipes) {
-            List<Pair<RecipeCapability<?>, Object>> flatContent = flattenedContent(recipe);
-            flatContent.sort(Comparator.comparingInt(entry -> frequencies.getInt(entry.right())));
-            List<List<AbstractMapIngredient>> inputs = new ArrayList<>(flatContent.size());
-            for (Pair<RecipeCapability<?>, Object> entry : flatContent) {
-                List<AbstractMapIngredient> ingredients = MapIngredientTypeManager.getFrom(entry.right(), entry.left());
+        var frequencies = inputFrequencies();
+        for (GTRecipe recipe : recipes) {
+            List<Pair<RecipeCapability<?>, Object>> flattedContent = flattenedContent(recipe);
+            flattedContent.sort(Comparator.comparingInt(entry -> frequencies.getInt(entry.right())));
+            List<List<AbstractMapIngredient>> inputs = new ArrayList<>(flattedContent.size());
+            for (var entry : flattedContent) {
+                var ingredients = MapIngredientTypeManager.getFrom(entry.right(), entry.left());
                 MapIngredientPool.applyPooling(ingredients);
                 inputs.add(ingredients);
             }
-            if (inputs.isEmpty()) {
-                recipe.recipeCategory.addRecipe(recipe);
-            } else if (!db.add(recipe, inputs)) {
-                ExtForCore.LOGGER.warn("Failed to add recipe from staging into lookup DB: {}",
-                        recipe.getRecipeLocation());
+            boolean result = db.add(recipe, inputs);
+            if (!result) {
+                ExtForCore.LOGGER.warn("failed to add recipe from staging into lookup DB: {}", recipe.getId());
             }
         }
     }
 
+    /**
+     * @return a map of the amount of times every input is used
+     */
     private @NotNull Object2IntMap<Object> inputFrequencies() {
-        Object2IntMap<Object> map = new Object2IntOpenHashMap<>();
-        for (MachineRecipe recipe : recipes) {
-            recipe.inputs.forEach((capability, list) -> {
-                for (Object input : compressedContent(list, capability)) {
+        var map = new Object2IntOpenHashMap<>();
+        for (GTRecipe recipe : recipes) {
+            recipe.inputs.forEach((cap, list) -> {
+                for (var input : compressedContent(list, cap)) {
                     map.mergeInt(input, 1, Integer::sum);
                 }
             });
-            recipe.tickInputs.forEach((capability, list) -> {
-                for (Object input : compressedContent(list, capability)) {
+            recipe.tickInputs.forEach((cap, list) -> {
+                for (var input : compressedContent(list, cap)) {
                     map.mergeInt(input, 1, Integer::sum);
                 }
             });
@@ -71,36 +86,56 @@ public final class StagingRecipeDB {
         return map;
     }
 
+    /**
+     * @param list the list of content
+     * @param cap  the RecipeCapability for the content
+     * @return the compressed ingredient form of the content
+     */
     private static @NotNull List<Object> compressedContent(@NotNull List<Content> list,
-                                                           @NotNull RecipeCapability<?> capability) {
-        return capability.compressIngredients(list.stream().map(Content::getContent).toList());
+                                                           @NotNull RecipeCapability<?> cap) {
+        var contentList = list.stream()
+                .map(Content::getContent)
+                .toList();
+        return cap.compressIngredients(contentList);
     }
 
-    private static @NotNull List<Pair<RecipeCapability<?>, Object>> flattenedContent(@NotNull MachineRecipe recipe) {
-        Map<RecipeCapability<?>, List<Content>> map = new Object2ObjectOpenHashMap<>();
-        recipe.inputs.forEach((capability, list) -> buildInputsByCapability(map, capability, list));
-        recipe.tickInputs.forEach((capability, list) -> buildInputsByCapability(map, capability, list));
+    /**
+     * Returns the flattened content of a recipe
+     *
+     * @param recipe the recipe
+     * @return the flattened content
+     */
+    private static @NotNull List<Pair<RecipeCapability<?>, Object>> flattenedContent(@NotNull GTRecipe recipe) {
+        var map = new Object2ObjectOpenHashMap<RecipeCapability<?>, List<Content>>();
+        recipe.inputs.forEach((cap, list) -> buildInputsByCap(map, cap, list));
+        recipe.tickInputs.forEach((cap, list) -> buildInputsByCap(map, cap, list));
         List<Pair<RecipeCapability<?>, Object>> list = new ArrayList<>();
-        map.forEach((capability, contents) -> {
-            for (Content content : contents) {
-                list.add(Pair.of(capability, content.getContent()));
+        map.forEach((k, v) -> {
+            for (var content : v) {
+                list.add(Pair.of(k, content.getContent()));
             }
         });
         return list;
     }
 
-    private static void buildInputsByCapability(@NotNull Map<RecipeCapability<?>, List<Content>> map,
-                                                @NotNull RecipeCapability<?> capability,
-                                                @NotNull List<Content> list) {
-        if (!capability.isRecipeSearchFilter()) {
+    /**
+     * Builds a map of inputs by RecipeCapability
+     *
+     * @param map  the map to populate
+     * @param cap  the recipe capability for the list
+     * @param list the list of inputs
+     */
+    private static void buildInputsByCap(@NotNull Map<RecipeCapability<?>, List<Content>> map,
+                                         @NotNull RecipeCapability<?> cap, @NotNull List<Content> list) {
+        if (!cap.isRecipeSearchFilter()) {
             return;
         }
-        map.compute(capability, (key, value) -> {
-            if (value == null) {
+        map.compute(cap, (k, v) -> {
+            if (v == null) {
                 return new ArrayList<>(list);
             }
-            value.addAll(list);
-            return value;
+            v.addAll(list);
+            return v;
         });
     }
 }

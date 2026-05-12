@@ -1,12 +1,20 @@
 package com.extfro.extfrocore.api.sync_system;
 
-import com.extfro.extfrocore.api.sync_system.holder.SyncDataHolder;
+import com.extfro.extfrocore.api.sync_system.data_transformers.ValueTransformer;
+
+import net.minecraft.nbt.Tag;
+import net.neoforged.neoforge.common.util.INBTSerializable;
 
 /**
  * Represents a class with fields that have sync annotations.
  * <p>
- * A field can be marked with sync annotations if the field type has a registered codec or implements
- * {@link ISyncManaged}.
+ * A field of type {@code T} can be marked with sync annotations if:
+ * <ul>
+ * <li>{@code T} is primitive
+ * <li>{@code T} has an {@link ValueTransformer} registered
+ * <li>{@code T} implements {@link INBTSerializable<Tag>}
+ * <li>{@code T} is a {@link ISyncManaged} class
+ * </ul>
  *
  * @see SyncDataHolder
  */

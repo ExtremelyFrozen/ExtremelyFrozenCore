@@ -1,9 +1,9 @@
 {
 	"parent": "item/generated",
 	"textures": {
-		"layer0": "extfrocore:item/material_sets/shiny/dust",
-		"layer1": "extfrocore:item/material_sets/shiny/dust_secondary",
-		"layer2": "extfrocore:item/material_sets/shiny/dust_overlay",
-		"layer3": "extfrocore:item/material_sets/dull/dust_pure_overlay"
+		"layer0": "gtceu:item/material_sets/shiny/dust",
+		"layer1": "gtceu:item/material_sets/shiny/dust_secondary",
+		"layer2": "gtceu:item/material_sets/shiny/dust_overlay",
+		"layer3": "gtceu:item/material_sets/dull/dust_pure_overlay"
 	}
 }

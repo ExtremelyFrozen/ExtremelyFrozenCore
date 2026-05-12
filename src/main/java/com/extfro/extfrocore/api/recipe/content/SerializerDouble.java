@@ -3,10 +3,11 @@ package com.extfro.extfrocore.api.recipe.content;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 
 import com.mojang.serialization.Codec;
+import org.apache.commons.lang3.math.NumberUtils;
 
-public final class SerializerDouble implements IContentSerializer<Double> {
+public class SerializerDouble implements IContentSerializer<Double> {
 
-    public static final SerializerDouble INSTANCE = new SerializerDouble();
+    public static SerializerDouble INSTANCE = new SerializerDouble();
 
     private SerializerDouble() {}
 
@@ -21,24 +22,20 @@ public final class SerializerDouble implements IContentSerializer<Double> {
     }
 
     @Override
-    public Double of(Object object) {
-        if (object instanceof Double value) {
-            return value;
+    public Double of(Object o) {
+        if (o instanceof Double) {
+            return (Double) o;
+        } else if (o instanceof Number) {
+            return ((Number) o).doubleValue();
+        } else if (o instanceof CharSequence) {
+            return NumberUtils.toDouble(o.toString(), 1);
         }
-        if (object instanceof Number value) {
-            return value.doubleValue();
-        }
-        if (object instanceof CharSequence value) {
-            try {
-                return Double.parseDouble(value.toString());
-            } catch (NumberFormatException ignored) {}
-        }
-        return defaultValue();
+        return 0d;
     }
 
     @Override
     public Double defaultValue() {
-        return 0D;
+        return 0d;
     }
 
     @Override

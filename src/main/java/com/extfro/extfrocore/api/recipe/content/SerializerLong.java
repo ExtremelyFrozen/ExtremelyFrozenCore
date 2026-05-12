@@ -3,10 +3,11 @@ package com.extfro.extfrocore.api.recipe.content;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 
 import com.mojang.serialization.Codec;
+import org.apache.commons.lang3.math.NumberUtils;
 
-public final class SerializerLong implements IContentSerializer<Long> {
+public class SerializerLong implements IContentSerializer<Long> {
 
-    public static final SerializerLong INSTANCE = new SerializerLong();
+    public static SerializerLong INSTANCE = new SerializerLong();
 
     private SerializerLong() {}
 
@@ -21,19 +22,15 @@ public final class SerializerLong implements IContentSerializer<Long> {
     }
 
     @Override
-    public Long of(Object object) {
-        if (object instanceof Long value) {
-            return value;
+    public Long of(Object o) {
+        if (o instanceof Long) {
+            return (Long) o;
+        } else if (o instanceof Number) {
+            return ((Number) o).longValue();
+        } else if (o instanceof CharSequence) {
+            return NumberUtils.toLong(o.toString(), 1);
         }
-        if (object instanceof Number value) {
-            return value.longValue();
-        }
-        if (object instanceof CharSequence value) {
-            try {
-                return Long.parseLong(value.toString());
-            } catch (NumberFormatException ignored) {}
-        }
-        return defaultValue();
+        return 0L;
     }
 
     @Override

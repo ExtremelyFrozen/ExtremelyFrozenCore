@@ -3,7 +3,8 @@ package com.extfro.extfrocore.api.machine.trait;
 import com.extfro.extfrocore.api.capability.recipe.IO;
 import com.extfro.extfrocore.api.capability.recipe.IRecipeHandler;
 import com.extfro.extfrocore.api.capability.recipe.RecipeCapability;
-import com.extfro.extfrocore.api.recipe.MachineRecipe;
+import com.extfro.extfrocore.api.recipe.GTRecipe;
+import com.extfro.extfrocore.utils.ISubscription;
 
 import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
 import lombok.Getter;
@@ -11,24 +12,18 @@ import lombok.Setter;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class RecipeHandlerList {
 
     public static final RecipeHandlerList NO_DATA = new RecipeHandlerList(IO.NONE);
 
-    public static final Comparator<RecipeHandlerList> COMPARATOR = (first, second) -> {
-        int priority = Long.compare(first.getPriority(), second.getPriority());
-        if (priority != 0) return priority;
-        boolean firstHasContent = first.getTotalContentAmount() > 0;
-        boolean secondHasContent = second.getTotalContentAmount() > 0;
-        return Boolean.compare(firstHasContent, secondHasContent);
+    public static final Comparator<RecipeHandlerList> COMPARATOR = (h1, h2) -> {
+        int cmp = Long.compare(h1.getPriority(), h2.getPriority());
+        if (cmp != 0) return cmp;
+        boolean b1 = h1.getTotalContentAmount() > 0;
+        boolean b2 = h2.getTotalContentAmount() > 0;
+        return Boolean.compare(b1, b2);
     };
 
     @Getter
@@ -40,6 +35,7 @@ public class RecipeHandlerList {
     private final IO handlerIO;
     @Getter
     private int color = -1;
+
     @Setter
     @Getter
     @NotNull
@@ -50,29 +46,29 @@ public class RecipeHandlerList {
     }
 
     public static RecipeHandlerList of(IO io, int color, IRecipeHandler<?>... handlers) {
-        RecipeHandlerList list = new RecipeHandlerList(io);
-        list.addHandlers(handlers);
-        list.setColor(color);
-        return list;
+        RecipeHandlerList rhl = new RecipeHandlerList(io);
+        rhl.addHandlers(handlers);
+        rhl.setColor(color);
+        return rhl;
     }
 
     public static RecipeHandlerList of(IO io, IRecipeHandler<?>... handlers) {
-        RecipeHandlerList list = new RecipeHandlerList(io);
-        list.addHandlers(handlers);
-        return list;
+        RecipeHandlerList rhl = new RecipeHandlerList(io);
+        rhl.addHandlers(handlers);
+        return rhl;
     }
 
     public static RecipeHandlerList of(IO io, Iterable<IRecipeHandler<?>> handlers) {
-        RecipeHandlerList list = new RecipeHandlerList(io);
-        list.addHandlers(handlers);
-        return list;
+        RecipeHandlerList rhl = new RecipeHandlerList(io);
+        rhl.addHandlers(handlers);
+        return rhl;
     }
 
     public static RecipeHandlerList of(IO io, int color, Iterable<IRecipeHandler<?>> handlers) {
-        RecipeHandlerList list = new RecipeHandlerList(io);
-        list.addHandlers(handlers);
-        list.setColor(color);
-        return list;
+        RecipeHandlerList rhl = new RecipeHandlerList(io);
+        rhl.addHandlers(handlers);
+        rhl.setColor(color);
+        return rhl;
     }
 
     public void addHandler(IRecipeHandler<?> handler) {
@@ -84,19 +80,17 @@ public class RecipeHandlerList {
     }
 
     public void addHandlers(Iterable<IRecipeHandler<?>> handlers) {
-        for (IRecipeHandler<?> handler : handlers) {
-            handlerMap.computeIfAbsent(handler.getCapability(), ignored -> new ArrayList<>()).add(handler);
+        for (var handler : handlers) {
+            getHandlerMap().computeIfAbsent(handler.getCapability(), c -> new ArrayList<>()).add(handler);
             allHandlers.add(handler);
-            if (handler instanceof NotifiableRecipeHandlerTrait<?> trait) {
-                allHandlerTraits.add(trait);
-            }
+            if (handler instanceof NotifiableRecipeHandlerTrait<?> rht) allHandlerTraits.add(rht);
         }
-        if (handlerIO.supports(IO.OUT)) sort();
+        if (handlerIO.support(IO.OUT)) sort();
     }
 
     private void sort() {
-        for (List<IRecipeHandler<?>> handlers : handlerMap.values()) {
-            handlers.sort(IRecipeHandler.ENTRY_COMPARATOR);
+        for (var list : getHandlerMap().values()) {
+            list.sort(IRecipeHandler.ENTRY_COMPARATOR);
         }
     }
 
@@ -111,16 +105,17 @@ public class RecipeHandlerList {
     protected void setDistinct(boolean distinct, boolean notify) {
         boolean currentDistinct = isDistinct();
         if (currentDistinct != distinct) {
-            group = currentDistinct ? new RecipeHandlerGroupColor(color) : RecipeHandlerGroupDistinctness.BUS_DISTINCT;
-            for (NotifiableRecipeHandlerTrait<?> trait : allHandlerTraits) {
-                trait.setDistinct(distinct);
-                if (notify) trait.notifyListeners();
+            this.group = currentDistinct ? new RecipeHandlerGroupColor(color) :
+                    RecipeHandlerGroupDistinctness.BUS_DISTINCT;
+            for (var rht : allHandlerTraits) {
+                rht.setDistinct(distinct);
+                if (notify) rht.notifyListeners();
             }
         }
     }
 
     public boolean isDistinct() {
-        return group == RecipeHandlerGroupDistinctness.BUS_DISTINCT;
+        return this.group == RecipeHandlerGroupDistinctness.BUS_DISTINCT;
     }
 
     public void setColor(int color) {
@@ -129,107 +124,107 @@ public class RecipeHandlerList {
 
     public void setColor(int color, boolean notify) {
         this.color = color;
-        if (group != RecipeHandlerGroupDistinctness.BUS_DISTINCT) {
-            group = new RecipeHandlerGroupColor(color);
+        if (this.group != RecipeHandlerGroupDistinctness.BUS_DISTINCT) {
+            this.group = new RecipeHandlerGroupColor(color);
         }
         if (notify) {
-            for (NotifiableRecipeHandlerTrait<?> trait : allHandlerTraits) {
-                trait.notifyListeners();
+            for (var rht : allHandlerTraits) {
+                rht.notifyListeners();
             }
         }
     }
 
-    public boolean hasCapability(RecipeCapability<?> capability) {
-        return handlerMap.containsKey(capability);
+    public boolean hasCapability(RecipeCapability<?> cap) {
+        return getHandlerMap().containsKey(cap);
     }
 
-    public @NotNull List<IRecipeHandler<?>> getCapability(RecipeCapability<?> capability) {
-        return handlerMap.getOrDefault(capability, Collections.emptyList());
+    public @NotNull List<IRecipeHandler<?>> getCapability(RecipeCapability<?> cap) {
+        return getHandlerMap().getOrDefault(cap, Collections.emptyList());
     }
 
     public @NotNull Set<RecipeCapability<?>> getCapabilities() {
-        return handlerMap.keySet();
+        return getHandlerMap().keySet();
     }
 
+    /**
+     * @return whether any of the capabilities in this RHL should bypass distinct checks
+     */
     public boolean doesCapabilityBypassDistinct() {
-        for (RecipeCapability<?> capability : getCapabilities()) {
+        for (var capability : getCapabilities()) {
             if (capability.shouldBypassDistinct()) return true;
         }
         return false;
     }
 
-    public boolean isValid(IO externalIO) {
+    public boolean isValid(IO extIO) {
         if (this == NO_DATA || handlerIO == IO.NONE) return false;
-        return externalIO == IO.BOTH || handlerIO == IO.BOTH || externalIO == handlerIO;
+        return (extIO == IO.BOTH || handlerIO == IO.BOTH || extIO == handlerIO);
     }
 
     public long getPriority() {
         long priority = 0;
-        for (IRecipeHandler<?> handler : allHandlers) {
-            priority += handler.getPriority();
-        }
+        for (var handler : allHandlers) priority += handler.getPriority();
         return priority;
     }
 
     public double getTotalContentAmount() {
         double sum = 0;
-        for (IRecipeHandler<?> handler : allHandlers) {
-            sum += handler.getTotalContentAmount();
-        }
+        for (var handler : allHandlers) sum += handler.getTotalContentAmount();
         return sum;
     }
 
     @Contract(pure = true)
-    public Map<RecipeCapability<?>, List<Object>> handleRecipe(IO io, MachineRecipe recipe,
+    public Map<RecipeCapability<?>, List<Object>> handleRecipe(IO io, GTRecipe recipe,
                                                                Map<RecipeCapability<?>, List<Object>> contents,
                                                                boolean simulate) {
-        if (handlerMap.isEmpty()) return contents;
+        if (getHandlerMap().isEmpty()) return contents;
         var copy = new Reference2ObjectOpenHashMap<>(contents);
-        for (var iterator = copy.reference2ObjectEntrySet().fastIterator(); iterator.hasNext();) {
-            var entry = iterator.next();
-            List<IRecipeHandler<?>> handlers = getCapability(entry.getKey());
-            for (IRecipeHandler<?> handler : handlers) {
-                List<?> left = handler.handleRecipe(io, recipe, entry.getValue(), simulate);
+        for (var it = copy.reference2ObjectEntrySet().fastIterator(); it.hasNext();) {
+            var entry = it.next();
+            var handlerList = getCapability(entry.getKey());
+            for (var handler : handlerList) {
+                var left = handler.handleRecipe(io, recipe, entry.getValue(), simulate);
                 if (left == null) {
-                    iterator.remove();
+                    it.remove();
                     break;
+                } else {
+                    entry.setValue(new ArrayList<>(left));
                 }
-                entry.setValue(new ArrayList<>(left));
             }
         }
         return copy;
     }
 
     public List<IRecipeHandler<?>> getHandlersFlat() {
-        List<IRecipeHandler<?>> handlers = new ArrayList<>();
-        for (var entry : handlerMap.entrySet()) {
-            handlers.addAll(entry.getValue());
+        List<IRecipeHandler<?>> handlerList = new ArrayList<>();
+        for (var handlerEntry : getHandlerMap().entrySet()) {
+            handlerList.addAll(handlerEntry.getValue());
         }
-        return handlers;
+        return handlerList;
     }
 
-    private record Subscription(List<ISubscription> subscriptions) implements ISubscription {
+    private record Subscription(List<ISubscription> subs) implements ISubscription {
 
         @Override
         public void unsubscribe() {
-            subscriptions.forEach(ISubscription::unsubscribe);
+            subs.forEach(ISubscription::unsubscribe);
         }
     }
 
     public ISubscription subscribe(Runnable listener) {
-        List<ISubscription> subscriptions = new ArrayList<>(allHandlerTraits.size());
-        allHandlerTraits.forEach(trait -> subscriptions.add(trait.addChangedListener(listener)));
-        return new Subscription(subscriptions);
+        List<ISubscription> subs = new ArrayList<>(allHandlerTraits.size());
+        allHandlerTraits.forEach(rht -> subs.add(rht.addChangedListener(listener)));
+        return new Subscription(subs);
     }
 
-    public ISubscription subscribe(Runnable listener, RecipeCapability<?> capability) {
-        List<IRecipeHandler<?>> capabilityHandlers = getCapability(capability);
-        List<ISubscription> subscriptions = new ArrayList<>(capabilityHandlers.size());
-        for (IRecipeHandler<?> handler : capabilityHandlers) {
+    public ISubscription subscribe(Runnable listener, RecipeCapability<?> cap) {
+        var capList = getCapability(cap);
+        List<ISubscription> subs = new ArrayList<>(capList.size());
+        for (var handler : capList) {
             if (handler instanceof IRecipeHandlerTrait<?> trait) {
-                subscriptions.add(trait.addChangedListener(listener));
+                subs.add(trait.addChangedListener(listener));
             }
         }
-        return new Subscription(subscriptions);
+        return new Subscription(subs);
     }
 }

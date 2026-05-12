@@ -1,10 +1,13 @@
 package com.extfro.extfrocore.api.recipe.modifier;
 
+import com.extfro.extfrocore.api.capability.recipe.EURecipeCapability;
 import com.extfro.extfrocore.api.capability.recipe.RecipeCapability;
-import com.extfro.extfrocore.api.recipe.MachineRecipe;
+import com.extfro.extfrocore.api.recipe.GTRecipe;
 import com.extfro.extfrocore.api.recipe.RecipeCondition;
+import com.extfro.extfrocore.api.recipe.RecipeHelper;
 import com.extfro.extfrocore.api.recipe.content.Content;
 import com.extfro.extfrocore.api.recipe.content.ContentModifier;
+import com.extfro.extfrocore.api.recipe.ingredient.EnergyStack;
 
 import net.minecraft.network.chat.Component;
 
@@ -14,25 +17,37 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
+/**
+ * Represents a function that accepts a GTRecipe and returns a modified version of the GTRecipe, or null.
+ * <p>
+ * The passed recipe should NOT be modified.
+ * If modifications are applied, a new GTRecipe object should be returned.
+ * </p>
+ *
+ * <p>
+ * This is a functional interface whose functional method is {@link #apply(GTRecipe)}
+ * </p>
+ */
 @FunctionalInterface
 public interface ModifierFunction {
 
+    // TODO: Add reasons for any NULL ModifierFunction (replace them with cancel)
+    /**
+     * Use this static to denote that the recipe should be cancelled
+     */
     ModifierFunction NULL = recipe -> null;
+    /**
+     * Use this static to denote that the recipe doesn't get modified
+     */
     ModifierFunction IDENTITY = ModifierFunction.builder().build();
-
-    Component DEFAULT_FAILURE = Component.translatable("extfrocore.recipe_modifier.default_fail");
 
     static ModifierFunction cancel(Component reason) {
         return new ModifierFunction() {
 
             @Override
-            public @Nullable MachineRecipe apply(@NotNull MachineRecipe recipe) {
+            public @Nullable GTRecipe apply(@NotNull GTRecipe recipe) {
                 return null;
             }
 
@@ -43,29 +58,60 @@ public interface ModifierFunction {
         };
     }
 
-    static FunctionBuilder builder() {
-        return new FunctionBuilder();
-    }
-
+    /**
+     * Applies this modifier to the passed recipe
+     *
+     * @param recipe the GTRecipe to apply the modifier to
+     * @return A new GTRecipe object with modifications, or null if the recipe should be cancelled
+     */
     @Contract(pure = true)
     @Nullable
-    MachineRecipe apply(@NotNull MachineRecipe recipe);
+    GTRecipe apply(@NotNull GTRecipe recipe);
 
+    /**
+     * Returns a composed function that first applies {@code before} to its input, then applies this function.
+     *
+     * @param before the function to apply first
+     * @return The composed function of {@code this.apply(before.apply(recipe))}
+     */
     default ModifierFunction compose(@NotNull ModifierFunction before) {
         return recipe -> applySafe(before.apply(recipe));
     }
 
+    /**
+     * Returns a composed function that first applies this function to its input, then applies {@code after}
+     *
+     * @param after the function to apply second
+     * @return The composed function of {@code after.apply(this.apply(recipe))}
+     */
     default ModifierFunction andThen(@NotNull ModifierFunction after) {
         return recipe -> after.applySafe(apply(recipe));
     }
 
-    private MachineRecipe applySafe(@Nullable MachineRecipe recipe) {
+    private GTRecipe applySafe(@Nullable GTRecipe recipe) {
         if (recipe == null) return null;
         return apply(recipe);
     }
 
+    static final Component DEFAULT_FAILURE = Component.translatable("gtceu.recipe_modifier.default_fail");
+
     default Component getFailReason() {
         return DEFAULT_FAILURE;
+    }
+
+    /**
+     * Creates a FunctionBuilder to easily build a ModifierFunction that modifies parts of a recipe.
+     * <p>
+     * Note that <b>tick modifiers <em>do not</em> modify EUt contents</b> and that
+     * <b>setting the OC level or parallel count <em>does not</em> modify the contents of the recipe.</b>
+     * <p>
+     * You should do that by setting the other parameters.
+     * </p>
+     *
+     * @return A new {@link FunctionBuilder} instance
+     */
+    static FunctionBuilder builder() {
+        return new FunctionBuilder();
     }
 
     @Setter
@@ -75,7 +121,8 @@ public interface ModifierFunction {
         private int parallels = 1;
         private int subtickParallels = 1;
         private int batchParallels = 1;
-        private int addOCs;
+        private int addOCs = 0;
+        private ContentModifier eutModifier = ContentModifier.IDENTITY;
         private ContentModifier durationModifier = ContentModifier.IDENTITY;
         private ContentModifier inputModifier = ContentModifier.IDENTITY;
         private ContentModifier outputModifier = ContentModifier.IDENTITY;
@@ -83,16 +130,23 @@ public interface ModifierFunction {
         private ContentModifier tickOutputModifier = ContentModifier.IDENTITY;
         private final List<RecipeCondition<?>> addedConditions = new ArrayList<>();
 
+        public FunctionBuilder() {}
+
         public FunctionBuilder conditions(RecipeCondition<?>... conditions) {
             addedConditions.addAll(Arrays.asList(conditions));
             return this;
         }
 
-        public FunctionBuilder modifyAllContents(ContentModifier modifier) {
-            inputModifier = modifier;
-            outputModifier = modifier;
-            tickInputModifier = modifier;
-            tickOutputModifier = modifier;
+        public FunctionBuilder modifyAllContents(ContentModifier cm) {
+            inputModifier = cm;
+            outputModifier = cm;
+            tickInputModifier = cm;
+            tickOutputModifier = cm;
+            return this;
+        }
+
+        public FunctionBuilder eutMultiplier(double multiplier) {
+            eutModifier = ContentModifier.multiplier(multiplier);
             return this;
         }
 
@@ -101,32 +155,69 @@ public interface ModifierFunction {
             return this;
         }
 
+        /**
+         * Builds the ModifierFunction from this builder.
+         * <p>
+         * Note that <b>tick modifiers <em>do not</em> modify EUt contents</b> and that
+         * <b>setting the OC level or parallel count <em>does not</em> modify the contents of the recipe.</b>
+         * <p>
+         * You should do that by setting the other parameters.
+         * </p>
+         *
+         * @return A new {@link ModifierFunction} from the params of this builder
+         */
         public ModifierFunction build() {
-            if (parallels == 0 || subtickParallels == 0 || batchParallels == 0) return NULL;
+            if (parallels == 0) return NULL;
             return recipe -> {
                 var newConditions = new ArrayList<>(recipe.conditions);
                 newConditions.addAll(addedConditions);
-                var copied = new MachineRecipe(recipe.recipeType, recipe.id,
+                var copied = new GTRecipe(recipe.recipeType, recipe.id,
                         inputModifier.applyContents(recipe.inputs),
                         outputModifier.applyContents(recipe.outputs),
-                        tickInputModifier.applyContents(recipe.tickInputs),
-                        tickOutputModifier.applyContents(recipe.tickOutputs),
+                        applyAllButEU(tickInputModifier, recipe.tickInputs),
+                        applyAllButEU(tickOutputModifier, recipe.tickOutputs),
                         new HashMap<>(recipe.inputChanceLogics), new HashMap<>(recipe.outputChanceLogics),
                         new HashMap<>(recipe.tickInputChanceLogics), new HashMap<>(recipe.tickOutputChanceLogics),
-                        newConditions, recipe.data.copy(), recipe.duration, recipe.recipeCategory, recipe.groupColor);
+                        newConditions, new ArrayList<>(recipe.ingredientActions),
+                        recipe.data, recipe.duration, recipe.recipeCategory, recipe.groupColor);
                 copied.parallels = recipe.parallels * parallels;
                 copied.subtickParallels = recipe.subtickParallels * subtickParallels;
-                copied.batchParallels = recipe.batchParallels * batchParallels;
                 copied.ocLevel = recipe.ocLevel + addOCs;
-                copied.duration = Math.max(1, durationModifier.apply(recipe.duration));
+                copied.batchParallels = recipe.batchParallels * batchParallels;
+                if (recipe.data.getBoolean("duration_is_total_cwu")) {
+                    copied.duration = (int) Math.max(1, (recipe.duration * (1f - 0.025f * addOCs)));
+                } else {
+                    copied.duration = Math.max(1, durationModifier.apply(recipe.duration));
+                }
+                if (eutModifier != ContentModifier.IDENTITY) {
+                    var preEUt = RecipeHelper.getRealEUtWithIO(recipe);
+                    EnergyStack eut = EURecipeCapability.CAP.copyWithModifier(preEUt.stack(), eutModifier);
+                    EURecipeCapability.putEUContent(preEUt.isInput() ? copied.tickInputs : copied.tickOutputs, eut);
+                }
                 return copied;
             };
         }
 
-        @SuppressWarnings("unused")
-        private static Map<RecipeCapability<?>, List<Content>> applyContents(ContentModifier modifier,
+        private static Map<RecipeCapability<?>, List<Content>> applyAllButEU(ContentModifier cm,
                                                                              Map<RecipeCapability<?>, List<Content>> contents) {
-            return modifier.applyContents(contents);
+            if (cm == ContentModifier.IDENTITY) return new HashMap<>(contents);
+            Map<RecipeCapability<?>, List<Content>> copyContents = new HashMap<>();
+            for (var entry : contents.entrySet()) {
+                var cap = entry.getKey();
+                var contentList = entry.getValue();
+                if (contentList != null && !contentList.isEmpty()) {
+                    if (cap == EURecipeCapability.CAP) {
+                        copyContents.put(cap, new ArrayList<>(contentList));
+                        continue;
+                    }
+                    List<Content> contentsCopy = new ArrayList<>();
+                    for (Content content : contentList) {
+                        contentsCopy.add(content.copy(cap, cm));
+                    }
+                    copyContents.put(cap, contentsCopy);
+                }
+            }
+            return copyContents;
         }
     }
 }

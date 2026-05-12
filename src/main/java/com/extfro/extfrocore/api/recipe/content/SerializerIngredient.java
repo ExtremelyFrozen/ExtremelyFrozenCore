@@ -2,7 +2,6 @@ package com.extfro.extfrocore.api.recipe.content;
 
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.tags.TagKey;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.level.ItemLike;
@@ -13,7 +12,7 @@ import com.mojang.serialization.Codec;
 public class SerializerIngredient implements IContentSerializer<SizedIngredient> {
 
     public static final SizedIngredient EMPTY = new SizedIngredient(Ingredient.EMPTY, 1);
-    public static final SerializerIngredient INSTANCE = new SerializerIngredient();
+    public static SerializerIngredient INSTANCE = new SerializerIngredient();
 
     private SerializerIngredient() {}
 
@@ -29,18 +28,15 @@ public class SerializerIngredient implements IContentSerializer<SizedIngredient>
 
     @Override
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    public SizedIngredient of(Object object) {
-        if (object instanceof SizedIngredient ingredient) {
+    public SizedIngredient of(Object o) {
+        if (o instanceof SizedIngredient ingredient) {
             return ingredient;
-        }
-        if (object instanceof ItemStack stack) {
-            return new SizedIngredient(Ingredient.of(stack), stack.getCount());
-        }
-        if (object instanceof ItemLike itemLike) {
+        } else if (o instanceof ItemStack itemStack) {
+            return new SizedIngredient(Ingredient.of(itemStack), itemStack.getCount());
+        } else if (o instanceof ItemLike itemLike) {
             return SizedIngredient.of(itemLike, 1);
-        }
-        if (object instanceof TagKey tag && tag.isFor(net.minecraft.core.registries.Registries.ITEM)) {
-            return SizedIngredient.of((TagKey<Item>) tag, 1);
+        } else if (o instanceof TagKey tag) {
+            return SizedIngredient.of(tag, 1);
         }
         return EMPTY;
     }

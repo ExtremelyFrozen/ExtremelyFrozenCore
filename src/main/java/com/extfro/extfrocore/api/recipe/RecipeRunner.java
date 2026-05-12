@@ -6,7 +6,6 @@ import com.extfro.extfrocore.api.capability.recipe.RecipeCapability;
 import com.extfro.extfrocore.api.machine.feature.IVoidable;
 import com.extfro.extfrocore.api.machine.trait.RecipeHandlerGroup;
 import com.extfro.extfrocore.api.machine.trait.RecipeHandlerGroupColor;
-import com.extfro.extfrocore.api.machine.trait.RecipeHandlerGroupDistinctness;
 import com.extfro.extfrocore.api.machine.trait.RecipeHandlerList;
 import com.extfro.extfrocore.api.recipe.chance.boost.ChanceBoostFunction;
 import com.extfro.extfrocore.api.recipe.chance.logic.ChanceLogic;
@@ -19,16 +18,16 @@ import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Predicate;
+
+import static com.extfro.extfrocore.api.machine.trait.RecipeHandlerGroupDistinctness.BUS_DISTINCT;
+import static com.extfro.extfrocore.api.machine.trait.RecipeHandlerGroupDistinctness.BYPASS_DISTINCT;
+import static com.extfro.extfrocore.api.recipe.RecipeHelper.addToRecipeHandlerMap;
 
 public class RecipeRunner {
 
-    private final MachineRecipe recipe;
+    private final GTRecipe recipe;
     private final IO io;
     private final boolean isTick;
     private final Map<RecipeCapability<?>, Object2IntMap<?>> chanceCaches;
@@ -40,7 +39,7 @@ public class RecipeRunner {
     @Getter
     private int groupColor;
 
-    public RecipeRunner(MachineRecipe recipe, IO io, boolean isTick,
+    public RecipeRunner(GTRecipe recipe, IO io, boolean isTick,
                         IRecipeCapabilityHolder holder, Map<RecipeCapability<?>, Object2IntMap<?>> chanceCaches,
                         boolean simulated) {
         this.recipe = recipe;
@@ -51,57 +50,67 @@ public class RecipeRunner {
         this.recipeContents = new Reference2ObjectOpenHashMap<>();
         this.searchRecipeContents = simulated ? recipeContents : new Reference2ObjectOpenHashMap<>();
         this.simulated = simulated;
-        this.outputVoid = capability -> holder instanceof IVoidable voidable &&
-                voidable.canVoidRecipeOutputs(capability);
+        this.outputVoid = cap -> holder instanceof IVoidable voidable && voidable.canVoidRecipeOutputs(cap);
         this.groupColor = recipe.groupColor;
     }
 
     @NotNull
     public ActionResult handle(Map<RecipeCapability<?>, List<Content>> entries) {
         fillContentMatchList(entries);
+
         if (searchRecipeContents.isEmpty()) {
             return ActionResult.PASS_NO_CONTENTS;
         }
-        return handleContents();
+
+        return this.handleContents();
     }
 
+    /**
+     * Populates the content match list to know if conditions are satisfied.
+     */
     private void fillContentMatchList(Map<RecipeCapability<?>, List<Content>> entries) {
-        ChanceBoostFunction function = recipe.recipeType.getChanceFunction();
-        int recipeTier = recipe.ocLevel;
+        ChanceBoostFunction function = recipe.getType().getChanceFunction();
+        int recipeTier = RecipeHelper.getPreOCRecipeEuTier(recipe);
         int chanceTier = recipeTier + recipe.ocLevel;
         for (var entry : entries.entrySet()) {
-            RecipeCapability<?> capability = entry.getKey();
-            if (!capability.doMatchInRecipe()) continue;
-            if (simulated && io == IO.OUT && outputVoid.test(capability)) continue;
+            RecipeCapability<?> cap = entry.getKey();
+            if (!cap.doMatchInRecipe()) continue;
+            if (simulated && io == IO.OUT && outputVoid.test(cap)) continue;
 
-            ChanceLogic logic = recipe.getChanceLogicForCapability(capability, io, isTick);
+            ChanceLogic logic = recipe.getChanceLogicForCapability(cap, this.io, this.isTick);
             List<Content> chancedContents = new ArrayList<>();
+            // skip if empty
             if (entry.getValue().isEmpty()) continue;
+            // populate recipe content capability map
+            var contentList = this.recipeContents.computeIfAbsent(cap, c -> new ArrayList<>());
+            var searchContentList = this.searchRecipeContents.computeIfAbsent(cap, c -> new ArrayList<>());
+            for (Content cont : entry.getValue()) {
+                searchContentList.add(cont.content);
 
-            List<Object> contentList = recipeContents.computeIfAbsent(capability, ignored -> new ArrayList<>());
-            List<Object> searchContentList = searchRecipeContents.computeIfAbsent(capability,
-                    ignored -> new ArrayList<>());
-            for (Content content : entry.getValue()) {
-                searchContentList.add(content.content);
+                // When simulating the recipe handling (used for recipe matching),
+                // searchRecipeContents == recipeContents, so all contents, chanced and unchanced, must match
                 if (simulated) continue;
 
-                if (content.chance >= content.maxChance) {
-                    contentList.add(content.content);
-                } else if (content.chance > 0 || content.tierChanceBoost > 0) {
-                    chancedContents.add(content);
+                if (cont.chance >= cont.maxChance) {
+                    contentList.add(cont.content);
+                } else if (cont.chance > 0 || cont.tierChanceBoost > 0) {
+                    chancedContents.add(cont);
                 }
+                // Do not add Non-Consumed ingredients; they'd just get dropped after the chance roll anyway
             }
 
+            // add chanced contents to the recipe content map
             if (!chancedContents.isEmpty()) {
-                Object2IntMap<?> cache = chanceCaches.get(capability);
-                chancedContents = logic.roll(capability, chancedContents, function, recipeTier, chanceTier, cache,
+                var cache = this.chanceCaches.get(cap);
+                chancedContents = logic.roll(cap, chancedContents, function, recipeTier, chanceTier, cache,
                         recipe.getTotalRuns());
-                for (Content content : chancedContents) {
-                    contentList.add(content.content);
+
+                for (Content cont : chancedContents) {
+                    contentList.add(cont.content);
                 }
             }
 
-            if (contentList.isEmpty()) recipeContents.remove(capability);
+            if (contentList.isEmpty()) recipeContents.remove(cap);
         }
     }
 
@@ -109,43 +118,44 @@ public class RecipeRunner {
         if (recipeContents.isEmpty()) return ActionResult.SUCCESS;
         if (!capabilityProxies.containsKey(io)) {
             return ActionResult.fail(
-                    Component.translatable("extfrocore.recipe_logic.no_capabilities")
+                    Component.translatable("gtceu.recipe_logic.no_capabilities")
                             .append(Component.literal(": "))
-                            .append(Component.literal(io.name())),
+                            .append(Component.translatable(io.tooltip)),
                     null, io);
         }
 
         List<RecipeHandlerList> handlers = capabilityProxies.getOrDefault(io, Collections.emptyList());
-        if (!isTick && io.supports(IO.OUT)) {
+        // Only sort for non-tick outputs
+        if (!isTick && io.support(IO.OUT)) {
             handlers.sort(RecipeHandlerList.COMPARATOR.reversed());
         }
 
         Map<RecipeHandlerGroup, List<RecipeHandlerList>> handlerGroups = new HashMap<>();
-        for (RecipeHandlerList handler : handlers) {
-            RecipeHelper.addToRecipeHandlerMap(handler.getGroup(), handler, handlerGroups);
+        for (var handler : handlers) {
+            addToRecipeHandlerMap(handler.getGroup(), handler, handlerGroups);
         }
-
-        for (RecipeHandlerList handler : handlerGroups.getOrDefault(RecipeHandlerGroupDistinctness.BUS_DISTINCT,
-                Collections.emptyList())) {
-            Map<RecipeCapability<?>, List<Object>> result = handler.handleRecipe(io, recipe, searchRecipeContents,
-                    true);
-            if (!result.isEmpty()) {
-                for (RecipeHandlerList bypassHandler : handlerGroups.getOrDefault(
-                        RecipeHandlerGroupDistinctness.BYPASS_DISTINCT, Collections.emptyList())) {
-                    result = bypassHandler.handleRecipe(io, recipe, result, true);
-                    if (result.isEmpty()) break;
+        // Specifically check distinct handlers first
+        for (RecipeHandlerList handler : handlerGroups.getOrDefault(BUS_DISTINCT, Collections.emptyList())) {
+            // Handle the contents of this handler and also all the bypassed handlers
+            var res = handler.handleRecipe(io, recipe, searchRecipeContents, true);
+            if (!res.isEmpty()) {
+                for (RecipeHandlerList bypassHandler : handlerGroups.getOrDefault(BYPASS_DISTINCT,
+                        Collections.emptyList())) {
+                    res = bypassHandler.handleRecipe(io, recipe, res, true);
+                    if (res.isEmpty()) break;
                 }
             }
             if (io == IO.OUT) {
-                if (hasAnyNonVoidingContents(result)) continue;
-            } else if (io == IO.IN && !result.isEmpty()) {
-                continue;
+                if (hasAnyNonVoidingContents(res)) continue;
+            } else if (io == IO.IN) {
+                if (!res.isEmpty()) continue;
             }
             if (!simulated) {
+                // Actually consume the contents of this handler and also all the bypassed handlers
                 recipeContents = handler.handleRecipe(io, recipe, recipeContents, false);
                 if (!recipeContents.isEmpty()) {
-                    for (RecipeHandlerList bypassHandler : handlerGroups.getOrDefault(
-                            RecipeHandlerGroupDistinctness.BYPASS_DISTINCT, Collections.emptyList())) {
+                    for (RecipeHandlerList bypassHandler : handlerGroups.getOrDefault(BYPASS_DISTINCT,
+                            Collections.emptyList())) {
                         recipeContents = bypassHandler.handleRecipe(io, recipe, recipeContents, false);
                         if (recipeContents.isEmpty()) break;
                     }
@@ -155,52 +165,69 @@ public class RecipeRunner {
             return ActionResult.SUCCESS;
         }
 
-        for (Map.Entry<RecipeHandlerGroup, List<RecipeHandlerList>> entry : handlerGroups.entrySet()) {
-            if (entry.getKey().equals(RecipeHandlerGroupDistinctness.BUS_DISTINCT)) continue;
+        // Check the other groups. For every group, try consuming the ingredients,
+        // see if it succeeds.
+        for (Map.Entry<RecipeHandlerGroup, List<RecipeHandlerList>> handlerListEntry : handlerGroups.entrySet()) {
+            if (handlerListEntry.getKey().equals(BUS_DISTINCT)) continue;
 
-            if (entry.getKey() instanceof RecipeHandlerGroupColor coloredGroup) {
+            if (handlerListEntry.getKey() instanceof RecipeHandlerGroupColor coloredGroup) {
                 if (io == IO.IN && simulated && !isTick) {
                     groupColor = coloredGroup.color();
                 } else if (coloredGroup.color() != -1 && coloredGroup.color() != groupColor) {
                     continue;
                 }
             }
-
+            // List to keep track of the remaining items for this RecipeHandlerGroup
             Map<RecipeCapability<?>, List<Object>> copiedRecipeContents = searchRecipeContents;
-            for (RecipeHandlerList handler : entry.getValue()) {
+
+            for (RecipeHandlerList handler : handlerListEntry.getValue()) {
                 copiedRecipeContents = handler.handleRecipe(io, recipe, copiedRecipeContents, true);
-                if (copiedRecipeContents.isEmpty()) break;
+                if (copiedRecipeContents.isEmpty()) {
+                    break;
+                }
             }
-            if (!entry.getKey().equals(RecipeHandlerGroupDistinctness.BYPASS_DISTINCT)) {
-                for (RecipeHandlerList bypassHandler : handlerGroups.getOrDefault(
-                        RecipeHandlerGroupDistinctness.BYPASS_DISTINCT, Collections.emptyList())) {
+            // If we're already in the bypass_distinct group, don't check it twice.
+            if (!handlerListEntry.getKey().equals(BYPASS_DISTINCT)) {
+                for (RecipeHandlerList bypassHandler : handlerGroups.getOrDefault(BYPASS_DISTINCT,
+                        Collections.emptyList())) {
                     copiedRecipeContents = bypassHandler.handleRecipe(io, recipe, copiedRecipeContents, true);
-                    if (copiedRecipeContents.isEmpty()) break;
+                    if (copiedRecipeContents.isEmpty()) {
+                        break;
+                    }
                 }
             }
 
             if (io == IO.OUT) {
                 if (hasAnyNonVoidingContents(copiedRecipeContents)) continue;
-            } else if (io == IO.IN && !copiedRecipeContents.isEmpty()) {
-                continue;
+            } else if (io == IO.IN) {
+                if (!copiedRecipeContents.isEmpty()) continue;
             }
             if (simulated) return ActionResult.SUCCESS;
-
-            for (RecipeHandlerList handler : entry.getValue()) {
+            // Start actually removing items.
+            // Keep track of the remaining items for this RecipeHandlerGroup
+            // First go through the handlers of the group
+            for (RecipeHandlerList handler : handlerListEntry.getValue()) {
                 recipeContents = handler.handleRecipe(io, recipe, recipeContents, false);
-                if (recipeContents.isEmpty()) return ActionResult.SUCCESS;
+                if (recipeContents.isEmpty()) {
+                    return ActionResult.SUCCESS;
+                }
             }
-            if (!entry.getKey().equals(RecipeHandlerGroupDistinctness.BYPASS_DISTINCT)) {
-                for (RecipeHandlerList bypassHandler : handlerGroups.getOrDefault(
-                        RecipeHandlerGroupDistinctness.BYPASS_DISTINCT, Collections.emptyList())) {
+            // Then go through the handlers that bypass the distinctness system and empty those
+            // If we're already in the bypass_distinct group, don't check it twice.
+            if (!handlerListEntry.getKey().equals(BYPASS_DISTINCT)) {
+                for (RecipeHandlerList bypassHandler : handlerGroups.getOrDefault(BYPASS_DISTINCT,
+                        Collections.emptyList())) {
                     recipeContents = bypassHandler.handleRecipe(io, recipe, recipeContents, false);
-                    if (recipeContents.isEmpty()) return ActionResult.SUCCESS;
+                    if (recipeContents.isEmpty()) {
+                        return ActionResult.SUCCESS;
+                    }
                 }
             }
         }
 
         for (var entry : recipeContents.entrySet()) {
-            if (!simulated && io == IO.OUT && outputVoid.test(entry.getKey())) {
+            // void excess real output contents if it can be voided
+            if (!simulated && io == IO.OUT && this.outputVoid.test(entry.getKey())) {
                 entry.getValue().clear();
             }
             if (entry.getValue() != null && !entry.getValue().isEmpty()) {
@@ -208,14 +235,19 @@ public class RecipeRunner {
             }
         }
 
-        boolean containsContent = false;
+        // if, post voiding, we don't have stuff, pass instead of fail
+        boolean containsStuff = false;
         for (var entry : recipeContents.entrySet()) {
             if (!entry.getValue().isEmpty()) {
-                containsContent = true;
+                containsStuff = true;
                 break;
             }
         }
-        return containsContent ? ActionResult.FAIL_NO_REASON : ActionResult.PASS_NO_CONTENTS;
+        if (!containsStuff) {
+            return ActionResult.PASS_NO_CONTENTS;
+        }
+
+        return ActionResult.FAIL_NO_REASON;
     }
 
     private boolean hasAnyNonVoidingContents(Map<RecipeCapability<?>, List<Object>> contents) {

@@ -20,15 +20,16 @@ import java.util.function.ToIntFunction;
 public class BiomeWeightModifier implements ToIntFunction<Holder<Biome>> {
 
     public static final BiomeWeightModifier EMPTY = new BiomeWeightModifier(HolderSet.empty(), 0);
-
+    // spotless:off
     public static final Codec<BiomeWeightModifier> SINGLE_CODEC = RecordCodecBuilder.create(instance -> instance.group(
             RegistryCodecs.homogeneousList(Registries.BIOME).fieldOf("biomes").forGetter(mod -> mod.biomes),
-            Codec.INT.fieldOf("added_weight").forGetter(mod -> mod.addedWeight))
-            .apply(instance, BiomeWeightModifier::new));
+            Codec.INT.fieldOf("added_weight").forGetter(mod -> mod.addedWeight)
+    ).apply(instance, BiomeWeightModifier::new));
 
     public static final Codec<BiomeWeightModifier> CODEC = Codec
             .lazyInitialized(() -> Codec.withAlternative(FromList.CODEC, SINGLE_CODEC, BiomeWeightModifier::flattenAndWrap))
             .xmap(Function.identity(), BiomeWeightModifier::flattenAndWrap);
+    // spotless:on
 
     public HolderSet<Biome> biomes;
     public int addedWeight;
@@ -68,8 +69,9 @@ public class BiomeWeightModifier implements ToIntFunction<Holder<Biome>> {
                 flat.addAll(flatten(inner));
             }
             return flat;
+        } else {
+            return Collections.singletonList(modifier);
         }
-        return Collections.singletonList(modifier);
     }
 
     public static FromList flattenAndWrap(BiomeWeightModifier modifier) {
@@ -93,13 +95,13 @@ public class BiomeWeightModifier implements ToIntFunction<Holder<Biome>> {
 
         @Override
         public int applyAsInt(Holder<Biome> biome) {
-            int modifier = 0;
-            for (var weightModifier : originalModifiers) {
-                if (weightModifier.biomes.contains(biome)) {
-                    modifier += weightModifier.applyAsInt(biome);
+            int mod = 0;
+            for (var modifier : originalModifiers) {
+                if (modifier.biomes.contains(biome)) {
+                    mod += modifier.applyAsInt(biome);
                 }
             }
-            return modifier;
+            return mod;
         }
 
         @Override

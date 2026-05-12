@@ -1,38 +1,61 @@
 package com.extfro.extfrocore.api.machine.trait;
 
+import com.extfro.extfrocore.ExtForCore;
+import com.extfro.extfrocore.api.capability.IWorkable;
+import com.extfro.extfrocore.api.capability.recipe.EURecipeCapability;
 import com.extfro.extfrocore.api.capability.recipe.IO;
 import com.extfro.extfrocore.api.capability.recipe.RecipeCapability;
+import com.extfro.extfrocore.api.gui.GuiTextures;
+import com.extfro.extfrocore.api.gui.fancy.IFancyTooltip;
 import com.extfro.extfrocore.api.machine.MetaMachine;
 import com.extfro.extfrocore.api.machine.TickableSubscription;
 import com.extfro.extfrocore.api.machine.feature.IRecipeLogicMachine;
+import com.extfro.extfrocore.api.machine.multiblock.MultiblockControllerMachine;
+import com.extfro.extfrocore.api.machine.property.GTMachineModelProperties;
 import com.extfro.extfrocore.api.recipe.ActionResult;
-import com.extfro.extfrocore.api.recipe.MachineRecipe;
+import com.extfro.extfrocore.api.recipe.GTRecipe;
 import com.extfro.extfrocore.api.recipe.RecipeHelper;
-import com.extfro.extfrocore.api.recipe.RecipeLogicContext;
-import com.extfro.extfrocore.api.registry.EFRegistries;
-import com.extfro.extfrocore.api.sync_system.ISyncManaged;
+import com.extfro.extfrocore.api.recipe.modifier.ModifierFunction;
+import com.extfro.extfrocore.api.registry.GTRegistries;
+import com.extfro.extfrocore.api.sound.AutoReleasedSound;
+import com.extfro.extfrocore.api.sync_system.annotations.ClientFieldChangeListener;
 import com.extfro.extfrocore.api.sync_system.annotations.RerenderOnChanged;
 import com.extfro.extfrocore.api.sync_system.annotations.SaveField;
 import com.extfro.extfrocore.api.sync_system.annotations.SyncToClient;
-import com.extfro.extfrocore.api.sync_system.holder.SyncDataHolder;
+import com.extfro.extfrocore.api.sync_system.data_transformers.ValueTransformer;
+import com.extfro.extfrocore.api.sync_system.data_transformers.ValueTransformers;
+import com.extfro.extfrocore.common.cover.MachineControllerCover;
+import com.extfro.extfrocore.core.MixinHelpers;
+import com.extfro.extfrocore.utils.GTMath;
 
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.StringRepresentable;
+import net.minecraft.world.item.crafting.RecipeManager;
+import net.minecraft.world.level.block.state.properties.EnumProperty;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 
+import com.lowdragmc.lowdraglib2.gui.texture.IGuiTexture;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import lombok.Getter;
 import lombok.Setter;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.VisibleForTesting;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.IdentityHashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
-public class RecipeLogic implements RecipeLogicContext, ISyncManaged {
+public class RecipeLogic extends MachineTrait implements IWorkable, IFancyTooltip {
+
+    public static final MachineTraitType<RecipeLogic> TYPE = new MachineTraitType<>(RecipeLogic.class, false);
+
+    @Override
+    public MachineTraitType<RecipeLogic> getTraitType() {
+        return TYPE;
+    }
 
     protected static class ChanceCacheMap extends IdentityHashMap<RecipeCapability<?>, Object2IntMap<?>> {}
 
@@ -46,15 +69,15 @@ public class RecipeLogic implements RecipeLogicContext, ISyncManaged {
         @Getter
         private final String serializedName;
 
-        Status(String serializedName) {
-            this.serializedName = serializedName;
+        Status(String name) {
+            this.serializedName = name;
         }
     }
 
-    public final IRecipeLogicMachine machine;
-    @Getter
-    protected final SyncDataHolder syncDataHolder = new SyncDataHolder(this);
-    public @Nullable List<MachineRecipe> lastFailedMatches;
+    public static final EnumProperty<Status> STATUS_PROPERTY = GTMachineModelProperties.RECIPE_LOGIC_STATUS;
+
+    public @Nullable IRecipeLogicMachine machine;
+    public @Nullable List<GTRecipe> lastFailedMatches;
 
     @Getter
     @SaveField
@@ -72,19 +95,33 @@ public class RecipeLogic implements RecipeLogicContext, ISyncManaged {
     @SyncToClient
     private Component waitingReason = null;
 
+    @Getter
     @SyncToClient
     protected final List<Component> failureReasons = new ArrayList<>();
-    @Getter
-    protected final Map<MachineRecipe, Component> failureReasonMap = new HashMap<>();
 
     @Getter
-    protected MachineRecipe lastRecipe;
+    protected final Map<GTRecipe, Component> failureReasonMap = new HashMap<>();
+    /**
+     * unsafe, it may not be found from {@link RecipeManager}. Do not index it.
+     */
+    @Nullable
     @Getter
     @SaveField
     @SyncToClient
-    protected int consecutiveRecipes = 0;
+    protected GTRecipe lastRecipe;
     @Getter
-    protected MachineRecipe lastOriginRecipe;
+    @SaveField
+    @SyncToClient
+    protected int consecutiveRecipes = 0; // Consecutive recipes that have been run
+    /**
+     * safe, it is the origin recipe before {@link IRecipeLogicMachine#fullModifyRecipe(GTRecipe)}'
+     * which can be found
+     * from {@link RecipeManager}.
+     */
+    @Nullable
+    @Getter
+    @SaveField
+    protected GTRecipe lastOriginRecipe;
     @SaveField
     @Getter
     @SyncToClient
@@ -95,6 +132,7 @@ public class RecipeLogic implements RecipeLogicContext, ISyncManaged {
     protected int duration;
     @Getter(onMethod_ = @VisibleForTesting)
     protected boolean recipeDirty;
+    @SaveField
     @Getter
     protected long totalContinuousRunningTime;
     protected int runAttempt = 0;
@@ -104,37 +142,49 @@ public class RecipeLogic implements RecipeLogicContext, ISyncManaged {
     @Setter
     protected boolean suspendAfterFinish = false;
     @Getter
+    @SaveField(nbtKey = "chance_cache")
     protected final ChanceCacheMap chanceCaches = makeChanceCaches();
     protected @Nullable TickableSubscription subscription;
+    protected @Nullable Object workingSound;
+
+    public RecipeLogic() {
+        super();
+    }
 
     public RecipeLogic(IRecipeLogicMachine machine) {
+        this();
         this.machine = machine;
+        machine.self().attachTrait(this);
     }
 
     @Override
-    public @Nullable MetaMachine machine() {
-        return machine.self();
+    protected List<Class<?>> validMachineClasses() {
+        return List.of(IRecipeLogicMachine.class);
     }
 
     @Override
-    public int recipeTier() {
-        return machine.self().getDefinition().getTier();
+    public void setMachine(MetaMachine machine) {
+        super.setMachine(machine);
+        this.machine = (IRecipeLogicMachine) machine;
     }
 
-    public MetaMachine getMachine() {
-        return machine.self();
+    public IRecipeLogicMachine getRLMachine() {
+        if (machine == null) {
+            machine = (IRecipeLogicMachine) getMachine();
+        }
+        return machine;
     }
 
-    @Override
-    public void scheduleRenderUpdate() {
-        getMachine().scheduleRenderUpdate();
+    @SuppressWarnings("unused")
+    @ClientFieldChangeListener(fieldName = "status")
+    protected void onStatusSynced() {
+        scheduleRenderUpdate();
+        updateSound();
     }
 
-    @Override
-    public void markAsChanged() {
-        getMachine().markAsChanged();
-    }
-
+    /**
+     * Call it to abort current recipe and reset the first state.
+     */
     public void resetRecipeLogic() {
         recipeDirty = false;
         lastRecipe = null;
@@ -150,10 +200,12 @@ public class RecipeLogic implements RecipeLogicContext, ISyncManaged {
             setStatus(Status.IDLE);
         }
         updateTickSubscription();
-        getMachine().getSyncDataHolder().resyncAllFields();
+        getSyncDataHolder().resyncAllFields();
     }
 
+    @Override
     public void onMachineLoad() {
+        super.onMachineLoad();
         updateTickSubscription();
     }
 
@@ -170,12 +222,18 @@ public class RecipeLogic implements RecipeLogicContext, ISyncManaged {
 
     public void setProgress(int progress) {
         this.progress = progress;
-        syncDataHolder.resyncAllFields();
-        getMachine().getSyncDataHolder().resyncAllFields();
+        syncDataHolder.markClientSyncFieldDirty("progress");
     }
 
     public double getProgressPercent() {
         return duration == 0 ? 0.0 : progress / (duration * 1.0);
+    }
+
+    /**
+     * it should be called on the server side restrictively.
+     */
+    public RecipeManager getRecipeManager() {
+        return ExtForCore.getMinecraftServer().getRecipeManager();
     }
 
     public void serverTick() {
@@ -196,18 +254,19 @@ public class RecipeLogic implements RecipeLogicContext, ISyncManaged {
             } else if (!machine.keepSubscribing() || getMachine().getOffsetTimer() % 5 == 0) {
                 findAndHandleRecipe();
                 if (lastFailedMatches != null) {
-                    for (MachineRecipe match : lastFailedMatches) {
+                    for (GTRecipe match : lastFailedMatches) {
                         if (checkMatchedRecipeAvailable(match)) break;
                     }
                 }
             }
         }
-
         boolean unsubscribe = false;
         if (isSuspend()) {
+            // Machine is paused and can unsubscribe
             unsubscribe = true;
         } else if (lastRecipe == null && isIdle() && !machine.keepSubscribing() && !recipeDirty &&
                 lastFailedMatches == null) {
+                    // No recipes available and the machine wants to unsubscribe until notified
                     unsubscribe = true;
                 }
         if (isIdle()) {
@@ -220,20 +279,21 @@ public class RecipeLogic implements RecipeLogicContext, ISyncManaged {
         }
     }
 
-    protected ActionResult matchRecipe(MachineRecipe recipe) {
+    protected ActionResult matchRecipe(GTRecipe recipe) {
         return RecipeHelper.matchContents(machine, recipe);
     }
 
-    protected ActionResult checkRecipe(MachineRecipe recipe) {
-        ActionResult conditionResult = RecipeHelper.checkConditions(recipe, this);
+    protected ActionResult checkRecipe(GTRecipe recipe) {
+        var conditionResult = RecipeHelper.checkConditions(recipe, this);
         if (!conditionResult.isSuccess()) return conditionResult;
+
         return matchRecipe(recipe);
     }
 
-    public boolean checkMatchedRecipeAvailable(MachineRecipe match) {
-        MachineRecipe modified = machine.fullModifyRecipe(match);
+    public boolean checkMatchedRecipeAvailable(GTRecipe match) {
+        var modified = machine.fullModifyRecipe(match);
         if (modified != null) {
-            ActionResult recipeMatch = checkRecipe(modified);
+            var recipeMatch = checkRecipe(modified);
             if (recipeMatch.isSuccess()) {
                 setupRecipe(modified);
             } else {
@@ -250,23 +310,45 @@ public class RecipeLogic implements RecipeLogicContext, ISyncManaged {
 
     public void handleRecipeWorking() {
         assert lastRecipe != null;
-        ActionResult conditionResult = RecipeHelper.checkConditions(lastRecipe, this);
+        var conditionResult = RecipeHelper.checkConditions(lastRecipe, this);
         if (conditionResult.isSuccess()) {
-            ActionResult handleTick = handleTickRecipe(lastRecipe);
+            var handleTick = handleTickRecipe(lastRecipe);
             if (handleTick.isSuccess()) {
                 setStatus(Status.WORKING);
                 if (!machine.onWorking()) {
-                    interruptRecipe();
+                    this.interruptRecipe();
                     return;
                 }
                 progress++;
                 totalContinuousRunningTime++;
-                runAttempt = 0;
-                runDelay = 0;
             } else {
                 setWaiting(handleTick.reason());
-                runAttempt = Math.min(runAttempt + 1, 5);
-                runDelay = runAttempt * 60;
+
+                // Machine isn't getting enough power, suspend after 5 attempts.
+                if (handleTick.io() == IO.IN && handleTick.capability() == EURecipeCapability.CAP) {
+                    runAttempt++;
+                    runAttempt = (int) GTMath.clamp(runAttempt, 0, 5);
+                    if (runAttempt == 5) {
+                        boolean preventPowerFail = false;
+                        if (machine instanceof MultiblockControllerMachine) {
+                            var covers = machine.self().getCoverContainer().getCovers();
+                            for (var cover : covers) {
+                                if (cover instanceof MachineControllerCover mcc) {
+                                    if (mcc.preventPowerFail()) {
+                                        preventPowerFail = true;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+
+                        if (machine instanceof MultiblockControllerMachine && !preventPowerFail) {
+                            runAttempt = 0;
+                            setStatus(Status.SUSPEND);
+                        }
+                    }
+                    runDelay = runAttempt * 60;
+                }
             }
         } else {
             setWaiting(conditionResult.reason());
@@ -278,23 +360,25 @@ public class RecipeLogic implements RecipeLogicContext, ISyncManaged {
 
     protected void regressRecipe() {
         if (progress > 0 && machine.regressWhenWaiting()) {
-            progress = 1;
+            this.progress = 1;
         }
     }
 
-    public Iterator<MachineRecipe> searchRecipe() {
-        return machine.getRecipeType().searchRecipe(this, recipe -> true);
+    public Iterator<GTRecipe> searchRecipe() {
+        return machine.getRecipeType().searchRecipe(machine, r -> true);
     }
 
     public void findAndHandleRecipe() {
         lastFailedMatches = null;
 
+        // try to execute last recipe if possible
         if (!recipeDirty && lastRecipe != null && checkRecipe(lastRecipe).isSuccess()) {
-            MachineRecipe recipe = lastRecipe;
+            GTRecipe recipe = lastRecipe;
             lastRecipe = null;
             lastOriginRecipe = null;
             setupRecipe(recipe);
         } else {
+            // try to find and handle a new recipe
             failureReasonMap.clear();
             lastRecipe = null;
             lastOriginRecipe = null;
@@ -303,15 +387,19 @@ public class RecipeLogic implements RecipeLogicContext, ISyncManaged {
         recipeDirty = false;
     }
 
-    protected void handleSearchingRecipes(Iterator<MachineRecipe> matches) {
+    protected void handleSearchingRecipes(Iterator<GTRecipe> matches) {
         while (matches.hasNext()) {
-            MachineRecipe match = matches.next();
-            if (checkMatchedRecipeAvailable(match)) return;
+            GTRecipe match = matches.next();
+
+            // If a new recipe was found, cache found recipe.
+            if (checkMatchedRecipeAvailable(match))
+                return;
 
             if (!matchRecipe(match).isSuccess()) {
                 continue;
             }
 
+            // cache matching recipes.
             if (lastFailedMatches == null) {
                 lastFailedMatches = new ArrayList<>();
             }
@@ -319,19 +407,20 @@ public class RecipeLogic implements RecipeLogicContext, ISyncManaged {
         }
     }
 
-    public ActionResult handleTickRecipe(MachineRecipe recipe) {
+    public ActionResult handleTickRecipe(GTRecipe recipe) {
         if (!recipe.hasTick()) return ActionResult.SUCCESS;
 
-        ActionResult result = RecipeHelper.matchTickRecipe(machine, recipe);
+        var result = RecipeHelper.matchTickRecipe(machine, recipe);
         if (!result.isSuccess()) return result;
 
         result = handleTickRecipeIO(recipe, IO.IN);
         if (!result.isSuccess()) return result;
 
-        return handleTickRecipeIO(recipe, IO.OUT);
+        result = handleTickRecipeIO(recipe, IO.OUT);
+        return result;
     }
 
-    public void setupRecipe(MachineRecipe recipe) {
+    public void setupRecipe(GTRecipe recipe) {
         if (!machine.beforeWorking(recipe)) {
             setStatus(Status.IDLE);
             consecutiveRecipes = 0;
@@ -340,7 +429,7 @@ public class RecipeLogic implements RecipeLogicContext, ISyncManaged {
             isActive = false;
             return;
         }
-        ActionResult handledIO = handleRecipeIO(recipe, IO.IN);
+        var handledIO = handleRecipeIO(recipe, IO.IN);
         if (handledIO.isSuccess()) {
             if (lastRecipe != null && !recipe.equals(lastRecipe)) {
                 chanceCaches.clear();
@@ -358,7 +447,7 @@ public class RecipeLogic implements RecipeLogicContext, ISyncManaged {
     public void setStatus(Status status) {
         if (this.status != status) {
             if (this.status == Status.WORKING) {
-                totalContinuousRunningTime = 0;
+                this.totalContinuousRunningTime = 0;
             }
             if ((status == Status.WAITING || status == Status.SUSPEND) && suspendAfterFinish) {
                 status = Status.SUSPEND;
@@ -366,9 +455,8 @@ public class RecipeLogic implements RecipeLogicContext, ISyncManaged {
             }
             machine.notifyStatusChanged(this.status, status);
             this.status = status;
-            syncDataHolder.resyncAllFields();
-            getMachine().getSyncDataHolder().resyncAllFields();
-            getMachine().scheduleRenderUpdate();
+            syncDataHolder.markClientSyncFieldDirty("status");
+            setRenderState(getRenderState().setValue(GTMachineModelProperties.RECIPE_LOGIC_STATUS, status));
             updateTickSubscription();
             if (this.status != Status.WAITING) {
                 waitingReason = null;
@@ -382,8 +470,12 @@ public class RecipeLogic implements RecipeLogicContext, ISyncManaged {
         machine.onWaiting();
     }
 
+    /**
+     * mark current handling recipe (if exist) as dirty.
+     * do not try it immediately in the next round
+     */
     public void markLastRecipeDirty() {
-        recipeDirty = true;
+        this.recipeDirty = true;
     }
 
     public boolean isWorking() {
@@ -406,21 +498,19 @@ public class RecipeLogic implements RecipeLogicContext, ISyncManaged {
         return !isSuspend() && !isSuspendAfterFinish();
     }
 
+    @Override
     public void setWorkingEnabled(boolean isWorkingAllowed) {
-        if (!isWorkingAllowed && getStatus() == Status.IDLE) {
-            setStatus(Status.SUSPEND);
-        } else {
-            setSuspendAfterFinish(!isWorkingAllowed);
-            if (isWorkingAllowed) {
-                if (lastRecipe != null && duration > 0) {
-                    setStatus(Status.WORKING);
-                } else {
-                    setStatus(Status.IDLE);
-                }
+        setSuspendAfterFinish(!isWorkingAllowed);
+        if (isWorkingAllowed) {
+            if (lastRecipe != null && duration > 0) {
+                setStatus(Status.WORKING);
+            } else {
+                setStatus(Status.IDLE);
             }
         }
     }
 
+    @Override
     public int getMaxProgress() {
         return duration;
     }
@@ -433,6 +523,13 @@ public class RecipeLogic implements RecipeLogicContext, ISyncManaged {
         return false;
     }
 
+    /**
+     * Show the customized progress line instead of the regular duration progress time in the machine display.
+     * <p>
+     * Must override and return {@code true} in {@link #hasCustomProgressLine()}.
+     *
+     * @return the customized progress line
+     */
     public @Nullable Component getCustomProgressLine() {
         return null;
     }
@@ -444,18 +541,21 @@ public class RecipeLogic implements RecipeLogicContext, ISyncManaged {
             runDelay = 0;
             consecutiveRecipes++;
             handleRecipeIO(lastRecipe, IO.OUT);
+            // Don't ready the next recipe after finish if suspend is set
+            // so that the modifiers won't be applied until re-starting.
             if (suspendAfterFinish) {
                 setStatus(Status.SUSPEND);
                 consecutiveRecipes = 0;
                 progress = 0;
                 duration = 0;
                 isActive = false;
+                // Force a recipe recheck.
                 lastRecipe = null;
                 return;
             }
             if (machine.alwaysTryModifyRecipe()) {
                 if (lastOriginRecipe != null) {
-                    MachineRecipe modified = machine.fullModifyRecipe(lastOriginRecipe.copy());
+                    var modified = machine.fullModifyRecipe(lastOriginRecipe.copy());
                     if (modified == null) {
                         markLastRecipeDirty();
                     } else {
@@ -465,7 +565,8 @@ public class RecipeLogic implements RecipeLogicContext, ISyncManaged {
                     markLastRecipeDirty();
                 }
             }
-            ActionResult recipeCheck = checkRecipe(lastRecipe);
+            // try it again
+            var recipeCheck = checkRecipe(lastRecipe);
             if (!recipeDirty && recipeCheck.isSuccess()) {
                 setupRecipe(lastRecipe);
             } else {
@@ -478,14 +579,17 @@ public class RecipeLogic implements RecipeLogicContext, ISyncManaged {
         }
     }
 
-    protected ActionResult handleRecipeIO(MachineRecipe recipe, IO io) {
-        return RecipeHelper.handleRecipeIO(machine, recipe, io, chanceCaches);
+    protected ActionResult handleRecipeIO(GTRecipe recipe, IO io) {
+        return RecipeHelper.handleRecipeIO(machine, recipe, io, this.chanceCaches);
     }
 
-    protected ActionResult handleTickRecipeIO(MachineRecipe recipe, IO io) {
-        return RecipeHelper.handleTickRecipeIO(machine, recipe, io, chanceCaches);
+    protected ActionResult handleTickRecipeIO(GTRecipe recipe, IO io) {
+        return RecipeHelper.handleTickRecipeIO(machine, recipe, io, this.chanceCaches);
     }
 
+    /**
+     * Interrupt current recipe without io.
+     */
     public void interruptRecipe() {
         machine.afterWorking();
         if (lastRecipe != null) {
@@ -495,24 +599,134 @@ public class RecipeLogic implements RecipeLogicContext, ISyncManaged {
         }
     }
 
+    // Remains for legacy + for subclasses
+    public void inValid() {}
+
+    //////////////////////////////////////
+    // ******** MISC *********//
+    //////////////////////////////////////
+    @OnlyIn(Dist.CLIENT)
+    public void updateSound() {
+        if (isWorking() && machine.shouldWorkingPlaySound()) {
+            var sound = machine.getRecipeType().getSound();
+            if (workingSound instanceof AutoReleasedSound soundEntry) {
+                if (soundEntry.soundEntry == sound && !soundEntry.isStopped()) {
+                    return;
+                }
+                soundEntry.release();
+                workingSound = null;
+            }
+            if (sound != null) {
+                workingSound = sound.playAutoReleasedSound(
+                        () -> machine.shouldWorkingPlaySound() && isWorking() && !getMachine().isRemoved() &&
+                                getMachine().getLevel().isLoaded(getMachine().getBlockPos()) &&
+                                MetaMachine.getMachine(getMachine().getLevel(), getMachine().getBlockPos()) ==
+                                        getMachine(),
+                        getMachine().getBlockPos(), true, 0, 1, 1);
+            }
+        } else if (workingSound instanceof AutoReleasedSound soundEntry) {
+            soundEntry.release();
+            workingSound = null;
+        }
+    }
+
+    @Override
+    public IGuiTexture getFancyTooltipIcon() {
+        if (showFancyTooltip()) {
+            return GuiTextures.INSUFFICIENT_INPUT;
+        }
+        return IGuiTexture.EMPTY;
+    }
+
+    @Override
+    public List<Component> getFancyTooltip() {
+        if (isWaiting() && waitingReason != null) {
+            return List.of(waitingReason);
+        }
+        if (isIdle() && !failureReasons.isEmpty()) {
+            return failureReasons;
+        }
+        return Collections.emptyList();
+    }
+
+    @Override
+    public boolean showFancyTooltip() {
+        return waitingReason != null || !failureReasons.isEmpty();
+    }
+
     protected ChanceCacheMap makeChanceCaches() {
         ChanceCacheMap map = new ChanceCacheMap();
-        for (RecipeCapability<?> capability : EFRegistries.RECIPE_CAPABILITIES) {
-            map.put(capability, capability.makeChanceCache());
+        for (RecipeCapability<?> cap : GTRegistries.RECIPE_CAPABILITIES) {
+            map.put(cap, cap.makeChanceCache());
         }
         return map;
     }
 
-    public static void putFailureReason(Object machine, MachineRecipe recipe, Component reason) {
-        if (machine instanceof IRecipeLogicMachine logicMachine) {
-            putFailureReason(logicMachine.getRecipeLogic(), recipe, reason);
+    static {
+        ValueTransformers.registerTransformer(ChanceCacheMap.class, new ValueTransformer<ChanceCacheMap>() {
+
+            @Override
+            public Tag serializeNBT(ChanceCacheMap value,
+                                    TransformerContext<ChanceCacheMap> context) {
+                CompoundTag chanceCache = new CompoundTag();
+                if (context.currentValue() == null) return chanceCache;
+
+                context.currentValue().forEach((cap, cache) -> {
+                    ListTag cacheTag = new ListTag();
+                    for (var entry : cache.object2IntEntrySet()) {
+                        CompoundTag compoundTag = new CompoundTag();
+                        var obj = cap.toNbt(entry.getKey(), MixinHelpers.getCurrentBERegistries());
+                        compoundTag.put("entry", obj);
+                        compoundTag.putInt("cached_chance", entry.getIntValue());
+                        cacheTag.add(compoundTag);
+                    }
+                    chanceCache.put(cap.name, cacheTag);
+                });
+
+                return chanceCache;
+            }
+
+            @Override
+            public @Nullable ChanceCacheMap deserializeNBT(Tag tag,
+                                                           TransformerContext<ChanceCacheMap> context) {
+                CompoundTag chanceCache = ValueTransformer.assertTagType(CompoundTag.class, tag, context);
+                if (context.currentValue() != null) {
+                    for (String key : chanceCache.getAllKeys()) {
+                        RecipeCapability<?> cap = GTRegistries.RECIPE_CAPABILITIES.get(ResourceLocation.parse(key));
+                        // Necessary since a RecipeCapability was removed when removing Create support, and for future
+                        // removals
+                        if (cap == null) continue;
+                        // noinspection rawtypes
+                        Object2IntMap map = context.currentValue().computeIfAbsent(cap,
+                                RecipeCapability::makeChanceCache);
+
+                        ListTag chanceTag = chanceCache.getList(key, Tag.TAG_COMPOUND);
+                        for (int i = 0; i < chanceTag.size(); ++i) {
+                            CompoundTag chanceKey = chanceTag.getCompound(i);
+                            var entry = cap.fromNbt(chanceKey.get("entry"), GTRegistries.builtinRegistry());
+                            int value = chanceKey.getInt("cached_chance");
+                            // noinspection unchecked
+                            map.put(entry, value);
+                        }
+                    }
+                }
+                return context.currentValue();
+            }
+        });
+    }
+
+    public static void putFailureReason(Object machine, GTRecipe recipe, Component reason) {
+        if (machine instanceof IRecipeLogicMachine rlm) {
+            putFailureReason(rlm.getRecipeLogic(), recipe, reason);
         }
     }
 
-    public static void putFailureReason(RecipeLogic logic, MachineRecipe recipe, Component reason) {
-        Map<MachineRecipe, Component> map = logic.getFailureReasonMap();
+    public static void putFailureReason(RecipeLogic logic, GTRecipe recipe, Component reason) {
+        var map = logic.getFailureReasonMap();
         if (map.containsKey(recipe)) {
-            map.put(recipe, reason);
+            if (reason != ModifierFunction.DEFAULT_FAILURE) {
+                map.put(recipe, reason);
+            }
         } else {
             map.put(recipe, reason);
         }

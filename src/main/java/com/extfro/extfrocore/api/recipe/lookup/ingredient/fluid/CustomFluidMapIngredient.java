@@ -14,7 +14,7 @@ import java.util.List;
 public class CustomFluidMapIngredient extends AbstractMapIngredient {
 
     protected FluidStack stack;
-    protected FluidIngredient ingredient;
+    protected FluidIngredient ingredient = null;
 
     public CustomFluidMapIngredient(FluidStack stack) {
         this.stack = stack;
@@ -27,7 +27,8 @@ public class CustomFluidMapIngredient extends AbstractMapIngredient {
 
     public static List<AbstractMapIngredient> from(FluidIngredient ingredient) {
         List<AbstractMapIngredient> ingredients = new ArrayList<>();
-        for (FluidStack stack : ingredient.getStacks()) {
+        FluidStack[] stacks = ingredient.getStacks();
+        for (FluidStack stack : stacks) {
             ingredients.add(new CustomFluidMapIngredient(stack, ingredient));
         }
         return ingredients;
@@ -39,16 +40,21 @@ public class CustomFluidMapIngredient extends AbstractMapIngredient {
     }
 
     @Override
-    public boolean equals(Object obj) {
-        if (super.equals(obj)) {
-            CustomFluidMapIngredient other = (CustomFluidMapIngredient) obj;
-            if (!FluidStack.isSameFluid(stack, other.stack)) {
+    public boolean equals(Object o) {
+        if (super.equals(o)) {
+            CustomFluidMapIngredient other = (CustomFluidMapIngredient) o;
+            if (!FluidStack.isSameFluid(this.stack, other.stack)) {
                 return false;
             }
-            if (ingredient != null) {
-                return other.ingredient != null ? ingredient.equals(other.ingredient) : ingredient.test(other.stack);
+            if (this.ingredient != null) {
+                if (other.ingredient != null) {
+                    return ingredient.equals(other.ingredient);
+                } else {
+                    return this.ingredient.test(other.stack);
+                }
+            } else if (other.ingredient != null) {
+                return other.ingredient.test(this.stack);
             }
-            return other.ingredient == null || other.ingredient.test(stack);
         }
         return false;
     }
@@ -60,7 +66,10 @@ public class CustomFluidMapIngredient extends AbstractMapIngredient {
 
     @Override
     public String toString() {
-        return "CustomFluidMapIngredient{fluid=" + stack + ", ingredient=" + ingredient + "}";
+        return "CustomMapIngredient{" +
+                "item=" + stack +
+                "ingredient=" + ingredient +
+                "}";
     }
 
     @Override

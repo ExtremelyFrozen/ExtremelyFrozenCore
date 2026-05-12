@@ -1,0 +1,77 @@
+package com.extfro.extfrocore.common.recipe.condition;
+
+import com.extfro.extfrocore.ExtForCore;
+import com.extfro.extfrocore.api.machine.trait.RecipeLogic;
+import com.extfro.extfrocore.api.recipe.GTRecipe;
+import com.extfro.extfrocore.api.recipe.RecipeCondition;
+import com.extfro.extfrocore.api.recipe.condition.RecipeConditionType;
+import com.extfro.extfrocore.common.data.GTRecipeConditions;
+import com.extfro.extfrocore.common.machine.owner.MachineOwner;
+
+import net.minecraft.network.chat.Component;
+
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.MapCodec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
+import earth.terrarium.heracles.common.handlers.progress.QuestProgressHandler;
+import earth.terrarium.heracles.common.handlers.progress.QuestsProgress;
+import earth.terrarium.heracles.common.handlers.quests.QuestHandler;
+import lombok.NoArgsConstructor;
+import org.jetbrains.annotations.NotNull;
+
+@NoArgsConstructor
+public class HeraclesQuestCondition extends RecipeCondition<HeraclesQuestCondition> {
+
+    // spotless:off
+    public static final MapCodec<HeraclesQuestCondition> CODEC = RecordCodecBuilder.mapCodec(instance -> RecipeCondition.isReverse(instance).and(
+            Codec.STRING.fieldOf("questId").forGetter(val -> val.questId)
+    ).apply(instance, HeraclesQuestCondition::new));
+    // spotless:on
+
+    private String questId;
+
+    public HeraclesQuestCondition(String questId) {
+        this.questId = questId;
+    }
+
+    public HeraclesQuestCondition(boolean isReverse, String questId) {
+        super(isReverse);
+        this.questId = questId;
+    }
+
+    @Override
+    public RecipeConditionType<HeraclesQuestCondition> getType() {
+        return GTRecipeConditions.HERACLES_QUEST;
+    }
+
+    @Override
+    public Component getTooltips() {
+        String questTitle = QuestHandler.get(questId).display().title().toString();
+
+        if (isReverse) {
+            return Component.translatable("recipe.condition.quest.not_completed.tooltip", questTitle);
+        } else {
+            return Component.translatable("recipe.condition.quest.completed.tooltip", questTitle);
+        }
+    }
+
+    @Override
+    public boolean testCondition(@NotNull GTRecipe recipe, @NotNull RecipeLogic recipeLogic) {
+        MachineOwner owner = recipeLogic.getMachine().getOwner();
+        if (owner == null) return false;
+        for (var player : owner.getMembers()) {
+            QuestsProgress questsProgress = QuestProgressHandler
+                    .getProgress(ExtForCore.getMinecraftServer(), player);
+            var progress = questsProgress.getProgress(questId);
+            if (progress != null && (progress.isComplete() || QuestHandler.get(questId).tasks().isEmpty())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public HeraclesQuestCondition createTemplate() {
+        return new HeraclesQuestCondition();
+    }
+}

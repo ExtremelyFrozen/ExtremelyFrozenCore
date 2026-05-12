@@ -28,22 +28,21 @@ public interface IRecipeCapabilityHolder {
     }
 
     @NotNull
-    default List<IRecipeHandler<?>> getCapabilitiesFlat(IO io, RecipeCapability<?> capability) {
+    default List<IRecipeHandler<?>> getCapabilitiesFlat(IO io, RecipeCapability<?> cap) {
         return getCapabilitiesFlat()
                 .getOrDefault(io, Collections.emptyMap())
-                .getOrDefault(capability, Collections.emptyList());
+                .getOrDefault(cap, Collections.emptyList());
     }
 
     default void addHandlerList(RecipeHandlerList handlerList) {
         if (handlerList == RecipeHandlerList.NO_DATA) return;
         IO io = handlerList.getHandlerIO();
-        getCapabilitiesProxy().computeIfAbsent(io, ignored -> new ArrayList<>()).add(handlerList);
+        getCapabilitiesProxy().computeIfAbsent(io, i -> new ArrayList<>()).add(handlerList);
         var entrySet = handlerList.getHandlerMap().entrySet();
-        var inner = getCapabilitiesFlat().computeIfAbsent(io,
-                ignored -> new Reference2ObjectOpenHashMap<>(entrySet.size()));
+        var inner = getCapabilitiesFlat().computeIfAbsent(io, i -> new Reference2ObjectOpenHashMap<>(entrySet.size()));
         for (var entry : entrySet) {
-            List<IRecipeHandler<?>> handlers = entry.getValue();
-            inner.computeIfAbsent(entry.getKey(), ignored -> new ArrayList<>(handlers.size())).addAll(handlers);
+            var entryList = entry.getValue();
+            inner.computeIfAbsent(entry.getKey(), c -> new ArrayList<>(entryList.size())).addAll(entryList);
         }
     }
 }

@@ -1,5 +1,6 @@
 package com.extfro.extfrocore.api.recipe.lookup.ingredient.item;
 
+import com.extfro.extfrocore.api.recipe.ingredient.SizedIngredientExtensions;
 import com.extfro.extfrocore.api.recipe.lookup.ingredient.AbstractMapIngredient;
 
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -8,26 +9,27 @@ import net.minecraft.world.item.crafting.Ingredient;
 import net.neoforged.neoforge.common.crafting.DataComponentIngredient;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import lombok.experimental.ExtensionMethod;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
+@ExtensionMethod(SizedIngredientExtensions.class)
 public class ItemDataComponentMapIngredient extends ItemStackMapIngredient {
 
     protected DataComponentIngredient componentIngredient;
 
-    public ItemDataComponentMapIngredient(ItemStack stack, DataComponentIngredient componentIngredient,
-                                          Ingredient vanilla) {
-        super(stack, vanilla);
-        this.componentIngredient = componentIngredient;
+    public ItemDataComponentMapIngredient(ItemStack s, DataComponentIngredient ingredient, Ingredient vanilla) {
+        super(s, vanilla);
+        this.componentIngredient = ingredient;
     }
 
     @NotNull
     public static List<AbstractMapIngredient> from(@NotNull DataComponentIngredient ingredient) {
-        Ingredient vanilla = new Ingredient(ingredient);
+        Ingredient vanilla = ingredient.toVanilla();
         ObjectArrayList<AbstractMapIngredient> list = new ObjectArrayList<>();
-        for (ItemStack stack : vanilla.getItems()) {
-            list.add(new ItemDataComponentMapIngredient(stack, ingredient, vanilla));
+        for (ItemStack s : vanilla.getItems()) {
+            list.add(new ItemDataComponentMapIngredient(s, ingredient, vanilla));
         }
         return list;
     }
@@ -53,47 +55,48 @@ public class ItemDataComponentMapIngredient extends ItemStackMapIngredient {
             return true;
         }
         if (obj instanceof ItemDataComponentMapIngredient other) {
-            if (!ItemStack.isSameItem(stack, other.stack)) {
+            if (!ItemStack.isSameItem(this.stack, other.stack)) {
                 return false;
             }
-            if (componentIngredient == other.componentIngredient) {
+            if (this.componentIngredient == other.componentIngredient) {
                 return true;
             }
 
-            if (componentIngredient != null) {
+            if (this.componentIngredient != null) {
                 if (other.componentIngredient != null) {
-                    if (componentIngredient.isStrict() != other.componentIngredient.isStrict()) {
+                    if (this.componentIngredient.isStrict() != other.componentIngredient.isStrict()) {
                         return false;
                     }
-                    if (!componentIngredient.components().equals(other.componentIngredient.components())) {
+                    if (!this.componentIngredient.components().equals(other.componentIngredient.components())) {
                         return false;
                     }
-                    if (componentIngredient.isStrict()) {
-                        for (ItemStack thisStack : ingredient.getItems()) {
-                            for (ItemStack otherStack : other.ingredient.getItems()) {
-                                if (ItemStack.isSameItemSameComponents(thisStack, otherStack)) {
-                                    return true;
-                                }
+
+                    if (this.componentIngredient.isStrict()) {
+                        for (ItemStack tStack : this.ingredient.getItems()) {
+                            for (ItemStack oStack : other.ingredient.getItems()) {
+                                if (ItemStack.isSameItemSameComponents(tStack, oStack)) return true;
                             }
                         }
-                        return false;
+                    } else {
+                        boolean thisContains = this.componentIngredient.items()
+                                .stream().allMatch(holder -> other.componentIngredient.items().contains(holder));
+                        boolean otherContains = other.componentIngredient.items()
+                                .stream().allMatch(holder -> this.componentIngredient.items().contains(holder));
+                        return thisContains && otherContains;
                     }
-                    boolean thisContains = componentIngredient.items().stream()
-                            .allMatch(holder -> other.componentIngredient.items().contains(holder));
-                    boolean otherContains = other.componentIngredient.items().stream()
-                            .allMatch(holder -> componentIngredient.items().contains(holder));
-                    return thisContains && otherContains;
+                } else {
+                    return this.componentIngredient.test(other.stack);
                 }
-                return componentIngredient.test(other.stack);
+            } else {
+                return other.componentIngredient.test(this.stack);
             }
-            return other.componentIngredient.test(stack);
         }
         return false;
     }
 
     @Override
     public String toString() {
-        return "ItemDataComponentMapIngredient{item=" + BuiltInRegistries.ITEM.getKey(stack.getItem()) + "}";
+        return "DataComponentItemStackMapIngredient{item=" + BuiltInRegistries.ITEM.getKey(stack.getItem()) + "}";
     }
 
     @Override

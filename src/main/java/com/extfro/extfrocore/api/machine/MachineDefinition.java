@@ -3,12 +3,13 @@ package com.extfro.extfrocore.api.machine;
 import com.extfro.extfrocore.api.block.MetaMachineBlock;
 import com.extfro.extfrocore.api.capability.recipe.RecipeCapability;
 import com.extfro.extfrocore.api.data.RotationState;
+import com.extfro.extfrocore.api.gui.editor.EditableMachineUI;
 import com.extfro.extfrocore.api.item.MetaMachineItem;
 import com.extfro.extfrocore.api.machine.feature.IRecipeLogicMachine;
-import com.extfro.extfrocore.api.recipe.MachineRecipe;
-import com.extfro.extfrocore.api.recipe.MachineRecipeType;
+import com.extfro.extfrocore.api.recipe.GTRecipe;
+import com.extfro.extfrocore.api.recipe.GTRecipeType;
 import com.extfro.extfrocore.api.recipe.modifier.RecipeModifier;
-import com.extfro.extfrocore.api.registry.registrate.EFDefinitionHolder;
+import com.extfro.extfrocore.client.model.machine.MachineRenderState;
 
 import net.minecraft.core.Direction;
 import net.minecraft.core.IdMapper;
@@ -23,9 +24,7 @@ import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
-import com.tterrag.registrate.util.entry.BlockEntry;
-import com.tterrag.registrate.util.entry.ItemEntry;
-import com.tterrag.registrate.util.entry.RegistryEntry;
+import com.lowdragmc.lowdraglib2.utils.ShapeUtils;
 import it.unimi.dsi.fastutil.objects.Reference2IntMap;
 import it.unimi.dsi.fastutil.objects.Reference2IntOpenHashMap;
 import lombok.Getter;
@@ -38,19 +37,18 @@ import org.jetbrains.annotations.Nullable;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.BiConsumer;
-import java.util.function.BiPredicate;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
+import java.util.function.*;
 
-public class MachineDefinition implements Supplier<MetaMachineBlock>,
-                               EFDefinitionHolder<MetaMachineBlock, MetaMachineItem, MetaMachine> {
+/**
+ * Representing basic information of a machine.
+ */
+public class MachineDefinition implements Supplier<MetaMachineBlock> {
 
     public static final IdMapper<MachineRenderState> RENDER_STATE_REGISTRY = new IdMapper<>(512);
 
     @Getter
     private final ResourceLocation id;
+    // This is only stored here for KJS use.
     @Getter
     @Setter
     @Nullable
@@ -63,58 +61,71 @@ public class MachineDefinition implements Supplier<MetaMachineBlock>,
     private Supplier<BlockEntityType<? extends BlockEntity>> blockEntityTypeSupplier;
     @Getter
     @Setter
-    private @NotNull MachineRecipeType @NotNull [] recipeTypes = new MachineRecipeType[0];
+    private @NotNull GTRecipeType @NotNull [] recipeTypes;
     @Getter
     @Setter
     private int tier;
     @Getter
     @Setter
-    private int defaultPaintingColor = -1;
+    private int defaultPaintingColor;
+    @Getter
+    @Setter
+    private RecipeModifier recipeModifier;
+    @Getter
+    @Setter
+    private boolean alwaysTryModifyRecipe;
+    @NotNull
+    @Getter
+    @Setter
+    private BiPredicate<IRecipeLogicMachine, GTRecipe> beforeWorking = (machine, recipe) -> true;
+    @NotNull
+    @Getter
+    @Setter
+    private Predicate<IRecipeLogicMachine> onWorking = (machine) -> true;
+    @NotNull
+    @Getter
+    @Setter
+    private Consumer<IRecipeLogicMachine> onWaiting = (machine) -> {};
+    @NotNull
+    @Getter
+    @Setter
+    private Consumer<IRecipeLogicMachine> afterWorking = (machine) -> {};
+    @Getter
+    @Setter
+    private boolean regressWhenWaiting = true;
+    /** Whether this machine can be rotated or face upwards. */
     @Getter
     @Setter
     private boolean allowExtendedFacing;
+
     @Getter
     @Setter
-    private RotationState rotationState = RotationState.NON_Y_AXIS;
+    private RotationState rotationState;
     @Setter
-    private VoxelShape shape = Shapes.block();
+    private VoxelShape shape;
     @Getter
     @Setter
-    private boolean renderWorldPreview = true;
+    private boolean renderWorldPreview;
     @Getter
     @Setter
-    private boolean renderXEIPreview = true;
+    private boolean renderXEIPreview;
     private final Map<Direction, VoxelShape> cache = new EnumMap<>(Direction.class);
     @Getter
     @Setter
-    private BiConsumer<ItemStack, List<Component>> tooltipBuilder = (stack, tooltip) -> {};
+    private BiConsumer<ItemStack, List<Component>> tooltipBuilder;
     @Getter
     @Setter
     private Supplier<BlockState> appearance;
     @Getter
     @Setter
     private boolean allowCoverOnFront;
+    @Nullable
+    @Getter
+    @Setter
+    private EditableMachineUI editableUI;
     @Getter
     @Setter
     private Reference2IntMap<RecipeCapability<?>> recipeOutputLimits = new Reference2IntOpenHashMap<>();
-    @Getter
-    @Setter
-    private RecipeModifier recipeModifier = RecipeModifier.NO_MODIFIER;
-    @Getter
-    @Setter
-    private BiPredicate<IRecipeLogicMachine, MachineRecipe> beforeWorking = (machine, recipe) -> true;
-    @Getter
-    @Setter
-    private Predicate<IRecipeLogicMachine> onWorking = machine -> true;
-    @Getter
-    @Setter
-    private Consumer<IRecipeLogicMachine> onWaiting = machine -> {};
-    @Getter
-    @Setter
-    private Consumer<IRecipeLogicMachine> afterWorking = machine -> {};
-    @Getter
-    @Setter
-    private boolean regressWhenWaiting;
 
     @Getter
     @Setter(onMethod_ = @ApiStatus.Internal)
@@ -127,13 +138,8 @@ public class MachineDefinition implements Supplier<MetaMachineBlock>,
         this.id = id;
     }
 
-    @Override
-    public ResourceLocation id() {
-        return id;
-    }
-
     public final void registerDefaultState(MachineRenderState state) {
-        defaultRenderState = state;
+        this.defaultRenderState = state;
     }
 
     public Block getBlock() {
@@ -148,6 +154,15 @@ public class MachineDefinition implements Supplier<MetaMachineBlock>,
         return blockEntityTypeSupplier.get();
     }
 
+    @Nullable
+    public EditableMachineUI getEditableUI() {
+        return editableUI;
+    }
+
+    public void setEditableUI(@Nullable EditableMachineUI editableUI) {
+        this.editableUI = editableUI;
+    }
+
     public ItemStack asStack() {
         return new ItemStack(getItem());
     }
@@ -157,27 +172,8 @@ public class MachineDefinition implements Supplier<MetaMachineBlock>,
     }
 
     public VoxelShape getShape(Direction direction) {
-        if (shape.isEmpty() || shape == Shapes.block() || direction == Direction.NORTH) {
-            return shape;
-        }
-        return cache.computeIfAbsent(direction, dir -> rotateShape(shape, dir));
-    }
-
-    private static VoxelShape rotateShape(VoxelShape source, Direction direction) {
-        VoxelShape[] result = { source };
-        int times = switch (direction) {
-            case SOUTH -> 2;
-            case WEST -> 1;
-            case EAST -> 3;
-            default -> 0;
-        };
-        for (int i = 0; i < times; i++) {
-            VoxelShape[] rotated = { Shapes.empty() };
-            result[0].forAllBoxes((minX, minY, minZ, maxX, maxY, maxZ) -> rotated[0] = Shapes.or(rotated[0],
-                    Shapes.box(1.0D - maxZ, minY, minX, 1.0D - minZ, maxY, maxX)));
-            result[0] = rotated[0];
-        }
-        return result[0];
+        if (shape.isEmpty() || shape == Shapes.block() || direction == Direction.NORTH) return shape;
+        return this.cache.computeIfAbsent(direction, dir -> ShapeUtils.rotate(shape, dir));
     }
 
     @Override
@@ -189,6 +185,11 @@ public class MachineDefinition implements Supplier<MetaMachineBlock>,
         return id.getPath();
     }
 
+    @Override
+    public String toString() {
+        return id.toString();
+    }
+
     public String getDescriptionId() {
         return getBlock().getDescriptionId();
     }
@@ -198,30 +199,12 @@ public class MachineDefinition implements Supplier<MetaMachineBlock>,
     }
 
     @Override
-    public void setBlock(BlockEntry<MetaMachineBlock> block) {
-        setBlockSupplier(block);
-    }
-
-    @Override
-    public void setItem(ItemEntry<MetaMachineItem> item) {
-        setItemSupplier(item);
-    }
-
-    @Override
-    public void setBlockEntity(RegistryEntry<BlockEntityType<?>, BlockEntityType<MetaMachine>> blockEntity) {
-        setBlockEntityTypeSupplier(blockEntity::get);
-    }
-
-    @Override
-    public String toString() {
-        return id.toString();
-    }
-
-    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
+
         MachineDefinition that = (MachineDefinition) o;
+
         return id.equals(that.id);
     }
 
@@ -230,7 +213,7 @@ public class MachineDefinition implements Supplier<MetaMachineBlock>,
         return id.hashCode();
     }
 
-    private static final ThreadLocal<MachineDefinition> STATE = new ThreadLocal<>();
+    static final ThreadLocal<MachineDefinition> STATE = new ThreadLocal<>();
 
     public static MachineDefinition getBuilt() {
         return STATE.get();

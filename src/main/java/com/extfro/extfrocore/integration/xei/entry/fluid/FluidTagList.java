@@ -20,7 +20,7 @@ public final class FluidTagList implements FluidEntryList {
     private final List<FluidTagEntry> entries = new ArrayList<>();
 
     public static FluidTagList of(@NotNull TagKey<Fluid> tag, int amount, @NotNull DataComponentPatch componentPatch) {
-        FluidTagList list = new FluidTagList();
+        var list = new FluidTagList();
         list.add(tag, amount, componentPatch);
         return list;
     }
@@ -34,22 +34,21 @@ public final class FluidTagList implements FluidEntryList {
     }
 
     @Override
-    public List<FluidStack> getStacks() {
-        return entries.stream().flatMap(FluidTagEntry::stacks).toList();
-    }
-
-    @Override
     public boolean isEmpty() {
         return entries.isEmpty();
     }
 
-    public record FluidTagEntry(@NotNull TagKey<Fluid> tag, int amount,
-                                @NotNull DataComponentPatch componentPatch) {
+    @Override
+    public List<FluidStack> getStacks() {
+        return entries.stream()
+                .flatMap(FluidTagEntry::stacks)
+                .toList();
+    }
+
+    public record FluidTagEntry(@NotNull TagKey<Fluid> tag, int amount, @NotNull DataComponentPatch componentPatch) {
 
         public Stream<FluidStack> stacks() {
-            return BuiltInRegistries.FLUID.getTag(tag)
-                    .map(HolderSet.ListBacked::stream)
-                    .orElseGet(Stream::empty)
+            return BuiltInRegistries.FLUID.getTag(tag).map(HolderSet.ListBacked::stream).orElseGet(Stream::empty)
                     .map(holder -> new FluidStack(holder, amount, componentPatch));
         }
     }

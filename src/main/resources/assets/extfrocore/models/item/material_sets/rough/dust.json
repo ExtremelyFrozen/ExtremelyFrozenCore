@@ -1,7 +1,7 @@
 {
 	"parent": "item/generated",
 	"textures": {
-		"layer0": "extfrocore:item/material_sets/rough/dust",
-		"layer1": "extfrocore:item/material_sets/rough/dust_secondary"
+		"layer0": "gtceu:item/material_sets/rough/dust",
+		"layer1": "gtceu:item/material_sets/rough/dust_secondary"
 	}
 }

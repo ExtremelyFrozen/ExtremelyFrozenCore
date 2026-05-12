@@ -1,7 +1,7 @@
 package com.extfro.extfrocore.utils.input;
 
 import com.extfro.extfrocore.ExtForCore;
-import com.extfro.extfrocore.common.network.KeyDownPayload;
+import com.extfro.extfrocore.common.network.packets.CPacketKeyDown;
 
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
@@ -30,7 +30,7 @@ import java.util.function.Supplier;
 
 public final class SyncedKeyMapping {
 
-    private static final Int2ObjectMap<SyncedKeyMapping> KEY_MAPPINGS = new Int2ObjectOpenHashMap<>();
+    private static final Int2ObjectMap<SyncedKeyMapping> KEYMAPPINGS = new Int2ObjectOpenHashMap<>();
     private static int syncIndex = 0;
 
     @OnlyIn(Dist.CLIENT)
@@ -43,7 +43,7 @@ public final class SyncedKeyMapping {
     @OnlyIn(Dist.CLIENT)
     private boolean isKeyDown;
 
-    private static final Int2BooleanMap UPDATING_KEY_DOWN = new Int2BooleanOpenHashMap();
+    private static final Int2BooleanMap updatingKeyDown = new Int2BooleanOpenHashMap();
 
     private final WeakHashMap<ServerPlayer, Boolean> serverMapping = new WeakHashMap<>();
     private final WeakHashMap<ServerPlayer, Set<IKeyPressedListener>> playerListeners = new WeakHashMap<>();
@@ -53,53 +53,89 @@ public final class SyncedKeyMapping {
         if (ExtForCore.isClientSide()) {
             this.keyMappingGetter = mcKeyMapping;
         }
+        // Does not need to be registered, will be registered by MC
         this.needsRegister = false;
-        KEY_MAPPINGS.put(syncIndex++, this);
+
+        KEYMAPPINGS.put(syncIndex++, this);
     }
 
     private SyncedKeyMapping(int keyCode) {
         if (ExtForCore.isClientSide() && !ExtForCore.isDataGen()) {
             this.keyCode = keyCode;
         }
+        // Does not need to be registered, is not a configurable key mapping
         this.needsRegister = false;
-        KEY_MAPPINGS.put(syncIndex++, this);
+
+        KEYMAPPINGS.put(syncIndex++, this);
     }
 
     private SyncedKeyMapping(String nameKey, IKeyConflictContext ctx, int keyCode, String category) {
         if (ExtForCore.isClientSide() && !ExtForCore.isDataGen()) {
-            this.keyMapping = createKeyMapping(nameKey, ctx, keyCode, category);
+            this.keyMapping = (KeyMapping) createKeyMapping(nameKey, ctx, keyCode, category);
         }
         this.needsRegister = true;
-        KEY_MAPPINGS.put(syncIndex++, this);
+        KEYMAPPINGS.put(syncIndex++, this);
     }
 
+    /**
+     * Create a SyncedKeyMapping wrapper around a Minecraft {@link KeyMapping}.
+     *
+     * @param mcKeyMapping Doubly-wrapped supplier around a keymapping from
+     *                     {@link net.minecraft.client.Options Minecraft.getInstance().options}.
+     */
     public static @NotNull SyncedKeyMapping createFromMC(@NotNull Supplier<Supplier<KeyMapping>> mcKeyMapping) {
         return new SyncedKeyMapping(mcKeyMapping);
     }
 
+    /**
+     * Create a new SyncedKeyMapping for a specified key code.
+     *
+     * @param keyCode The key code.
+     */
     public static @NotNull SyncedKeyMapping create(int keyCode) {
         return new SyncedKeyMapping(keyCode);
     }
 
+    /**
+     * Create a new SyncedKeyMapping with server held and pressed syncing to server.<br>
+     * Will automatically create a keymapping entry in the MC options page under the GregTechCEu category.
+     *
+     * @param nameKey Translation key for the keymapping name.
+     * @param ctx     Conflict context for the keymapping options category.
+     * @param keyCode The key code, from {@link InputConstants}.
+     */
     public static @NotNull SyncedKeyMapping createConfigurable(@NotNull String nameKey,
                                                                @NotNull IKeyConflictContext ctx,
                                                                int keyCode) {
         return createConfigurable(nameKey, ctx, keyCode, ExtForCore.MOD_NAME);
     }
 
+    /**
+     * Create a new SyncedKeyMapping with server held and pressed syncing to server.<br>
+     * Will automatically create a keymapping entry in the MC options page under the specified category.
+     *
+     * @param nameKey  Translation key for the keymapping name.
+     * @param ctx      Conflict context for the keymapping options category.
+     * @param keyCode  The key code, from {@link InputConstants}.
+     * @param category The category in the MC options page.
+     */
     public static @NotNull SyncedKeyMapping createConfigurable(@NotNull String nameKey,
                                                                @NotNull IKeyConflictContext ctx,
-                                                               int keyCode,
-                                                               @NotNull String category) {
+                                                               int keyCode, @NotNull String category) {
         return new SyncedKeyMapping(nameKey, ctx, keyCode, category);
     }
 
     @OnlyIn(Dist.CLIENT)
-    private @NotNull KeyMapping createKeyMapping(@NotNull String nameKey, @NotNull IKeyConflictContext ctx, int keyCode,
-                                                 @NotNull String category) {
+    private @NotNull Object createKeyMapping(@NotNull String nameKey, @NotNull IKeyConflictContext ctx, int keyCode,
+                                             String category) {
         return new KeyMapping(nameKey, ctx, InputConstants.Type.KEYSYM, keyCode, category);
     }
 
+    /**
+     * Check if the current client-side player is holding down this key.
+     *
+     * @return If the key is held. Always returns false on the server.
+     */
     public boolean isKeyDown() {
         if (ExtForCore.isClientSide()) {
             return isKeyDownClient();
@@ -107,14 +143,26 @@ public final class SyncedKeyMapping {
         return false;
     }
 
+    /**
+     * Check if a player is currently holding down this key.
+     *
+     * @param player The player to check.
+     *
+     * @return If the key is held.
+     */
     public boolean isKeyDown(@NotNull Player player) {
         if (player.level().isClientSide()) {
             return isKeyDownClient();
         }
         Boolean isKeyDown = serverMapping.get((ServerPlayer) player);
-        return isKeyDown != null && isKeyDown;
+        return isKeyDown != null ? isKeyDown : false;
     }
 
+    /**
+     * Is only safe to call on the client side
+     *
+     * @return if the key is down
+     */
     private boolean isKeyDownClient() {
         if (keyMapping != null) {
             return keyMapping.isDown();
@@ -123,6 +171,13 @@ public final class SyncedKeyMapping {
         return InputConstants.isKeyDown(id, keyCode);
     }
 
+    /**
+     * Registers an {@link IKeyPressedListener} to this key, which will have its {@link IKeyPressedListener#onKeyPressed
+     * onKeyPressed} method called when the provided player presses this key.
+     *
+     * @param player   The player who owns this listener.
+     * @param listener The handler for the key clicked event.
+     */
     public @NotNull SyncedKeyMapping registerPlayerListener(@NotNull ServerPlayer player,
                                                             @NotNull IKeyPressedListener listener) {
         Set<IKeyPressedListener> listenerSet = playerListeners
@@ -133,7 +188,7 @@ public final class SyncedKeyMapping {
 
     @ApiStatus.Internal
     public static void onRegisterKeyBinds(@NotNull RegisterKeyMappingsEvent event) {
-        for (SyncedKeyMapping value : KEY_MAPPINGS.values()) {
+        for (SyncedKeyMapping value : KEYMAPPINGS.values()) {
             if (value.keyMappingGetter != null) {
                 value.keyMapping = value.keyMappingGetter.get().get();
                 value.keyMappingGetter = null;
@@ -144,6 +199,12 @@ public final class SyncedKeyMapping {
         }
     }
 
+    /**
+     * Remove a player's listener on this keymapping for a provided player.
+     *
+     * @param player   The player who owns this listener.
+     * @param listener The handler for the key clicked event.
+     */
     public void removePlayerListener(@NotNull ServerPlayer player, @NotNull IKeyPressedListener listener) {
         Set<IKeyPressedListener> listenerSet = playerListeners.get(player);
         if (listenerSet != null) {
@@ -151,11 +212,22 @@ public final class SyncedKeyMapping {
         }
     }
 
+    /**
+     * Registers an {@link IKeyPressedListener} to this key, which will have its {@link IKeyPressedListener#onKeyPressed
+     * onKeyPressed} method called when any player presses this key.
+     *
+     * @param listener The handler for the key clicked event.
+     */
     public @NotNull SyncedKeyMapping registerGlobalListener(@NotNull IKeyPressedListener listener) {
         globalListeners.add(listener);
         return this;
     }
 
+    /**
+     * Remove a global listener on this keybinding.
+     *
+     * @param listener The handler for the key clicked event.
+     */
     public void removeGlobalListener(@NotNull IKeyPressedListener listener) {
         globalListeners.remove(listener);
     }
@@ -164,8 +236,8 @@ public final class SyncedKeyMapping {
     @SubscribeEvent
     @OnlyIn(Dist.CLIENT)
     public static void onClientTick(ClientTickEvent.Pre event) {
-        UPDATING_KEY_DOWN.clear();
-        for (var entry : KEY_MAPPINGS.int2ObjectEntrySet()) {
+        updatingKeyDown.clear();
+        for (var entry : KEYMAPPINGS.int2ObjectEntrySet()) {
             SyncedKeyMapping keyMapping = entry.getValue();
             boolean previousKeyDown = keyMapping.isKeyDown;
 
@@ -177,11 +249,11 @@ public final class SyncedKeyMapping {
             }
 
             if (previousKeyDown != keyMapping.isKeyDown) {
-                UPDATING_KEY_DOWN.put(entry.getIntKey(), keyMapping.isKeyDown);
+                updatingKeyDown.put(entry.getIntKey(), keyMapping.isKeyDown);
             }
         }
-        if (!UPDATING_KEY_DOWN.isEmpty()) {
-            PacketDistributor.sendToServer(new KeyDownPayload(UPDATING_KEY_DOWN));
+        if (!updatingKeyDown.isEmpty()) {
+            PacketDistributor.sendToServer(new CPacketKeyDown(updatingKeyDown));
         }
     }
 
@@ -189,12 +261,14 @@ public final class SyncedKeyMapping {
     public void serverActivate(boolean keyDown, ServerPlayer player) {
         this.serverMapping.put(player, keyDown);
 
+        // Player listeners
         Set<IKeyPressedListener> listenerSet = playerListeners.get(player);
         if (listenerSet != null && !listenerSet.isEmpty()) {
             for (IKeyPressedListener listener : listenerSet) {
                 listener.onKeyPressed(player, this, keyDown);
             }
         }
+        // Global listeners
         for (IKeyPressedListener listener : globalListeners) {
             listener.onKeyPressed(player, this, keyDown);
         }
@@ -202,6 +276,6 @@ public final class SyncedKeyMapping {
 
     @ApiStatus.Internal
     public static SyncedKeyMapping getFromSyncId(int id) {
-        return KEY_MAPPINGS.get(id);
+        return KEYMAPPINGS.get(id);
     }
 }

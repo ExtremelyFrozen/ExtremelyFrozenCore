@@ -1,53 +1,62 @@
 package com.extfro.extfrocore.api.recipe.lookup;
 
 import com.extfro.extfrocore.ExtForCore;
+import com.extfro.extfrocore.api.capability.recipe.FluidRecipeCapability;
 import com.extfro.extfrocore.api.capability.recipe.IO;
 import com.extfro.extfrocore.api.capability.recipe.IRecipeCapabilityHolder;
 import com.extfro.extfrocore.api.capability.recipe.RecipeCapability;
-import com.extfro.extfrocore.api.recipe.MachineRecipe;
+import com.extfro.extfrocore.api.recipe.GTRecipe;
 import com.extfro.extfrocore.api.recipe.RecipeHelper;
+import com.extfro.extfrocore.api.recipe.content.Content;
 import com.extfro.extfrocore.api.recipe.lookup.ingredient.AbstractMapIngredient;
 import com.extfro.extfrocore.api.recipe.lookup.ingredient.MapIngredientTypeManager;
+import com.extfro.extfrocore.common.data.GTRecipeTypes;
+import com.extfro.extfrocore.common.item.armor.PowerlessJetpack;
+import com.extfro.extfrocore.config.ConfigHolder;
 
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.neoforged.neoforge.fluids.crafting.SizedFluidIngredient;
 
 import com.mojang.datafixers.util.Either;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import org.jetbrains.annotations.ApiStatus;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-import org.jetbrains.annotations.VisibleForTesting;
+import org.jetbrains.annotations.*;
 
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Deque;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
+import java.util.*;
 import java.util.function.Predicate;
-import java.util.stream.Stream;
 
+/**
+ * Data structure storing recipes by their input ingredients
+ */
 public final class RecipeDB {
 
     private final @NotNull Branch rootBranch = new Branch();
 
+    /**
+     * Clear the DB
+     */
     @ApiStatus.Internal
     public void clear() {
         rootBranch.clear();
     }
 
-    public Stream<MachineRecipe> getRecipes() {
-        return rootBranch.getRecipes();
+    /**
+     * Find a GT Recipe
+     *
+     * @param holder the holder to search
+     * @return the recipe
+     */
+    public @Nullable GTRecipe find(@NotNull IRecipeCapabilityHolder holder) {
+        return find(holder, r -> RecipeHelper.matchRecipe(holder, r).isSuccess());
     }
 
-    public @Nullable MachineRecipe find(@NotNull IRecipeCapabilityHolder holder) {
-        return find(holder, recipe -> RecipeHelper.matchRecipe(holder, recipe).isSuccess());
-    }
-
-    public @Nullable MachineRecipe find(@NotNull IRecipeCapabilityHolder holder,
-                                        @NotNull Predicate<MachineRecipe> predicate) {
+    /**
+     * Find a GT Recipe
+     *
+     * @param holder    the holder to search
+     * @param predicate the predicate to determine recipe validity
+     * @return the recipe
+     */
+    public @Nullable GTRecipe find(@NotNull IRecipeCapabilityHolder holder, @NotNull Predicate<GTRecipe> predicate) {
         List<List<AbstractMapIngredient>> list = fromHolder(holder);
         if (list == null) {
             return null;
@@ -55,33 +64,52 @@ public final class RecipeDB {
         return find(list, predicate);
     }
 
+    /**
+     * Find a GT Recipe
+     *
+     * @param list      the ingredients to search
+     * @param predicate the predicate to determine recipe validity
+     * @return the recipe
+     */
     @ApiStatus.Internal
     @VisibleForTesting
-    public @Nullable MachineRecipe find(@NotNull List<List<AbstractMapIngredient>> list,
-                                        @NotNull Predicate<MachineRecipe> predicate) {
-        RecipeIterator iter = new RecipeIterator(this, list, predicate);
+    public @Nullable GTRecipe find(@NotNull List<List<AbstractMapIngredient>> list,
+                                   @NotNull Predicate<GTRecipe> predicate) {
+        var iter = new RecipeIterator(this, list, predicate);
         return iter.hasNext() ? iter.next() : null;
     }
 
-    public @Nullable MachineRecipe find(@NotNull Map<RecipeCapability<?>, List<Object>> inputs,
-                                        @NotNull Predicate<MachineRecipe> predicate) {
+    /**
+     * Find a GT Recipe
+     *
+     * @param inputs    the input capabilities and their associated contents to search with
+     * @param predicate the predicate to determine recipe validity
+     * @return the recipe
+     */
+    public @Nullable GTRecipe find(@NotNull Map<RecipeCapability<?>, List<Object>> inputs,
+                                   @NotNull Predicate<GTRecipe> predicate) {
         List<List<AbstractMapIngredient>> list = new ArrayList<>();
-        inputs.forEach((capability, contents) -> {
-            if (!capability.isRecipeSearchFilter()) {
+        inputs.forEach((cap, content) -> {
+            if (!cap.isRecipeSearchFilter()) {
                 return;
             }
-            for (Object ingredient : capability.compressIngredients(contents)) {
-                list.add(MapIngredientTypeManager.getFrom(ingredient, capability));
+            var compressed = cap.compressIngredients(content);
+            for (var ingredient : compressed) {
+                list.add(MapIngredientTypeManager.getFrom(ingredient, cap));
             }
         });
-        if (list.isEmpty()) {
-            return null;
-        }
         return find(list, predicate);
     }
 
-    public @Nullable RecipeIterator iterator(@NotNull IRecipeCapabilityHolder holder,
-                                             @NotNull Predicate<MachineRecipe> predicate) {
+    /**
+     * Create an iterator for a search space
+     *
+     * @param holder    the holder to search
+     * @param predicate the predicate to determine recipe validity
+     * @return an iterator
+     */
+    public @Nullable RecipeDB.RecipeIterator iterator(@NotNull IRecipeCapabilityHolder holder,
+                                                      @NotNull Predicate<GTRecipe> predicate) {
         List<List<AbstractMapIngredient>> list = fromHolder(holder);
         if (list == null) {
             return null;
@@ -89,33 +117,67 @@ public final class RecipeDB {
         return new RecipeIterator(this, list, predicate);
     }
 
+    /**
+     * Converts a Recipe Capability holder's handlers into a list of {@link AbstractMapIngredient}
+     *
+     * @param holder the capability holder to query handlers from
+     * @return a list of all the AbstractMapIngredients in the handlers
+     */
     private @Nullable List<List<AbstractMapIngredient>> fromHolder(@NotNull IRecipeCapabilityHolder holder) {
-        Map<RecipeCapability<?>, List<com.extfro.extfrocore.api.capability.recipe.IRecipeHandler<?>>> handlerMap = holder.getCapabilitiesFlat().getOrDefault(IO.IN, Collections.emptyMap());
+        var handlerMap = holder.getCapabilitiesFlat().getOrDefault(IO.IN, Collections.emptyMap());
         if (handlerMap.isEmpty()) {
             return null;
         }
 
+        // the initial capacity is a "feel-good" value because it's faster to just grow the list
+        // than to calculate an accurate value.
         List<List<AbstractMapIngredient>> list = new ObjectArrayList<>(handlerMap.size() * 8);
-        handlerMap.forEach((capability, handlers) -> {
-            if (!capability.isRecipeSearchFilter()) {
+        handlerMap.forEach((cap, handlers) -> {
+            if (!cap.isRecipeSearchFilter()) {
                 return;
             }
             for (var handler : handlers) {
-                for (Object ingredient : capability.compressIngredients(handler.getContents())) {
-                    list.add(MapIngredientTypeManager.getFrom(ingredient, capability));
+                var compressed = cap.compressIngredients(handler.getContents());
+                for (var ingredient : compressed) {
+                    list.add(MapIngredientTypeManager.getFrom(ingredient, cap));
                 }
             }
         });
-        return list.isEmpty() ? null : list;
+        if (list.isEmpty()) {
+            return null;
+        }
+        return list;
     }
 
-    private static @NotNull Map<AbstractMapIngredient, Either<MachineRecipe, Branch>> nodesForIngredient(
-                                                                                                         @NotNull AbstractMapIngredient ingredient,
-                                                                                                         @NotNull Branch branch) {
-        return ingredient.isSpecialIngredient() ? branch.getSpecialNodes() : branch.getNodes();
+    /**
+     * Determine the correct root nodes for an ingredient.
+     *
+     * @param ingredient the ingredient to check
+     * @param branch     the branch containing the nodes
+     * @return the nodes to search for the ingredient
+     */
+    private static @NotNull Map<AbstractMapIngredient, Either<GTRecipe, Branch>> nodesForIngredient(@NotNull AbstractMapIngredient ingredient,
+                                                                                                    @NotNull Branch branch) {
+        if (ingredient.isSpecialIngredient()) {
+            return branch.getSpecialNodes();
+        }
+        return branch.getNodes();
     }
 
-    boolean add(@NotNull MachineRecipe recipe, @NotNull List<List<AbstractMapIngredient>> ingredients) {
+    /**
+     * Add a recipe.
+     *
+     * @param recipe      the recipe to add
+     * @param ingredients the ingredients in optimal order, comprising the recipe
+     * @return if successful
+     */
+    boolean add(@NotNull GTRecipe recipe, @NotNull List<@Unmodifiable List<AbstractMapIngredient>> ingredients) {
+        // Add combustion fuels to the Powerless Jetpack
+        if (recipe.getType() == GTRecipeTypes.COMBUSTION_GENERATOR_FUELS) {
+            Content content = recipe.getInputContents(FluidRecipeCapability.CAP).getFirst();
+            SizedFluidIngredient fluid = FluidRecipeCapability.CAP.of(content.content);
+            PowerlessJetpack.FUELS.putIfAbsent(fluid, recipe.duration);
+        }
         if (addRecursive(recipe, ingredients, rootBranch, 0)) {
             recipe.recipeCategory.addRecipe(recipe);
             return true;
@@ -123,42 +185,79 @@ public final class RecipeDB {
         return false;
     }
 
-    private boolean addRecursive(@NotNull MachineRecipe recipe,
-                                 @NotNull List<List<AbstractMapIngredient>> ingredients,
+    /**
+     * Recursively adds a recipe.
+     *
+     * @param recipe      the recipe to add
+     * @param ingredients the ingredients to find the recipe with
+     * @param branch      the branch to add ingredients to
+     * @param index       the index of the ingredient list to check
+     * @return if successful
+     */
+    private boolean addRecursive(@NotNull GTRecipe recipe,
+                                 @NotNull List<@Unmodifiable List<AbstractMapIngredient>> ingredients,
                                  @NotNull Branch branch, int index) {
         if (index >= ingredients.size()) {
             return true;
         }
         boolean lastIngredient = index == ingredients.size() - 1;
-        List<AbstractMapIngredient> current = ingredients.get(index);
+        var current = ingredients.get(index);
         for (AbstractMapIngredient ingredient : current) {
-            Map<AbstractMapIngredient, Either<MachineRecipe, Branch>> nodes = nodesForIngredient(ingredient, branch);
-            Either<MachineRecipe, Branch> either = nodes.compute(ingredient, (key, value) -> {
+            var nodes = nodesForIngredient(ingredient, branch);
+            var either = nodes.compute(ingredient, (k, v) -> {
                 if (lastIngredient) {
-                    if (value == null) {
+                    // last ingredient
+                    if (v == null) {
+                        // no existing leaf, add the recipe
                         return Either.left(recipe);
                     }
-                    if (value.left().isEmpty() || !value.left().get().equals(recipe)) {
-                        warnConflict(recipe, value);
+                    if (v.left().isEmpty() || !v.left().get().equals(recipe)) {
+                        // empty recipe or different recipe exists already, conflict
+                        if (ConfigHolder.INSTANCE.dev.debug || ExtForCore.isDev()) {
+                            ExtForCore.LOGGER.warn(
+                                    "Recipe duplicate or conflict found in GTRecipeType {} and was not added. See next lines for details",
+                                    BuiltInRegistries.RECIPE_TYPE.getKey(recipe.getType()));
+                            if (v.left().isPresent()) {
+                                ExtForCore.LOGGER.warn("Attempted to add GTRecipe: {}, which conflicts with {}",
+                                        recipe.getId(), v.left().get().getId());
+                            } else {
+                                ExtForCore.LOGGER.warn("Attempted to add GTRecipe: {}, without exact duplicate/conflict",
+                                        recipe.getId());
+                            }
+                        }
                     }
-                    return value;
+                    // maintain existing recipe, even on conflicts
+                    // if there was no conflict but a recipe was still present, it was added on an earlier recurse,
+                    // and this will carry the result further back in the call stack
+                    return v;
                 }
-                return value == null ? Either.right(new Branch()) : value;
+                // if there is an existing ingredient, use it, otherwise create a new branch for the ingredient
+                return Objects.requireNonNullElseGet(v, () -> Either.right(new Branch()));
             });
-
             if (either.left().isPresent()) {
                 if (either.left().get() == recipe) {
+                    // recipe was successfully added, continue to add the other paths
                     continue;
                 }
+                // there was already a recipe here, fail on the conflict
                 return false;
             }
             boolean added = either.right()
-                    .filter(child -> addRecursive(recipe, ingredients, child, index + 1))
+                    .filter(b -> addRecursive(recipe, ingredients, b, index + 1))
                     .isPresent();
             if (!added) {
-                Either<MachineRecipe, Branch> child = nodes.get(ingredient);
-                if (lastIngredient || child != null && child.right().isPresent() && child.right().get().isEmptyBranch()) {
+                if (lastIngredient) {
+                    // remove the recipe
                     nodes.remove(ingredient);
+                } else {
+                    var child = nodes.get(ingredient);
+                    if (child != null && child.right().isPresent()) {
+                        var childBranch = child.right().get();
+                        if (childBranch.isEmptyBranch()) {
+                            // remove the branch if it was the only thing in it
+                            nodes.remove(ingredient);
+                        }
+                    }
                 }
                 return false;
             }
@@ -166,76 +265,80 @@ public final class RecipeDB {
         return true;
     }
 
-    private static void warnConflict(@NotNull MachineRecipe recipe, Either<MachineRecipe, Branch> existing) {
-        if (!ExtForCore.isDev()) {
-            return;
-        }
-        ExtForCore.LOGGER.warn("Recipe duplicate or conflict found in recipe type {} and was not added",
-                BuiltInRegistries.RECIPE_TYPE.getKey(recipe.getType()));
-        existing.left().ifPresent(conflict -> ExtForCore.LOGGER.warn("Attempted to add recipe {}, which conflicts with {}",
-                recipe.getRecipeLocation(), conflict.getRecipeLocation()));
-    }
+    private static class SearchFrame {
 
-    private static final class SearchFrame {
+        int index;           // ingredient slot we’re exploring
+        int ingredientIndex; // position within ingredients[index]
+        Branch branch;       // branch in the recipe DB
 
-        int index;
-        int ingredientIndex;
-        Branch branch;
-
-        private SearchFrame(int index, Branch branch) {
+        public SearchFrame(int index, Branch branch) {
             this.index = index;
+            this.ingredientIndex = 0;
             this.branch = branch;
         }
     }
 
-    public static class RecipeIterator implements Iterator<MachineRecipe> {
+    public static class RecipeIterator implements Iterator<GTRecipe> {
 
         private final @NotNull RecipeDB db;
         private final @NotNull List<List<AbstractMapIngredient>> ingredients;
-        private final @NotNull Predicate<MachineRecipe> predicate;
+        private final @NotNull Predicate<GTRecipe> predicate;
+
         private final Deque<SearchFrame> stack = new ArrayDeque<>();
-        private @Nullable MachineRecipe nextCached;
-        private boolean hasCached;
+
+        private @Nullable GTRecipe nextCached = null;
+        private boolean hasCached = false;
 
         @VisibleForTesting
         public RecipeIterator(@NotNull RecipeDB db,
                               @NotNull List<List<AbstractMapIngredient>> ingredients,
-                              @NotNull Predicate<MachineRecipe> predicate) {
+                              @NotNull Predicate<GTRecipe> predicate) {
             this.db = db;
             this.ingredients = ingredients;
             this.predicate = predicate;
-            reset();
+
+            for (int i = ingredients.size() - 1; i >= 0; i--) {
+                stack.push(new SearchFrame(i, db.rootBranch));
+            }
         }
 
-        private @Nullable MachineRecipe getNext() {
+        private @Nullable GTRecipe getNext() {
             while (!stack.isEmpty()) {
+                // We stay on one frame until all ingredients have been checked
                 SearchFrame frame = stack.peek();
+
                 if (frame.ingredientIndex >= ingredients.get(frame.index).size()) {
                     stack.pop();
                     continue;
                 }
 
                 List<AbstractMapIngredient> ingredientList = ingredients.get(frame.index);
-                AbstractMapIngredient ingredient = ingredientList.get(frame.ingredientIndex++);
-                Either<MachineRecipe, Branch> result = nodesForIngredient(ingredient, frame.branch).get(ingredient);
+                AbstractMapIngredient ingredient = ingredientList.get(frame.ingredientIndex);
+                // Increment candidate pos for next iteration
+                frame.ingredientIndex++;
+                var nodes = nodesForIngredient(ingredient, frame.branch);
+                var result = nodes.get(ingredient);
                 if (result == null) {
                     continue;
                 }
 
+                // Option 1: It's a recipe
                 if (result.left().isPresent()) {
-                    MachineRecipe recipe = result.left().get();
+                    var recipe = result.left().get();
                     if (predicate.test(recipe)) {
                         return recipe;
                     }
                 }
 
-                result.ifRight(branch -> {
-                    for (int index = ingredients.size() - 1; index >= 0; index--) {
-                        stack.push(new SearchFrame(index, branch));
+                // Option 2: It's a branch, dive deeper
+                result.ifRight(b -> {
+                    for (int j = ingredients.size() - 1; j >= 0; j--) {
+                        stack.push(new SearchFrame(j, b));
                     }
                 });
             }
-            return null;
+
+            return null; // no more recipes
         }
 
         @Override
@@ -248,24 +351,21 @@ public final class RecipeDB {
         }
 
         @Override
-        public MachineRecipe next() {
-            if (!hasCached) {
-                nextCached = getNext();
-            }
+        public GTRecipe next() {
+            if (!hasCached) nextCached = getNext();
             hasCached = false;
-            if (nextCached == null) {
-                throw new NoSuchElementException();
-            }
+            if (nextCached == null) throw new NoSuchElementException();
             return nextCached;
         }
 
+        /**
+         * Reset the iterator
+         */
         public void reset() {
             stack.clear();
-            for (int index = ingredients.size() - 1; index >= 0; index--) {
-                stack.push(new SearchFrame(index, db.rootBranch));
+            for (int i = ingredients.size() - 1; i >= 0; i--) {
+                stack.push(new SearchFrame(i, db.rootBranch));
             }
-            hasCached = false;
-            nextCached = null;
         }
     }
 }

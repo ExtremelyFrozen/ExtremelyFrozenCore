@@ -2,24 +2,17 @@ package com.extfro.extfrocore.api.cover;
 
 import com.extfro.extfrocore.ExtForCore;
 import com.extfro.extfrocore.api.capability.ICoverable;
-import com.extfro.extfrocore.api.item.CoverItem;
 import com.extfro.extfrocore.client.renderer.cover.ICoverRenderer;
 
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.item.Item;
 
 import lombok.Getter;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
 public final class CoverDefinition {
-
-    private static final Map<net.minecraft.world.item.Item, CoverDefinition> ITEM_LOOKUP = new ConcurrentHashMap<>();
 
     public interface CoverBehaviourProvider {
 
@@ -36,13 +29,11 @@ public final class CoverDefinition {
     private final CoverBehaviourProvider behaviorCreator;
     @Getter
     private final @Nullable Supplier<ICoverRenderer> coverRenderer;
-    @Getter
-    private @Nullable Supplier<? extends CoverItem> item;
 
     public CoverDefinition(ResourceLocation id, CoverBehaviourProvider behaviorCreator,
                            Supplier<Supplier<ICoverRenderer>> coverRenderer) {
-        this.id = id;
         this.behaviorCreator = behaviorCreator;
+        this.id = id;
         if (ExtForCore.isClientSide()) {
             this.coverRenderer = ClientHelper.initRenderer(coverRenderer);
         } else {
@@ -52,23 +43,6 @@ public final class CoverDefinition {
 
     public CoverBehavior createCoverBehavior(ICoverable coverable, Direction side) {
         return behaviorCreator.create(this, coverable, side);
-    }
-
-    public void bindItem(Item item) {
-        ITEM_LOOKUP.put(item, this);
-    }
-
-    public void bindItem(Supplier<? extends Item> item) {
-        bindItem(item.get());
-    }
-
-    public void setItem(Supplier<? extends CoverItem> item) {
-        this.item = item;
-        bindItem(item);
-    }
-
-    public static Optional<CoverDefinition> getForItem(net.minecraft.world.item.ItemStack stack) {
-        return Optional.ofNullable(ITEM_LOOKUP.get(stack.getItem()));
     }
 
     private static class ClientHelper {

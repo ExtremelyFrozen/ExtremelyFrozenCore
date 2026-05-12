@@ -2,21 +2,20 @@ package com.extfro.extfrocore.api.capability;
 
 import com.extfro.extfrocore.ExtForCore;
 import com.extfro.extfrocore.api.blockentity.ICopyable;
+import com.extfro.extfrocore.api.blockentity.IGregtechBlockEntity;
 import com.extfro.extfrocore.api.blockentity.ITickSubscription;
 import com.extfro.extfrocore.api.cover.CoverBehavior;
 import com.extfro.extfrocore.api.cover.CoverDefinition;
-import com.extfro.extfrocore.api.machine.MetaMachine;
+import com.extfro.extfrocore.api.item.tool.ToolHelper;
 import com.extfro.extfrocore.api.machine.TickableSubscription;
-import com.extfro.extfrocore.api.registry.EFRegistries;
+import com.extfro.extfrocore.api.registry.GTRegistries;
 import com.extfro.extfrocore.api.sync_system.ISyncManaged;
-import com.extfro.extfrocore.api.sync_system.SyncTagMap;
 import com.extfro.extfrocore.api.transfer.fluid.IFluidHandlerModifiable;
+import com.extfro.extfrocore.utils.GTUtil;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.NbtOps;
-import net.minecraft.nbt.StringTag;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
@@ -36,18 +35,12 @@ import net.neoforged.neoforge.items.IItemHandlerModifiable;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public interface ICoverable extends ITickSubscription, ISyncManaged, ICopyable {
 
-    Direction[] DIRECTIONS = Direction.values();
-
-    MetaMachine getHolder();
+    IGregtechBlockEntity getHolder();
 
     default Level getLevel() {
         return getHolder().getLevel();
@@ -74,14 +67,13 @@ public interface ICoverable extends ITickSubscription, ISyncManaged, ICopyable {
     }
 
     default void scheduleRenderUpdate() {
-        getHolder().scheduleRenderUpdate();
+        getHolder().notifyBlockUpdate();
     }
 
     default void scheduleNeighborShapeUpdate() {
         getHolder().scheduleNeighborShapeUpdate();
     }
 
-    @Override
     default void markAsChanged() {
         getHolder().markAsChanged();
     }
@@ -105,12 +97,19 @@ public interface ICoverable extends ITickSubscription, ISyncManaged, ICopyable {
 
     boolean shouldRenderBackSide();
 
-    @Nullable
     IItemHandlerModifiable getItemHandlerCap(@Nullable Direction side, boolean useCoverCapability);
 
-    @Nullable
     IFluidHandlerModifiable getFluidHandlerCap(@Nullable Direction side, boolean useCoverCapability);
 
+    /**
+     * Internal method, do not call yourself.
+     * <br>
+     * Use {@link ICoverable#removeCover(boolean, Direction, Player)} and
+     * {@link ICoverable#placeCoverOnSide(Direction, ItemStack, CoverDefinition, ServerPlayer)} instead
+     *
+     * @param coverBehavior the cover to set, or {@code null} to remove an existing cover
+     * @param side          the side to set the cover for
+     */
     @ApiStatus.Internal
     void setCoverAtSide(@Nullable CoverBehavior coverBehavior, Direction side);
 
@@ -127,10 +126,12 @@ public interface ICoverable extends ITickSubscription, ISyncManaged, ICopyable {
             removeCover(side, player);
         }
         coverBehavior.onAttached(itemStack, player);
-        coverBehavior.onLoad();
         setCoverAtSide(coverBehavior, side);
+        coverBehavior.onLoad();
         notifyBlockUpdate();
         scheduleNeighborShapeUpdate();
+        // TODO achievement
+        // AdvancementTriggers.FIRST_COVER_PLACE.trigger((PlayerMP) player);
         return true;
     }
 
@@ -146,18 +147,22 @@ public interface ICoverable extends ITickSubscription, ISyncManaged, ICopyable {
         coverBehavior.onRemoved();
         setCoverAtSide(null, side);
         for (ItemStack dropStack : drops) {
-            if (player != null && player.getInventory().add(dropStack)) {
+            if (player != null && player.getInventory().add(dropStack))
                 continue;
-            }
+
             Block.popResource(getLevel(), getBlockPos(), dropStack);
+
         }
         notifyBlockUpdate();
         scheduleNeighborShapeUpdate();
         return true;
     }
 
+    /**
+     * Drop all attached covers on the ground
+     */
     default void dropAllCovers() {
-        for (Direction side : DIRECTIONS) {
+        for (Direction side : GTUtil.DIRECTIONS) {
             removeCover(side, null);
         }
     }
@@ -167,7 +172,8 @@ public interface ICoverable extends ITickSubscription, ISyncManaged, ICopyable {
     }
 
     default List<CoverBehavior> getCovers() {
-        return Arrays.stream(DIRECTIONS).map(this::getCoverAtSide).filter(Objects::nonNull).toList();
+        return Arrays.stream(GTUtil.DIRECTIONS).map(this::getCoverAtSide).filter(Objects::nonNull)
+                .collect(Collectors.toList());
     }
 
     default void onLoad() {
@@ -189,7 +195,7 @@ public interface ICoverable extends ITickSubscription, ISyncManaged, ICopyable {
     }
 
     default boolean hasAnyCover() {
-        for (Direction facing : DIRECTIONS) {
+        for (Direction facing : GTUtil.DIRECTIONS) {
             if (getCoverAtSide(facing) != null) {
                 return true;
             }
@@ -209,9 +215,10 @@ public interface ICoverable extends ITickSubscription, ISyncManaged, ICopyable {
         double plateThickness = getCoverPlateThickness();
         List<VoxelShape> shapes = new ArrayList<>();
         if (plateThickness > 0.0) {
-            for (Direction side : DIRECTIONS) {
+            for (Direction side : GTUtil.DIRECTIONS) {
                 if (getCoverAtSide(side) != null) {
-                    shapes.add(getCoverPlateBox(side, plateThickness));
+                    var coverBox = getCoverPlateBox(side, plateThickness);
+                    shapes.add(coverBox);
                 }
             }
         }
@@ -222,12 +229,15 @@ public interface ICoverable extends ITickSubscription, ISyncManaged, ICopyable {
         if (side == null) {
             return false;
         }
+
         if (plateThickness > 0.0) {
-            VoxelShape coverPlateBox = getCoverPlateBox(side, plateThickness);
-            for (AABB aabb : coverPlateBox.toAabbs()) {
+            var coverPlateBox = getCoverPlateBox(side, plateThickness);
+            var aabbs = coverPlateBox.toAabbs();
+            for (AABB aabb : aabbs) {
                 if (Shapes.collide(side.getAxis(), aabb, collisionBox, plateThickness) < plateThickness) {
                     return true;
                 }
+
             }
         }
         return false;
@@ -235,7 +245,7 @@ public interface ICoverable extends ITickSubscription, ISyncManaged, ICopyable {
 
     @Nullable
     static Direction rayTraceCoverableSide(ICoverable coverable, Player player) {
-        HitResult rayTrace = player.pick(player.blockInteractionRange(), 0, false);
+        HitResult rayTrace = ToolHelper.getPlayerDefaultRaytrace(player);
         if (rayTrace.getType() != HitResult.Type.BLOCK) {
             return null;
         }
@@ -243,18 +253,25 @@ public interface ICoverable extends ITickSubscription, ISyncManaged, ICopyable {
     }
 
     default boolean hasDynamicCovers() {
-        for (Direction face : DIRECTIONS) {
-            CoverBehavior cover = getCoverAtSide(face);
-            if (cover != null && cover.getDynamicRenderer().get() != null) {
-                return true;
-            }
+        for (Direction face : GTUtil.DIRECTIONS) {
+            CoverBehavior cover = this.getCoverAtSide(face);
+            if (cover != null && cover.getDynamicRenderer().get() != null) return true;
         }
         return false;
     }
 
     @Nullable
     static Direction traceCoverSide(@Nullable BlockHitResult result) {
-        return result == null ? null : result.getDirection();
+        return determineGridSideHit(result);
+    }
+
+    @Nullable
+    static Direction determineGridSideHit(@Nullable BlockHitResult result) {
+        if (result == null) return null;
+        return GTUtil.determineWrenchingSide(result.getDirection(),
+                (float) (result.getLocation().x - result.getBlockPos().getX()),
+                (float) (result.getLocation().y - result.getBlockPos().getY()),
+                (float) (result.getLocation().z - result.getBlockPos().getZ()));
     }
 
     static VoxelShape getCoverPlateBox(Direction side, double plateThickness) {
@@ -269,9 +286,9 @@ public interface ICoverable extends ITickSubscription, ISyncManaged, ICopyable {
     }
 
     static boolean canPlaceCover(CoverDefinition coverDef, ICoverable coverable) {
-        for (Direction facing : DIRECTIONS) {
+        for (Direction facing : GTUtil.DIRECTIONS) {
             if (coverable.canPlaceCoverOnSide(coverDef, facing)) {
-                CoverBehavior cover = coverDef.createCoverBehavior(coverable, facing);
+                var cover = coverDef.createCoverBehavior(coverable, facing);
                 if (cover.canAttach()) {
                     return true;
                 }
@@ -283,83 +300,51 @@ public interface ICoverable extends ITickSubscription, ISyncManaged, ICopyable {
     @Nullable
     default BlockState getBlockAppearance(BlockState state, BlockAndTintGetter level, BlockPos pos, Direction side,
                                           BlockState sourceState, BlockPos sourcePos) {
-        CoverBehavior cover = getCoverAtSide(side);
-        return cover == null ? null : cover.getAppearance(sourceState, sourcePos);
+        if (hasCover(side)) {
+            return getCoverAtSide(side).getAppearance(sourceState, sourcePos);
+        }
+        return null;
     }
 
-    private SyncTagMap createCoverConfigTag(@Nullable CoverBehavior cover, HolderLookup.Provider registries) {
-        SyncTagMap tag = SyncTagMap.empty();
-        if (cover == null) {
-            return tag;
-        }
-        ResourceLocation id = EFRegistries.COVERS.getKey(cover.coverDefinition);
-        if (id == null) {
-            return tag;
-        }
-        tag.put("id", StringTag.valueOf(id.toString()));
-        ItemStack.CODEC.encodeStart(registries.createSerializationContext(NbtOps.INSTANCE), cover.getAttachItem())
-                .result()
-                .ifPresent(item -> tag.put("item", item));
-        SyncTagMap data = cover.getSyncDataHolder().serializeToSaveData(registries);
-        data.merge(cover.copyConfig(SyncTagMap.empty()));
-        tag.put("data", data.toTag());
+    private CompoundTag createCoverConfigTag(@Nullable CoverBehavior cover) {
+        if (cover == null) return new CompoundTag();
+        var tag = new CompoundTag();
+        tag.putString("id", GTRegistries.COVERS.getKey(cover.coverDefinition).toString());
+        tag.put("item", cover.getAttachItem().save(getLevel().registryAccess()));
+        tag.put("data", cover.copyConfig(new CompoundTag()));
         return tag;
     }
 
-    private void applyCoverConfigTag(ServerPlayer player, Direction dir, SyncTagMap tag,
-                                     HolderLookup.Provider registries) {
-        if (tag.isEmpty()) {
-            return;
-        }
-        StringTag idTag = tag.get("id") instanceof StringTag stringTag ? stringTag : null;
-        if (idTag == null) {
-            return;
-        }
-        ResourceLocation id = ResourceLocation.tryParse(idTag.getAsString());
-        if (id == null) {
-            return;
-        }
-        CoverDefinition def = EFRegistries.COVERS.get(id);
-        if (def == null) {
-            return;
-        }
-        ItemStack stack = ItemStack.EMPTY;
-        if (tag.get("item") != null) {
-            stack = ItemStack.CODEC.parse(registries.createSerializationContext(NbtOps.INSTANCE), tag.get("item"))
-                    .result()
-                    .orElse(ItemStack.EMPTY);
-        }
+    private void applyCoverConfigTag(ServerPlayer player, Direction dir, CompoundTag tag) {
+        if (tag.isEmpty()) return;
+        var def = GTRegistries.COVERS.get(ResourceLocation.parse(tag.getString("id")));
+        ItemStack stack = ItemStack.parseOptional(getLevel().registryAccess(), tag.getCompound("item"));
+        if (def == null) return;
+
         placeCoverOnSide(dir, stack, def, player);
 
         CoverBehavior placedCover = getCoverAtSide(dir);
-        SyncTagMap data = tag.get("data") == null ? null : SyncTagMap.tryRead(tag.get("data"));
-        if (placedCover != null && data != null && !data.isEmpty()) {
-            placedCover.getSyncDataHolder().deserializeData(registries, data, false);
-            placedCover.pasteConfig(player, data);
-        }
+        if (placedCover != null && tag.contains("data") && !tag.getCompound("data").isEmpty())
+            placedCover.pasteConfig(player, tag.getCompound("data"));
     }
 
     @Override
-    default SyncTagMap copyConfig(SyncTagMap tag) {
-        HolderLookup.Provider registries = getLevel().registryAccess();
-        for (Direction dir : DIRECTIONS) {
-            tag.put(dir.getName(), createCoverConfigTag(getCoverAtSide(dir), registries).toTag());
+    default CompoundTag copyConfig(CompoundTag tag) {
+        for (Direction dir : GTUtil.DIRECTIONS) {
+            tag.put(dir.getName(), hasCover(dir) ? createCoverConfigTag(getCoverAtSide(dir)) : new CompoundTag());
         }
+
         return tag;
     }
 
     @Override
-    default void pasteConfig(ServerPlayer player, SyncTagMap tag) {
-        for (Direction side : DIRECTIONS) {
+    default void pasteConfig(ServerPlayer player, CompoundTag tag) {
+        for (Direction side : GTUtil.DIRECTIONS) {
             removeCover(side, player);
         }
 
-        HolderLookup.Provider registries = getLevel().registryAccess();
-        for (Direction dir : DIRECTIONS) {
-            SyncTagMap sideTag = tag.get(dir.getName()) == null ? null : SyncTagMap.tryRead(tag.get(dir.getName()));
-            if (sideTag != null) {
-                applyCoverConfigTag(player, dir, sideTag, registries);
-            }
+        for (Direction dir : GTUtil.DIRECTIONS) {
+            applyCoverConfigTag(player, dir, tag.getCompound(dir.getName()));
         }
     }
 
@@ -368,20 +353,26 @@ public interface ICoverable extends ITickSubscription, ISyncManaged, ICopyable {
         Map<Item, Integer> allDrops = new HashMap<>();
         List<ItemStack> rawDrops = new ArrayList<>();
 
-        for (Direction side : DIRECTIONS) {
-            CoverBehavior cover = getCoverAtSide(side);
-            if (cover != null) {
-                rawDrops.add(cover.getAttachItem());
-                rawDrops.addAll(cover.getAdditionalDrops());
+        for (Direction side : GTUtil.DIRECTIONS) {
+            var cover = getCoverAtSide(side);
+            if (cover != null) rawDrops.add(cover.getAttachItem());
+        }
+
+        for (Direction side : GTUtil.DIRECTIONS) {
+            var cover = getCoverAtSide(side);
+            if (cover != null) rawDrops.addAll(cover.getAdditionalDrops());
+        }
+
+        for (var drop : rawDrops) {
+            if (allDrops.containsKey(drop.getItem())) {
+                allDrops.put(drop.getItem(), allDrops.get(drop.getItem()) + drop.getCount());
+            } else {
+                allDrops.put(drop.getItem(), drop.getCount());
             }
         }
 
-        for (ItemStack drop : rawDrops) {
-            allDrops.merge(drop.getItem(), drop.getCount(), Integer::sum);
-        }
-
         List<ItemStack> mergedStacks = new ArrayList<>();
-        allDrops.forEach((item, count) -> mergedStacks.add(new ItemStack(item, count)));
+        allDrops.forEach((k, v) -> mergedStacks.add(new ItemStack(k, v)));
         return mergedStacks;
     }
 }

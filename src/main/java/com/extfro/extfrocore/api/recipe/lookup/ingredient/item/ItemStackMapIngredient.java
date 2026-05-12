@@ -14,7 +14,7 @@ import java.util.List;
 public class ItemStackMapIngredient extends AbstractMapIngredient {
 
     protected ItemStack stack;
-    protected Ingredient ingredient;
+    protected Ingredient ingredient = null;
 
     public ItemStackMapIngredient(ItemStack stack) {
         this.stack = stack;
@@ -42,16 +42,21 @@ public class ItemStackMapIngredient extends AbstractMapIngredient {
     }
 
     @Override
-    public boolean equals(Object obj) {
-        if (super.equals(obj)) {
-            ItemStackMapIngredient other = (ItemStackMapIngredient) obj;
-            if (!ItemStack.isSameItem(stack, other.stack)) {
+    public boolean equals(Object o) {
+        if (super.equals(o)) {
+            ItemStackMapIngredient other = (ItemStackMapIngredient) o;
+            if (!ItemStack.isSameItem(this.stack, other.stack)) {
                 return false;
             }
-            if (ingredient != null) {
-                return other.ingredient != null ? ingredient.equals(other.ingredient) : ingredient.test(other.stack);
+            if (this.ingredient != null) {
+                if (other.ingredient != null) {
+                    return this.ingredient.equals(other.ingredient);
+                } else {
+                    return this.ingredient.test(other.stack);
+                }
+            } else if (other.ingredient != null) {
+                return other.ingredient.test(this.stack);
             }
-            return other.ingredient == null || other.ingredient.test(stack);
         }
         return false;
     }
@@ -63,6 +68,6 @@ public class ItemStackMapIngredient extends AbstractMapIngredient {
 
     @Override
     public String toString() {
-        return "ItemStackMapIngredient{item=" + stack + "}";
+        return "ItemStackMapIngredient{" + "item=" + stack + "}";
     }
 }

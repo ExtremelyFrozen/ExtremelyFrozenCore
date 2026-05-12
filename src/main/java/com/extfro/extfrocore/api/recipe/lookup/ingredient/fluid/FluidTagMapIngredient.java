@@ -26,12 +26,13 @@ public class FluidTagMapIngredient extends AbstractMapIngredient {
     public static List<AbstractMapIngredient> from(@NotNull FluidIngredient ingredient) {
         if (ingredient instanceof TagFluidIngredient tagIngredient) {
             return Collections.singletonList(new FluidTagMapIngredient(tagIngredient.tag()));
+        } else {
+            return Collections.emptyList();
         }
-        return Collections.emptyList();
     }
 
-    @NotNull
     @SuppressWarnings("deprecation")
+    @NotNull
     public static List<AbstractMapIngredient> from(@NotNull FluidStack stack) {
         List<AbstractMapIngredient> ingredients = new ObjectArrayList<>();
         stack.getFluid().builtInRegistryHolder().tags()
@@ -46,11 +47,14 @@ public class FluidTagMapIngredient extends AbstractMapIngredient {
 
     @Override
     public boolean equals(Object obj) {
-        return super.equals(obj) && tag == ((FluidTagMapIngredient) obj).tag;
+        if (super.equals(obj)) {
+            return tag == ((FluidTagMapIngredient) obj).tag;
+        }
+        return false;
     }
 
     @Override
     public String toString() {
-        return "FluidTagMapIngredient{tag=" + tag.location() + "}";
+        return "FluidTagMapIngredient{" + "tag=" + tag.location() + "}";
     }
 }

@@ -1,6 +1,6 @@
 {
-	"parent": "extfrocore:item/material_sets/dull/crushed",
+	"parent": "gtceu:item/material_sets/dull/crushed",
 	"textures": {
-		"layer1": "extfrocore:item/material_sets/radioactive/crushed_secondary"
+		"layer1": "gtceu:item/material_sets/radioactive/crushed_secondary"
 	}
 }

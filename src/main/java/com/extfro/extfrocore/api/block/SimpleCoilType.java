@@ -1,0 +1,60 @@
+package com.extfro.extfrocore.api.block;
+
+import com.extfro.extfrocore.api.data.chemical.material.Material;
+import com.extfro.extfrocore.utils.memoization.GTMemoizer;
+
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.StringRepresentable;
+
+import lombok.Getter;
+import org.jetbrains.annotations.NotNull;
+
+import java.util.function.Supplier;
+
+public class SimpleCoilType implements ICoilType, StringRepresentable {
+
+    @Getter
+    private final String name;
+    // electric blast furnace properties
+    @Getter
+    private final int coilTemperature;
+    // multi smelter properties
+    @Getter
+    private final int level;
+    @Getter
+    private final int tier;
+    @Getter
+    private final int energyDiscount;
+    @NotNull
+    private final Supplier<Material> material;
+    @Getter
+    private final ResourceLocation texture;
+
+    public SimpleCoilType(String name, int coilTemperature, int level, int energyDiscount, int tier,
+                          @NotNull Supplier<Material> material, ResourceLocation texture) {
+        this.name = name;
+        this.coilTemperature = coilTemperature;
+        this.level = level;
+        this.energyDiscount = energyDiscount;
+        this.tier = tier;
+        this.material = GTMemoizer.memoize(material);
+        this.texture = texture;
+    }
+
+    @NotNull
+    @Override
+    public String toString() {
+        return getName();
+    }
+
+    @Override
+    @NotNull
+    public String getSerializedName() {
+        return getName();
+    }
+
+    @Override
+    public Material getMaterial() {
+        return material.get();
+    }
+}

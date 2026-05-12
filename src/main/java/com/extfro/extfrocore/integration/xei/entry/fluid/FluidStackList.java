@@ -15,19 +15,15 @@ public final class FluidStackList implements FluidEntryList {
         this.stacks = new ArrayList<>();
     }
 
-    public FluidStackList(List<FluidStack> stacks) {
-        this.stacks = new ArrayList<>(stacks);
-    }
-
     public static FluidStackList of(FluidStack stack) {
-        FluidStackList list = new FluidStackList();
+        var list = new FluidStackList();
         list.add(stack);
         return list;
     }
 
-    public static FluidStackList of(Collection<FluidStack> stacks) {
-        FluidStackList list = new FluidStackList();
-        list.addAll(stacks);
+    public static FluidStackList of(Collection<FluidStack> coll) {
+        var list = new FluidStackList();
+        list.addAll(coll);
         return list;
     }
 
@@ -35,18 +31,18 @@ public final class FluidStackList implements FluidEntryList {
         stacks.add(stack);
     }
 
-    public void addAll(Collection<FluidStack> stacks) {
-        this.stacks.addAll(stacks);
-    }
-
-    @Override
-    public List<FluidStack> getStacks() {
-        return stacks;
+    public void addAll(Collection<FluidStack> list) {
+        stacks.addAll(list);
     }
 
     @Override
     public boolean isEmpty() {
         return stacks.isEmpty();
+    }
+
+    @Override
+    public List<FluidStack> getStacks() {
+        return stacks;
     }
 
     public Stream<FluidStack> stream() {

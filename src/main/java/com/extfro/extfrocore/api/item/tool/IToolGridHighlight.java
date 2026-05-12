@@ -1,0 +1,25 @@
+package com.extfro.extfrocore.api.item.tool;
+
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.state.BlockState;
+
+import com.lowdragmc.lowdraglib2.gui.texture.IGuiTexture;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.Set;
+
+public interface IToolGridHighlight {
+
+    default boolean shouldRenderGrid(Player player, BlockPos pos, BlockState state, ItemStack held,
+                                     Set<GTToolType> toolTypes) {
+        return true;
+    }
+
+    default @Nullable IGuiTexture sideTips(Player player, BlockPos pos, BlockState state,
+                                           Set<GTToolType> toolTypes, ItemStack held, Direction side) {
+        return null;
+    }
+}

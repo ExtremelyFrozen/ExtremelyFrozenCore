@@ -5,6 +5,7 @@ import net.minecraft.world.level.ItemLike;
 import net.neoforged.neoforge.fluids.FluidStack;
 
 import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
+import org.apache.commons.lang3.NotImplementedException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -15,28 +16,29 @@ public interface FluidFilter extends Filter<FluidStack, FluidFilter> {
 
     Map<ItemLike, Function<ItemStack, FluidFilter>> FILTERS = new HashMap<>();
 
-    static void register(ItemLike filterItem, Function<ItemStack, FluidFilter> factory) {
-        FILTERS.put(filterItem, factory);
-    }
-
-    static boolean isFilterItem(ItemStack itemStack) {
-        return FILTERS.containsKey(itemStack.getItem());
-    }
-
     static FluidFilter loadFilter(ItemStack itemStack) {
-        Function<ItemStack, FluidFilter> factory = FILTERS.get(itemStack.getItem());
-        if (factory == null) {
-            return EMPTY;
-        }
-        return factory.apply(itemStack);
+        return FILTERS.get(itemStack.getItem()).apply(itemStack);
     }
 
+    /**
+     * Retrieves the configured fluid amount for the supplied fluid.
+     *
+     * @return The amount configured for the supplied fluid stack.<br>
+     *         If the stack is not matched by this filter, 0 is returned instead.
+     */
     int testFluidAmount(FluidStack fluidStack);
 
+    /**
+     * @return Whether this filter supports querying for exact fluid amounts.
+     */
     default boolean supportsAmounts() {
         return !isBlackList();
     }
 
+    /**
+     * An empty fluid filter that allows all fluids.<br>
+     * ONLY TO BE USED FOR FLUID MATCHING! All other functionality will throw an exception.
+     */
     FluidFilter EMPTY = new FluidFilter() {
 
         @Override
@@ -51,12 +53,12 @@ public interface FluidFilter extends Filter<FluidStack, FluidFilter> {
 
         @Override
         public UIElement openConfigurator(int x, int y) {
-            throw new UnsupportedOperationException("Not available for empty fluid filter");
+            throw new NotImplementedException("Not available for empty fluid filter");
         }
 
         @Override
         public void setOnUpdated(Consumer<FluidFilter> onUpdated) {
-            throw new UnsupportedOperationException("Not available for empty fluid filter");
+            throw new NotImplementedException("Not available for empty fluid filter");
         }
     };
 }

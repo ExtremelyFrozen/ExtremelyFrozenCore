@@ -16,9 +16,9 @@ public final class FluidHolderSetList implements FluidEntryList {
     @Getter
     private final List<FluidHolderSetEntry> entries = new ArrayList<>();
 
-    public static FluidHolderSetList of(@NotNull HolderSet<Fluid> fluids, int amount) {
-        FluidHolderSetList list = new FluidHolderSetList();
-        list.add(fluids, amount);
+    public static FluidHolderSetList of(@NotNull HolderSet<Fluid> set, int amount) {
+        var list = new FluidHolderSetList();
+        list.add(set, amount);
         return list;
     }
 
@@ -26,13 +26,8 @@ public final class FluidHolderSetList implements FluidEntryList {
         entries.add(entry);
     }
 
-    public void add(@NotNull HolderSet<Fluid> fluids, int amount) {
-        add(new FluidHolderSetEntry(fluids, amount));
-    }
-
-    @Override
-    public List<FluidStack> getStacks() {
-        return entries.stream().flatMap(FluidHolderSetEntry::stacks).toList();
+    public void add(@NotNull HolderSet<Fluid> set, int amount) {
+        add(new FluidHolderSetEntry(set, amount));
     }
 
     @Override
@@ -40,10 +35,17 @@ public final class FluidHolderSetList implements FluidEntryList {
         return entries.isEmpty();
     }
 
-    public record FluidHolderSetEntry(@NotNull HolderSet<Fluid> fluids, int amount) {
+    @Override
+    public List<FluidStack> getStacks() {
+        return entries.stream()
+                .flatMap(FluidHolderSetEntry::stacks)
+                .toList();
+    }
+
+    public record FluidHolderSetEntry(@NotNull HolderSet<Fluid> set, int amount) {
 
         public Stream<FluidStack> stacks() {
-            return fluids.stream().map(holder -> new FluidStack(holder, amount));
+            return set.stream().map(holder -> new FluidStack(holder, amount));
         }
     }
 }

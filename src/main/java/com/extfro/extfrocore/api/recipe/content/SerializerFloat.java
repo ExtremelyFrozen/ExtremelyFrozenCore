@@ -3,10 +3,11 @@ package com.extfro.extfrocore.api.recipe.content;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 
 import com.mojang.serialization.Codec;
+import org.apache.commons.lang3.math.NumberUtils;
 
-public final class SerializerFloat implements IContentSerializer<Float> {
+public class SerializerFloat implements IContentSerializer<Float> {
 
-    public static final SerializerFloat INSTANCE = new SerializerFloat();
+    public static SerializerFloat INSTANCE = new SerializerFloat();
 
     private SerializerFloat() {}
 
@@ -21,24 +22,20 @@ public final class SerializerFloat implements IContentSerializer<Float> {
     }
 
     @Override
-    public Float of(Object object) {
-        if (object instanceof Float value) {
-            return value;
+    public Float of(Object o) {
+        if (o instanceof Float) {
+            return (Float) o;
+        } else if (o instanceof Number) {
+            return ((Number) o).floatValue();
+        } else if (o instanceof CharSequence) {
+            return NumberUtils.toFloat(o.toString(), 1);
         }
-        if (object instanceof Number value) {
-            return value.floatValue();
-        }
-        if (object instanceof CharSequence value) {
-            try {
-                return Float.parseFloat(value.toString());
-            } catch (NumberFormatException ignored) {}
-        }
-        return defaultValue();
+        return 0f;
     }
 
     @Override
     public Float defaultValue() {
-        return 0F;
+        return 0f;
     }
 
     @Override

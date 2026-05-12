@@ -1,0 +1,112 @@
+package com.extfro.extfrocore.common.machine.electric;
+
+import com.extfro.extfrocore.api.EFValues;
+import com.extfro.extfrocore.api.blockentity.BlockEntityCreationInfo;
+import com.extfro.extfrocore.api.capability.compat.FeCompat;
+import com.extfro.extfrocore.api.gui.GuiTextures;
+import com.extfro.extfrocore.api.item.tool.GTToolType;
+import com.extfro.extfrocore.api.machine.TieredEnergyMachine;
+import com.extfro.extfrocore.api.machine.property.GTMachineModelProperties;
+import com.extfro.extfrocore.common.data.item.GTItemAbilities;
+import com.extfro.extfrocore.common.machine.trait.ConverterTrait;
+import com.extfro.extfrocore.utils.ExtendedUseOnContext;
+
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
+
+import com.lowdragmc.lowdraglib2.gui.texture.IGuiTexture;
+
+import java.util.Set;
+
+public class ConverterMachine extends TieredEnergyMachine {
+
+    public static final BooleanProperty FE_TO_EU_PROPERTY = GTMachineModelProperties.IS_FE_TO_EU;
+
+    public ConverterMachine(BlockEntityCreationInfo info, int tier, int amps) {
+        super(info, tier, t -> new ConverterTrait((ConverterMachine) t, tier, amps));
+    }
+
+    //////////////////////////////////////
+    // ***** Initialization ******//
+    //////////////////////////////////////
+
+    public ConverterTrait getConverterTrait() {
+        return (ConverterTrait) energyContainer;
+    }
+
+    @Override
+    public int tintColor(int index) {
+        if (index == 2) {
+            return EFValues.VC[getTier()];
+        }
+        return super.tintColor(index);
+    }
+
+    //////////////////////////////////////
+    // ****** Interaction ******//
+    //////////////////////////////////////
+    @Override
+    public InteractionResult onSoftMalletClick(ExtendedUseOnContext context) {
+        if (!isRemote()) {
+            if (!context.getItemInHand().canPerformAction(GTItemAbilities.MALLET_CONFIGURE)) {
+                return InteractionResult.PASS;
+            }
+            if (getConverterTrait().isFeToEu()) {
+                setFeToEu(false);
+                context.getPlayer().sendSystemMessage(
+                        Component.translatable("gtceu.machine.energy_converter.message_conversion_eu",
+                                getConverterTrait().getAmps(), getConverterTrait().getVoltage(),
+                                FeCompat.toFeLong(
+                                        getConverterTrait().getVoltage() * getConverterTrait().getAmps(),
+                                        FeCompat.ratio(false))));
+            } else {
+                setFeToEu(true);
+                context.getPlayer().sendSystemMessage(
+                        Component.translatable("gtceu.machine.energy_converter.message_conversion_native",
+                                FeCompat.toFeLong(
+                                        getConverterTrait().getVoltage() * getConverterTrait().getAmps(),
+                                        FeCompat.ratio(true)),
+                                getConverterTrait().getAmps(), getConverterTrait().getVoltage()));
+            }
+        }
+        return InteractionResult.CONSUME;
+    }
+
+    public void setFeToEu(boolean feToEu) {
+        getConverterTrait().setFeToEu(feToEu);
+    }
+
+    public boolean isFeToEu() {
+        return getConverterTrait().isFeToEu();
+    }
+
+    @Override
+    public boolean isFacingValid(Direction facing) {
+        return true;
+    }
+
+    @Override
+    public IGuiTexture sideTips(Player player, BlockPos pos, BlockState state, Set<GTToolType> toolTypes,
+                                ItemStack held, Direction side) {
+        if (toolTypes.contains(GTToolType.SOFT_MALLET)) {
+            return this.isFeToEu() ? GuiTextures.TOOL_SWITCH_CONVERTER_NATIVE : GuiTextures.TOOL_SWITCH_CONVERTER_EU;
+        }
+        return super.sideTips(player, pos, state, toolTypes, held, side);
+    }
+
+    @Override
+    protected long getMaxInputOutputAmperage() {
+        return getConverterTrait().getAmps();
+    }
+
+    @Override
+    protected boolean isEnergyEmitter() {
+        return getConverterTrait().isFeToEu();
+    }
+}

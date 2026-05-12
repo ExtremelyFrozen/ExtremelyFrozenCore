@@ -35,20 +35,24 @@ public record ContentModifier(double multiplier, double addition) {
         return number * multiplier + addition;
     }
 
+    /**
+     * Applies this ContentModifier to all entries in the given Content map
+     *
+     * @param contents the content map to apply to
+     * @return A new Content map that is the modified version of the argument
+     */
     public Map<RecipeCapability<?>, List<Content>> applyContents(Map<RecipeCapability<?>, List<Content>> contents) {
-        if (this == IDENTITY) {
-            return new HashMap<>(contents);
-        }
+        if (this == IDENTITY) return new HashMap<>(contents);
         Map<RecipeCapability<?>, List<Content>> copyContents = new HashMap<>();
         for (var entry : contents.entrySet()) {
             var contentList = entry.getValue();
-            var capability = entry.getKey();
+            var cap = entry.getKey();
             if (contentList != null && !contentList.isEmpty()) {
                 List<Content> contentsCopy = new ArrayList<>();
                 for (Content content : contentList) {
-                    contentsCopy.add(content.copy(capability, this));
+                    contentsCopy.add(content.copy(cap, this));
                 }
-                copyContents.put(capability, contentsCopy);
+                copyContents.put(entry.getKey(), contentsCopy);
             }
         }
         return copyContents;

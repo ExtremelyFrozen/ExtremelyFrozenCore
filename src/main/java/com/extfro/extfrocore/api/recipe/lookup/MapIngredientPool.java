@@ -10,31 +10,41 @@ import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
 
+/**
+ * Pool for {@link AbstractMapIngredient} to save memory
+ */
 @ApiStatus.Internal
 public final class MapIngredientPool {
 
-    private static final Map<AbstractMapIngredient, WeakReference<AbstractMapIngredient>> POOL = new WeakHashMap<>();
+    private static final Map<AbstractMapIngredient, WeakReference<AbstractMapIngredient>> pool = new WeakHashMap<>();
 
-    private MapIngredientPool() {}
-
+    /**
+     * Replaces values in a list of ingredients with pooled versions,
+     * and pools the existing ingredients if not already pooled.
+     *
+     * @param list the list
+     */
     static void applyPooling(@NotNull List<AbstractMapIngredient> list) {
         for (int i = 0; i < list.size(); i++) {
             AbstractMapIngredient ingredient = list.get(i);
-            WeakReference<AbstractMapIngredient> pooledReference = POOL.get(ingredient);
+            var pooledReference = pool.get(ingredient);
             if (pooledReference == null) {
-                POOL.put(ingredient, new WeakReference<>(ingredient));
+                pool.put(ingredient, new WeakReference<>(ingredient));
                 continue;
             }
-            AbstractMapIngredient pooled = pooledReference.get();
+            var pooled = pooledReference.get();
             if (pooled == null) {
-                POOL.put(ingredient, new WeakReference<>(ingredient));
+                pool.put(ingredient, new WeakReference<>(ingredient));
             } else {
                 list.set(i, pooled);
             }
         }
     }
 
+    /**
+     * Clear the ingredient pool
+     */
     public static void clear() {
-        POOL.clear();
+        pool.clear();
     }
 }

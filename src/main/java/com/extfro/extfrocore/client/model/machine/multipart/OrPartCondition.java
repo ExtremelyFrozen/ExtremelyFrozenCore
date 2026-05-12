@@ -1,7 +1,7 @@
 package com.extfro.extfrocore.client.model.machine.multipart;
 
 import com.extfro.extfrocore.api.machine.MachineDefinition;
-import com.extfro.extfrocore.api.machine.MachineRenderState;
+import com.extfro.extfrocore.client.model.machine.MachineRenderState;
 
 import net.minecraft.world.level.block.state.StateDefinition;
 
@@ -19,11 +19,10 @@ public class OrPartCondition implements PartCondition {
         this.conditions = conditions;
     }
 
-    @Override
     public Predicate<MachineRenderState> getPredicate(StateDefinition<MachineDefinition, MachineRenderState> def) {
-        List<Predicate<MachineRenderState>> predicates = Streams.stream(conditions)
-                .map(condition -> condition.getPredicate(def))
+        List<Predicate<MachineRenderState>> predicates = Streams.stream(this.conditions)
+                .map((condition) -> condition.getPredicate(def))
                 .toList();
-        return state -> predicates.stream().anyMatch(predicate -> predicate.test(state));
+        return (state) -> predicates.stream().anyMatch((p) -> p.test(state));
     }
 }

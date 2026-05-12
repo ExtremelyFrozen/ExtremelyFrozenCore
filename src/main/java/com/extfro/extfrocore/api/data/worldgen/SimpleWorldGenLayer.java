@@ -20,7 +20,7 @@ public class SimpleWorldGenLayer implements IWorldGenLayer {
         this.name = name;
         this.target = target;
         this.levels = levels;
-        WorldGeneratorUtils.registerWorldGenLayer(this);
+        WorldGeneratorUtils.WORLD_GEN_LAYERS.put(name, this);
     }
 
     @Override
@@ -32,7 +32,7 @@ public class SimpleWorldGenLayer implements IWorldGenLayer {
     public String toString() {
         return getSerializedName() + "[" +
                 RuleTest.CODEC.encodeStart(JsonOps.INSTANCE, target.get()).result().orElse(null) + "]" +
-                ",dimensions=" + levels;
+                ",dimensions=" + levels.toString();
     }
 
     @Override
@@ -41,17 +41,13 @@ public class SimpleWorldGenLayer implements IWorldGenLayer {
     }
 
     @Override
-    public boolean equals(Object object) {
-        if (this == object) {
-            return true;
-        }
-        if (!(object instanceof IWorldGenLayer other)) {
-            return false;
-        }
-        return getSerializedName().equals(other.getSerializedName());
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof IWorldGenLayer that)) return false;
+
+        return getSerializedName().equals(that.getSerializedName());
     }
 
-    @Override
     public RuleTest getTarget() {
         return target.get();
     }

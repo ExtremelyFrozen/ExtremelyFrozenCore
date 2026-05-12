@@ -27,7 +27,7 @@ public interface IBlockEntityRendererBakedModel<T extends BlockEntity>
                               PoseStack poseStack, MultiBufferSource buffer, int packedLight, int packedOverlay) {}
 
     default boolean shouldRender(T blockEntity, Vec3 cameraPos) {
-        return Vec3.atCenterOf(blockEntity.getBlockPos()).closerThan(cameraPos, getViewDistance());
+        return Vec3.atCenterOf(blockEntity.getBlockPos()).closerThan(cameraPos, this.getViewDistance());
     }
 
     default AABB getRenderBoundingBox(T blockEntity) {

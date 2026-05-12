@@ -16,17 +16,16 @@ public class FluidDataComponentMapIngredient extends FluidStackMapIngredient {
 
     protected DataComponentFluidIngredient componentIngredient;
 
-    public FluidDataComponentMapIngredient(FluidStack stack, DataComponentFluidIngredient componentIngredient) {
-        super(stack.getFluidHolder());
-        this.stack = stack;
+    public FluidDataComponentMapIngredient(FluidStack s, DataComponentFluidIngredient componentIngredient) {
+        super(s.getFluidHolder());
         this.componentIngredient = componentIngredient;
     }
 
     @NotNull
-    public static List<AbstractMapIngredient> from(@NotNull DataComponentFluidIngredient ingredient) {
+    public static List<AbstractMapIngredient> from(@NotNull DataComponentFluidIngredient r) {
         ObjectArrayList<AbstractMapIngredient> list = new ObjectArrayList<>();
-        for (FluidStack stack : ingredient.getStacks()) {
-            list.add(new FluidDataComponentMapIngredient(stack, ingredient));
+        for (FluidStack s : r.getStacks()) {
+            list.add(new FluidDataComponentMapIngredient(s, r));
         }
         return list;
     }
@@ -50,47 +49,48 @@ public class FluidDataComponentMapIngredient extends FluidStackMapIngredient {
             return true;
         }
         if (obj instanceof FluidDataComponentMapIngredient other) {
-            if (!FluidStack.isSameFluid(stack, other.stack)) {
+            if (!FluidStack.isSameFluid(this.stack, other.stack)) {
                 return false;
             }
-            if (componentIngredient == other.componentIngredient) {
+            if (this.componentIngredient == other.componentIngredient) {
                 return true;
             }
 
-            if (componentIngredient != null) {
+            if (this.componentIngredient != null) {
                 if (other.componentIngredient != null) {
-                    if (componentIngredient.isStrict() != other.componentIngredient.isStrict()) {
+                    if (this.componentIngredient.isStrict() != other.componentIngredient.isStrict()) {
                         return false;
                     }
-                    if (!componentIngredient.components().equals(other.componentIngredient.components())) {
+                    if (!this.componentIngredient.components().equals(other.componentIngredient.components())) {
                         return false;
                     }
-                    if (componentIngredient.isStrict()) {
-                        for (FluidStack thisStack : componentIngredient.getStacks()) {
-                            for (FluidStack otherStack : other.componentIngredient.getStacks()) {
-                                if (FluidStack.isSameFluidSameComponents(thisStack, otherStack)) {
-                                    return true;
-                                }
+
+                    if (this.componentIngredient.isStrict()) {
+                        for (FluidStack tStack : this.componentIngredient.getStacks()) {
+                            for (FluidStack oStack : other.componentIngredient.getStacks()) {
+                                if (FluidStack.isSameFluidSameComponents(tStack, oStack)) return true;
                             }
                         }
-                        return false;
+                    } else {
+                        boolean thisContains = this.componentIngredient.fluids()
+                                .stream().allMatch(holder -> other.componentIngredient.fluids().contains(holder));
+                        boolean otherContains = other.componentIngredient.fluids()
+                                .stream().allMatch(holder -> this.componentIngredient.fluids().contains(holder));
+                        return thisContains && otherContains;
                     }
-                    boolean thisContains = componentIngredient.fluids().stream()
-                            .allMatch(holder -> other.componentIngredient.fluids().contains(holder));
-                    boolean otherContains = other.componentIngredient.fluids().stream()
-                            .allMatch(holder -> componentIngredient.fluids().contains(holder));
-                    return thisContains && otherContains;
+                } else {
+                    return this.componentIngredient.test(other.stack);
                 }
-                return componentIngredient.test(other.stack);
+            } else {
+                return other.componentIngredient.test(this.stack);
             }
-            return other.componentIngredient.test(stack);
         }
         return false;
     }
 
     @Override
     public String toString() {
-        return "FluidDataComponentMapIngredient{fluid=" + BuiltInRegistries.FLUID.getKey(stack.getFluid()) + "}";
+        return "MapFluidStackDataComponentIngredient{fluid=" + BuiltInRegistries.FLUID.getKey(stack.getFluid()) + "}";
     }
 
     @Override
@@ -98,8 +98,7 @@ public class FluidDataComponentMapIngredient extends FluidStackMapIngredient {
         return true;
     }
 
-    @Override
     protected int hash() {
-        return componentIngredient == null ? super.hash() : componentIngredient.hashCode();
+        return componentIngredient.hashCode();
     }
 }

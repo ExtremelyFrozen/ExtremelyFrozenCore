@@ -1,8 +1,8 @@
 package com.extfro.extfrocore.api.data.worldgen.bedrockore;
 
+import com.extfro.extfrocore.api.data.chemical.material.Material;
 import com.extfro.extfrocore.api.data.worldgen.BiomeWeightModifier;
-import com.extfro.extfrocore.api.material.EFMaterial;
-import com.extfro.extfrocore.api.registry.EFRegistries;
+import com.extfro.extfrocore.api.registry.GTRegistries;
 
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderGetter;
@@ -26,16 +26,12 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 import lombok.experimental.Tolerate;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 @Accessors(fluent = true, chain = true)
 public class BedrockOreDefinition {
 
+    // spotless:off
     public static final Codec<BedrockOreDefinition> DIRECT_CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Codec.INT.fieldOf("weight").forGetter(BedrockOreDefinition::weight),
             Codec.INT.fieldOf("size").forGetter(BedrockOreDefinition::size),
@@ -44,40 +40,38 @@ public class BedrockOreDefinition {
             ExtraCodecs.intRange(0, 100).fieldOf("depletion_chance").forGetter(BedrockOreDefinition::depletionChance),
             Codec.INT.fieldOf("depleted_yield").forGetter(BedrockOreDefinition::depletedYield),
             WeightedMaterial.CODEC.listOf().fieldOf("materials").forGetter(BedrockOreDefinition::materials),
-            BiomeWeightModifier.CODEC.optionalFieldOf("weight_modifier", BiomeWeightModifier.EMPTY)
-                    .forGetter(BedrockOreDefinition::biomeWeightModifier),
-            ResourceKey.codec(Registries.DIMENSION).listOf().fieldOf("dimension_filter")
-                    .forGetter(definition -> new ArrayList<>(definition.dimensionFilter)))
-            .apply(instance, BedrockOreDefinition::new));
-    public static final Codec<Holder<BedrockOreDefinition>> CODEC = RegistryFixedCodec.create(EFRegistries.BEDROCK_ORE_REGISTRY);
-
+            BiomeWeightModifier.CODEC.optionalFieldOf("weight_modifier", BiomeWeightModifier.EMPTY).forGetter(BedrockOreDefinition::biomeWeightModifier),
+            ResourceKey.codec(Registries.DIMENSION).listOf().fieldOf("dimension_filter").forGetter(ft -> new ArrayList<>(ft.dimensionFilter))
+            ).apply(instance, BedrockOreDefinition::new));
+    public static final Codec<Holder<BedrockOreDefinition>> CODEC = RegistryFixedCodec.create(GTRegistries.BEDROCK_ORE_REGISTRY);
+    // spotless:on
     @Getter
     @Setter
-    private int weight;
+    private int weight; // weight value for determining which vein will appear
     @Getter
     @Setter
-    private int size;
+    private int size; // size in chunks
     @Getter
     @Setter
-    private IntProvider yield;
+    private IntProvider yield;// the [minimum, maximum] yields
     @Getter
     @Setter
-    private int depletionAmount;
+    private int depletionAmount; // amount of ore the vein gets drained by
     @Getter
     @Setter
-    private int depletionChance;
+    private int depletionChance; // the chance [0, 100] that the vein will deplete by 1
     @Getter
     @Setter
-    private int depletedYield;
+    private int depletedYield; // yield after the vein is depleted
     @Getter
     @Setter
-    private List<WeightedMaterial> materials;
+    private List<WeightedMaterial> materials; // the ores which the vein contains
     @Getter
     @Setter
-    private BiomeWeightModifier biomeWeightModifier;
+    private BiomeWeightModifier biomeWeightModifier; // weighting of biomes
     @Getter
     @Setter
-    public Set<ResourceKey<Level>> dimensionFilter;
+    public Set<ResourceKey<Level>> dimensionFilter; // filtering of dimensions
 
     public BedrockOreDefinition(int weight, int size, IntProvider yield, int depletionAmount, int depletionChance,
                                 int depletedYield, List<WeightedMaterial> materials,
@@ -109,19 +103,40 @@ public class BedrockOreDefinition {
         return IntArrayList.toList(materials().stream().mapToInt(WeightedMaterial::weight));
     }
 
-    public List<EFMaterial> getAllMaterials() {
+    public int getWeight() {
+        return weight;
+    }
+
+    public Set<ResourceKey<Level>> getDimensionFilter() {
+        return dimensionFilter;
+    }
+
+    public List<WeightedMaterial> getMaterials() {
+        return materials;
+    }
+
+    public void weight(int weight) {
+        this.weight = weight;
+    }
+
+    public void biomeWeightModifier(BiomeWeightModifier biomeWeightModifier) {
+        this.biomeWeightModifier = biomeWeightModifier;
+    }
+
+    public List<Material> getAllMaterials() {
         return materials().stream().map(WeightedMaterial::material).toList();
     }
 
     public boolean canGenerate() {
-        return weight() > 0 || !biomeWeightModifier().isEmpty();
+        return this.weight() > 0 || !this.biomeWeightModifier().isEmpty();
     }
 
     public List<BiomeWeightModifier> getOriginalModifiers() {
-        if (biomeWeightModifier instanceof BiomeWeightModifier.FromList list) {
+        if (this.biomeWeightModifier instanceof BiomeWeightModifier.FromList list) {
             return list.getOriginalModifiers();
+        } else {
+            return Collections.singletonList(this.biomeWeightModifier);
         }
-        return Collections.singletonList(biomeWeightModifier);
     }
 
     public static Builder builder(HolderGetter<Biome> biomeLookup) {
@@ -130,14 +145,15 @@ public class BedrockOreDefinition {
 
     public Builder asBuilder(HolderGetter<Biome> biomeLookup) {
         Builder builder = builder(biomeLookup);
-        builder.weight(weight);
-        builder.size(size);
-        builder.yield(yield);
-        builder.depletionAmount(depletionAmount).depletionChance(depletionChance);
-        builder.depletedYield(depletedYield);
-        builder.materials(materials);
-        builder.dimensions(dimensionFilter);
-        builder.biomes(getOriginalModifiers());
+        builder.weight(this.weight);
+        builder.size(this.size);
+        builder.yield(this.yield);
+        builder.depletionAmount(this.depletionAmount).depletionChance(this.depletionChance);
+        builder.depletedYield(this.depletedYield);
+        builder.materials(this.materials);
+        builder.dimensions(this.dimensionFilter);
+        builder.biomes(this.getOriginalModifiers());
+
         return builder;
     }
 
@@ -147,19 +163,19 @@ public class BedrockOreDefinition {
         private final HolderGetter<Biome> biomeLookup;
 
         @Setter
-        private int weight;
+        private int weight; // weight value for determining which vein will appear
         @Setter
-        private int size;
+        private int size; // size of the vein, in chunks.
         @Setter
-        private IntProvider yield;
+        private IntProvider yield;// the [minimum, maximum) yields
         @Setter
-        private int depletionAmount;
+        private int depletionAmount; // amount of fluid the vein gets drained by
         @Setter
-        private int depletionChance = 1;
+        private int depletionChance = 1; // the chance [0, 100] that the vein will deplete by 1
         @Setter
-        private int depletedYield;
+        private int depletedYield; // yield after the vein is depleted
         @Setter
-        private List<WeightedMaterial> materials = new ArrayList<>();
+        private List<WeightedMaterial> materials = new ArrayList<>(); // the ores which the vein contains
         @Setter
         private Set<ResourceKey<Level>> dimensions = Collections.emptySet();
         private final List<BiomeWeightModifier> biomes = new LinkedList<>();
@@ -171,18 +187,15 @@ public class BedrockOreDefinition {
         public Builder copy() {
             var copied = new Builder(biomeLookup);
             copied.weight = weight;
-            copied.size = size;
             copied.yield = yield;
             copied.depletionAmount = depletionAmount;
             copied.depletionChance = depletionChance;
             copied.depletedYield = depletedYield;
             copied.materials = materials;
-            copied.dimensions = dimensions;
-            copied.biomes.addAll(biomes);
             return copied;
         }
 
-        public Builder material(EFMaterial material, int amount) {
+        public Builder material(Material material, int amount) {
             this.materials.add(new WeightedMaterial(material, amount));
             return this;
         }

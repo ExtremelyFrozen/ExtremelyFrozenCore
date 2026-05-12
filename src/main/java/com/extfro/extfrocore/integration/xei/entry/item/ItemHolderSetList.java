@@ -17,9 +17,9 @@ public final class ItemHolderSetList implements ItemEntryList {
     @Getter
     private final List<ItemHolderSetEntry> entries = new ArrayList<>();
 
-    public static ItemHolderSetList of(@NotNull Holder<Item> item, int amount, @NotNull DataComponentPatch patch) {
-        ItemHolderSetList list = new ItemHolderSetList();
-        list.add(item, amount, patch);
+    public static ItemHolderSetList of(@NotNull Holder<Item> set, int amount, @NotNull DataComponentPatch patch) {
+        var list = new ItemHolderSetList();
+        list.add(set, amount, patch);
         return list;
     }
 
@@ -27,13 +27,8 @@ public final class ItemHolderSetList implements ItemEntryList {
         entries.add(entry);
     }
 
-    public void add(@NotNull Holder<Item> item, int amount, @NotNull DataComponentPatch patch) {
-        add(new ItemHolderSetEntry(item, amount, patch));
-    }
-
-    @Override
-    public List<ItemStack> getStacks() {
-        return entries.stream().flatMap(ItemHolderSetEntry::stacks).toList();
+    public void add(@NotNull Holder<Item> set, int amount, @NotNull DataComponentPatch patch) {
+        add(new ItemHolderSetEntry(set, amount, patch));
     }
 
     @Override
@@ -41,10 +36,18 @@ public final class ItemHolderSetList implements ItemEntryList {
         return entries.isEmpty();
     }
 
-    public record ItemHolderSetEntry(@NotNull Holder<Item> item, int amount, @NotNull DataComponentPatch patch) {
+    @Override
+    public List<ItemStack> getStacks() {
+        return entries.stream()
+                .flatMap(ItemHolderSetEntry::stacks)
+                .toList();
+    }
+
+    public record ItemHolderSetEntry(@NotNull Holder<Item> set, int amount, @NotNull DataComponentPatch patch) {
 
         public Stream<ItemStack> stacks() {
-            return Stream.of(new ItemStack(item, amount, patch));
+            // return set.map(holder -> );
+            return Stream.of(new ItemStack(set, amount, patch));
         }
     }
 }

@@ -1,5 +1,5 @@
 {
-	"parent": "extfrocore:block/cube/tinted/default",
+	"parent": "gtceu:block/cube/tinted/default",
 	"textures": {
 		"particle": "#side",
 		"up": "#end",

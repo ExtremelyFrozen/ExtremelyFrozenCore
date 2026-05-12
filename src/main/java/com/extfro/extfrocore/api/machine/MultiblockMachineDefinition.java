@@ -33,26 +33,30 @@ public class MultiblockMachineDefinition extends MachineDefinition {
     @Setter
     @Getter
     @NotNull
-    private Supplier<BlockPattern> patternFactory = () -> BlockPattern.EMPTY;
+    private Supplier<BlockPattern> patternFactory;
     @Setter
     @Getter
-    private Supplier<List<MultiblockShapeInfo>> shapes = List::of;
+    private Supplier<List<MultiblockShapeInfo>> shapes;
+    /** Set this to false only if your multiblock is set up such that it could have a wall-shared controller. */
     @Getter
     @Setter
-    private boolean allowFlip = true;
+    private boolean allowFlip;
+    @Getter
+    @Setter
+    private boolean renderXEIPreview;
     @Setter
     @Getter
     @Nullable
     private Supplier<ItemStack[]> recoveryItems;
     @Setter
     @Getter
-    private Function<MultiblockControllerMachine, Comparator<IMultiPart>> partSorter = controller -> (a, b) -> 0;
+    private Function<MultiblockControllerMachine, Comparator<IMultiPart>> partSorter;
     @Getter
     @Setter
-    private TriFunction<MultiblockControllerMachine, IMultiPart, Direction, BlockState> partAppearance = (controller, part, side) -> getAppearance().get();
+    private TriFunction<MultiblockControllerMachine, IMultiPart, Direction, BlockState> partAppearance;
     @Getter
     @Setter
-    private BiConsumer<MultiblockControllerMachine, List<Component>> additionalDisplay = (machine, tooltip) -> {};
+    private BiConsumer<MultiblockControllerMachine, List<Component>> additionalDisplay;
 
     public MultiblockMachineDefinition(ResourceLocation id) {
         super(id);
@@ -62,13 +66,12 @@ public class MultiblockMachineDefinition extends MachineDefinition {
         var designs = shapes.get();
         if (!designs.isEmpty()) return designs;
         var structurePattern = patternFactory.get();
-        int[][] aisleRepetitions = structurePattern.aisleRepetitions();
+        int[][] aisleRepetitions = structurePattern.aisleRepetitions;
         return repetitionDFS(structurePattern, new ArrayList<>(), aisleRepetitions, new IntArrayList());
     }
 
-    private List<MultiblockShapeInfo> repetitionDFS(
-                                                    BlockPattern pattern, List<MultiblockShapeInfo> pages, int[][] aisleRepetitions,
-                                                    IntArrayList repetitionStack) {
+    private List<MultiblockShapeInfo> repetitionDFS(BlockPattern pattern, List<MultiblockShapeInfo> pages,
+                                                    int[][] aisleRepetitions, IntArrayList repetitionStack) {
         if (repetitionStack.size() == aisleRepetitions.length) {
             int[] repetition = new int[repetitionStack.size()];
             for (int i = 0; i < repetitionStack.size(); i++) {
@@ -76,7 +79,8 @@ public class MultiblockMachineDefinition extends MachineDefinition {
             }
             pages.add(new MultiblockShapeInfo(pattern.getPreview(repetition)));
         } else {
-            for (int i = aisleRepetitions[repetitionStack.size()][0]; i <= aisleRepetitions[repetitionStack.size()][1]; i++) {
+            for (int i = aisleRepetitions[repetitionStack.size()][0]; i <=
+                    aisleRepetitions[repetitionStack.size()][1]; i++) {
                 repetitionStack.push(i);
                 repetitionDFS(pattern, pages, aisleRepetitions, repetitionStack);
                 repetitionStack.popInt();

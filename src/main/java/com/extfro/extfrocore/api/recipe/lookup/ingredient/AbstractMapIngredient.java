@@ -3,11 +3,12 @@ package com.extfro.extfrocore.api.recipe.lookup.ingredient;
 public abstract class AbstractMapIngredient {
 
     protected final Class<? extends AbstractMapIngredient> objClass;
+
     private int hash;
-    private boolean hashed;
+    private boolean hashed = false;
 
     protected AbstractMapIngredient() {
-        objClass = getClass();
+        this.objClass = getClass();
     }
 
     protected abstract int hash();
@@ -25,7 +26,7 @@ public abstract class AbstractMapIngredient {
     public boolean equals(Object obj) {
         if (this == obj) return true;
         if (obj instanceof AbstractMapIngredient ingredient) {
-            return objClass == ingredient.objClass;
+            return this.objClass == ingredient.objClass;
         }
         return false;
     }

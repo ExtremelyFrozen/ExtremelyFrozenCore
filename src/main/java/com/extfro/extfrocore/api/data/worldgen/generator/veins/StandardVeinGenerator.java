@@ -1,9 +1,12 @@
 package com.extfro.extfrocore.api.data.worldgen.generator.veins;
 
-import com.extfro.extfrocore.api.data.worldgen.OreDefinition;
+import com.extfro.extfrocore.api.data.chemical.ChemicalHelper;
+import com.extfro.extfrocore.api.data.chemical.material.Material;
+import com.extfro.extfrocore.api.data.worldgen.GTOreDefinition;
 import com.extfro.extfrocore.api.data.worldgen.generator.VeinGenerator;
 import com.extfro.extfrocore.api.data.worldgen.ores.OreBlockPlacer;
 import com.extfro.extfrocore.api.data.worldgen.ores.OreVeinUtil;
+import com.extfro.extfrocore.api.registry.GTRegistries;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
@@ -20,6 +23,7 @@ import net.minecraft.world.level.levelgen.XoroshiroRandomSource;
 import net.minecraft.world.level.levelgen.feature.configurations.OreConfiguration;
 import net.minecraft.world.level.levelgen.structure.templatesystem.TagMatchTest;
 
+import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
@@ -33,30 +37,30 @@ import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 @NoArgsConstructor
 public class StandardVeinGenerator extends VeinGenerator {
 
+    // spotless:off
     public static final MapCodec<StandardVeinGenerator> CODEC_SEPARATE = RecordCodecBuilder.mapCodec(instance -> instance.group(
-            BuiltInRegistries.BLOCK.byNameCodec().fieldOf("block").forGetter(generator -> generator.block.get()),
-            BuiltInRegistries.BLOCK.byNameCodec().fieldOf("deep_block")
-                    .forGetter(generator -> generator.deepBlock.get()),
-            BuiltInRegistries.BLOCK.byNameCodec().fieldOf("nether_block")
-                    .forGetter(generator -> generator.netherBlock.get()))
-            .apply(instance, StandardVeinGenerator::new));
-    public static final MapCodec<StandardVeinGenerator> CODEC_LIST = OreConfiguration.TargetBlockState.CODEC.listOf()
+                    BuiltInRegistries.BLOCK.byNameCodec().fieldOf("block").forGetter(ext -> ext.block.get()),
+                    BuiltInRegistries.BLOCK.byNameCodec().fieldOf("deep_block").forGetter(ext -> ext.deepBlock.get()),
+                    BuiltInRegistries.BLOCK.byNameCodec().fieldOf("nether_block").forGetter(ext -> ext.netherBlock.get())
+    ).apply(instance, StandardVeinGenerator::new));
+    public static final MapCodec<StandardVeinGenerator> CODEC_LIST = Codec.either(OreConfiguration.TargetBlockState.CODEC.listOf(), GTRegistries.MATERIALS.byNameCodec())
             .fieldOf("targets")
             .xmap(StandardVeinGenerator::new, StandardVeinGenerator::getBlocks);
-    public static final MapCodec<StandardVeinGenerator> CODEC = Codec.mapEither(CODEC_SEPARATE, CODEC_LIST).xmap(either -> either.map(a -> a, b -> b), generator -> generator.blocks != null ? com.mojang.datafixers.util.Either.right(generator) :
-            com.mojang.datafixers.util.Either.left(generator));
+    // spotless:on
+    public static final MapCodec<StandardVeinGenerator> CODEC = Codec.mapEither(CODEC_SEPARATE, CODEC_LIST)
+            .xmap(Either::unwrap, Either::left);
 
     public NonNullSupplier<? extends Block> block;
     public NonNullSupplier<? extends Block> deepBlock;
     public NonNullSupplier<? extends Block> netherBlock;
 
     @Getter
-    public List<OreConfiguration.TargetBlockState> blocks;
-    private List<VeinEntry> defaultEntries = null;
+    public Either<List<OreConfiguration.TargetBlockState>, Material> blocks;
 
     public StandardVeinGenerator(Block block, Block deepBlock, Block netherBlock) {
         this.block = NonNullSupplier.of(() -> block);
@@ -64,7 +68,7 @@ public class StandardVeinGenerator extends VeinGenerator {
         this.netherBlock = NonNullSupplier.of(() -> netherBlock);
     }
 
-    public StandardVeinGenerator(List<OreConfiguration.TargetBlockState> blocks) {
+    public StandardVeinGenerator(Either<List<OreConfiguration.TargetBlockState>, Material> blocks) {
         this.blocks = blocks;
     }
 
@@ -79,6 +83,13 @@ public class StandardVeinGenerator extends VeinGenerator {
         return this;
     }
 
+    public StandardVeinGenerator withMaterial(Material material) {
+        this.blocks = Either.right(material);
+        return this;
+    }
+
+    private List<VeinEntry> defaultEntries = null;
+
     private List<VeinEntry> getDefaultEntries() {
         if (defaultEntries == null) {
             defaultEntries = List.of(
@@ -91,37 +102,39 @@ public class StandardVeinGenerator extends VeinGenerator {
 
     @Override
     public List<VeinEntry> getAllEntries() {
-        if (blocks != null) {
-            return VeinGenerator.mapTarget(blocks, 1);
+        if (this.blocks != null) {
+            return VeinGenerator.mapTarget(blocks, 1).toList();
+        } else {
+            return getDefaultEntries();
         }
-        return getDefaultEntries();
     }
 
-    @Override
     public VeinGenerator build() {
-        if (blocks != null) {
-            return this;
-        }
+        if (this.blocks != null) return this;
+        // if (this.blocks.left().isPresent() && !this.blocks.left().get().isEmpty()) return this;
         List<OreConfiguration.TargetBlockState> targetStates = new ArrayList<>();
-        if (block != null) {
+        if (this.block != null) {
             targetStates.add(OreConfiguration.target(new TagMatchTest(BlockTags.STONE_ORE_REPLACEABLES),
-                    block.get().defaultBlockState()));
+                    this.block.get().defaultBlockState()));
         }
-        if (deepBlock != null) {
+
+        if (this.deepBlock != null) {
             targetStates.add(OreConfiguration.target(new TagMatchTest(BlockTags.DEEPSLATE_ORE_REPLACEABLES),
-                    deepBlock.get().defaultBlockState()));
+                    this.deepBlock.get().defaultBlockState()));
         }
-        if (netherBlock != null) {
+
+        if (this.netherBlock != null) {
             targetStates.add(OreConfiguration.target(new TagMatchTest(BlockTags.NETHER_CARVER_REPLACEABLES),
-                    netherBlock.get().defaultBlockState()));
+                    this.netherBlock.get().defaultBlockState()));
         }
-        blocks = targetStates;
+
+        this.blocks = Either.left(targetStates);
         return this;
     }
 
     @Override
     public VeinGenerator copy() {
-        return new StandardVeinGenerator(new ArrayList<>(blocks));
+        return new StandardVeinGenerator(this.blocks.mapBoth(ArrayList::new, Function.identity()));
     }
 
     @Override
@@ -130,179 +143,197 @@ public class StandardVeinGenerator extends VeinGenerator {
     }
 
     @Override
-    public Map<BlockPos, OreBlockPlacer> generate(WorldGenLevel level, RandomSource random, OreDefinition definition,
+    public Map<BlockPos, OreBlockPlacer> generate(WorldGenLevel level, RandomSource random, GTOreDefinition entry,
                                                   BlockPos origin) {
         Map<BlockPos, OreBlockPlacer> generatedBlocks = new Object2ObjectOpenHashMap<>();
 
-        int size = definition.clusterSize().sample(random);
-        float angle = random.nextFloat() * (float) Math.PI;
-        float halfLength = size / 8.0F;
-        int padding = Mth.ceil((size / 16.0F * 2.0F + 1.0F) / 2.0F);
-        double minX = origin.getX() + Math.sin(angle) * halfLength;
-        double maxX = origin.getX() - Math.sin(angle) * halfLength;
-        double minZ = origin.getZ() + Math.cos(angle) * halfLength;
-        double maxZ = origin.getZ() - Math.cos(angle) * halfLength;
+        int size = entry.clusterSize().sample(random);
+        float f = random.nextFloat() * (float) Math.PI;
+        float f1 = size / 8.0F;
+        int i = Mth.ceil((size / 16.0F * 2.0F + 1.0F) / 2.0F);
+        double minX = origin.getX() + Math.sin(f) * f1;
+        double maxX = origin.getX() - Math.sin(f) * f1;
+        double minZ = origin.getZ() + Math.cos(f) * f1;
+        double maxZ = origin.getZ() - Math.cos(f) * f1;
         double minY = origin.getY() + random.nextInt(3) - 2;
         double maxY = origin.getY() + random.nextInt(3) - 2;
-        int x = origin.getX() - Mth.ceil(halfLength) - padding;
-        int y = origin.getY() - 2 - padding;
-        int z = origin.getZ() - Mth.ceil(halfLength) - padding;
-        int width = 2 * (Mth.ceil(halfLength) + padding);
-        int height = 2 * (2 + padding);
+        int x = origin.getX() - Mth.ceil(f1) - i;
+        int y = origin.getY() - 2 - i;
+        int z = origin.getZ() - Mth.ceil(f1) - i;
+        int width = 2 * (Mth.ceil(f1) + i);
+        int height = 2 * (2 + i);
 
         for (int heightmapX = x; heightmapX <= x + width; ++heightmapX) {
             for (int heightmapZ = z; heightmapZ <= z + width; ++heightmapZ) {
-                doPlaceNormal(generatedBlocks, random, definition, origin, blocks, minX, maxX, minZ, maxZ, minY,
+                this.doPlaceNormal(generatedBlocks, random, entry, origin, this.blocks, minX, maxX, minZ, maxZ, minY,
                         maxY, x, y, z, width, height);
-                if (!generatedBlocks.isEmpty()) {
+
+                // Stop after first successful placement attempt
+                if (!generatedBlocks.isEmpty())
                     return generatedBlocks;
-                }
             }
         }
+
         return generatedBlocks;
     }
 
     protected void doPlaceNormal(Map<BlockPos, OreBlockPlacer> generatedBlocks, RandomSource random,
-                                 OreDefinition definition, BlockPos origin,
-                                 List<OreConfiguration.TargetBlockState> targets,
-                                 double minX, double maxX, double minZ, double maxZ, double minY, double maxY,
-                                 int x, int y, int z, int width, int height) {
+                                 GTOreDefinition entry, BlockPos origin,
+                                 Either<List<OreConfiguration.TargetBlockState>, Material> targets,
+                                 double pMinX, double pMaxX, double pMinZ, double pMaxZ, double pMinY, double pMaxY,
+                                 int pX, int pY, int pZ, int pWidth, int pHeight) {
         MutableInt placedAmount = new MutableInt(1);
-        BitSet placedBlocks = new BitSet(width * height * width);
+        BitSet placedBlocks = new BitSet(pWidth * pHeight * pWidth);
         BlockPos.MutableBlockPos posCursor = new BlockPos.MutableBlockPos();
-        int size = definition.clusterSize().sample(random);
-        float density = definition.density();
+        int size = entry.clusterSize().sample(random);
+        float density = entry.density();
         double[] shape = new double[size * 4];
 
         for (int centerOffset = 0; centerOffset < size; ++centerOffset) {
             float centerOffsetFraction = (float) centerOffset / (float) size;
-            double shapeX = Mth.lerp(centerOffsetFraction, minX, maxX);
-            double shapeY = Mth.lerp(centerOffsetFraction, minY, maxY);
-            double shapeZ = Mth.lerp(centerOffsetFraction, minZ, maxZ);
+            double x = Mth.lerp(centerOffsetFraction, pMinX, pMaxX);
+            double y = Mth.lerp(centerOffsetFraction, pMinY, pMaxY);
+            double z = Mth.lerp(centerOffsetFraction, pMinZ, pMaxZ);
+
             double randomOffsetModifier = random.nextDouble() * (double) size / 16.0D;
             double randomShapeOffset = ((double) (Mth.sin((float) Math.PI * centerOffsetFraction) + 1.0F) *
                     randomOffsetModifier + 1.0D) / 2.0D;
 
             int shapeIdxOffset = centerOffset * 4;
-            shape[shapeIdxOffset] = shapeX;
-            shape[shapeIdxOffset + 1] = shapeY;
-            shape[shapeIdxOffset + 2] = shapeZ;
+            shape[shapeIdxOffset] = x;
+            shape[shapeIdxOffset + 1] = y;
+            shape[shapeIdxOffset + 2] = z;
             shape[shapeIdxOffset + 3] = randomShapeOffset;
         }
 
-        pruneOverlappingShapes(size, shape);
+        for (int centerOffset = 0; centerOffset < size - 1; ++centerOffset) {
+            int shapeIdxOffset1 = centerOffset * 4;
+            if (shape[shapeIdxOffset1 + 3] <= 0.0D)
+                continue;
+
+            for (int i4 = centerOffset + 1; i4 < size; ++i4) {
+                int shapeIdxOffset2 = i4 * 4;
+                if (shape[shapeIdxOffset2 + 3] <= 0.0D)
+                    continue;
+
+                double x = shape[shapeIdxOffset1] - shape[shapeIdxOffset2];
+                double y = shape[shapeIdxOffset1 + 1] - shape[shapeIdxOffset2 + 1];
+                double z = shape[shapeIdxOffset1 + 2] - shape[shapeIdxOffset2 + 2];
+                double randomShapeOffset = shape[shapeIdxOffset1 + 3] - shape[shapeIdxOffset2 + 3];
+
+                if (!(randomShapeOffset * randomShapeOffset > (x * x) + (y * y) + (z * z)))
+                    continue;
+
+                if (randomShapeOffset > 0.0D) {
+                    shape[shapeIdxOffset2 + 3] = -1.0D;
+                } else {
+                    shape[shapeIdxOffset1 + 3] = -1.0D;
+                }
+            }
+        }
 
         for (int centerOffset = 0; centerOffset < size; ++centerOffset) {
-            generateShape(generatedBlocks, random, definition, targets, x, y, z, width, height,
-                    shape, centerOffset * 4, placedBlocks, posCursor, density, placedAmount);
-        }
-    }
+            int shapeIdxOffset = centerOffset * 4;
 
-    private static void pruneOverlappingShapes(int size, double[] shape) {
-        for (int centerOffset = 0; centerOffset < size - 1; ++centerOffset) {
-            int firstOffset = centerOffset * 4;
-            if (shape[firstOffset + 3] <= 0.0D) {
-                continue;
-            }
-            for (int i = centerOffset + 1; i < size; ++i) {
-                int secondOffset = i * 4;
-                if (shape[secondOffset + 3] <= 0.0D) {
-                    continue;
-                }
-                double x = shape[firstOffset] - shape[secondOffset];
-                double y = shape[firstOffset + 1] - shape[secondOffset + 1];
-                double z = shape[firstOffset + 2] - shape[secondOffset + 2];
-                double randomShapeOffset = shape[firstOffset + 3] - shape[secondOffset + 3];
-                if (randomShapeOffset * randomShapeOffset <= x * x + y * y + z * z) {
-                    continue;
-                }
-                if (randomShapeOffset > 0.0D) {
-                    shape[secondOffset + 3] = -1.0D;
-                } else {
-                    shape[firstOffset + 3] = -1.0D;
-                }
-            }
+            generateShape(
+                    generatedBlocks, random, entry, origin, targets, pX, pY, pZ, pWidth, pHeight,
+                    shape, shapeIdxOffset, placedBlocks, posCursor, density, placedAmount);
         }
     }
 
     private static void generateShape(Map<BlockPos, OreBlockPlacer> generatedBlocks, RandomSource random,
-                                      OreDefinition definition, List<OreConfiguration.TargetBlockState> targets,
-                                      int x, int y, int z, int width, int height, double[] shape,
-                                      int shapeIdxOffset, BitSet placedBlocks, BlockPos.MutableBlockPos posCursor,
+                                      GTOreDefinition entry, BlockPos origin,
+                                      Either<List<OreConfiguration.TargetBlockState>, Material> targets,
+                                      int pX, int pY, int pZ, int pWidth, int pHeight, double[] shape,
+                                      int shapeIdxOffset,
+                                      BitSet placedBlocks, BlockPos.MutableBlockPos posCursor,
                                       float density, MutableInt placedAmount) {
         double randomShapeOffset = shape[shapeIdxOffset + 3];
-        if (randomShapeOffset < 0.0D) {
+        if (randomShapeOffset < 0.0D)
             return;
-        }
 
-        double shapeX = shape[shapeIdxOffset];
-        double shapeY = shape[shapeIdxOffset + 1];
-        double shapeZ = shape[shapeIdxOffset + 2];
+        double x = shape[shapeIdxOffset];
+        double y = shape[shapeIdxOffset + 1];
+        double z = shape[shapeIdxOffset + 2];
 
-        int minX = Math.max(Mth.floor(shapeX - randomShapeOffset), x);
-        int minY = Math.max(Mth.floor(shapeY - randomShapeOffset), y);
-        int minZ = Math.max(Mth.floor(shapeZ - randomShapeOffset), z);
-        int maxX = Math.max(Mth.floor(shapeX + randomShapeOffset), minX);
-        int maxY = Math.max(Mth.floor(shapeY + randomShapeOffset), minY);
-        int maxZ = Math.max(Mth.floor(shapeZ + randomShapeOffset), minZ);
+        int minX = Math.max(Mth.floor(x - randomShapeOffset), pX);
+        int minY = Math.max(Mth.floor(y - randomShapeOffset), pY);
+        int minZ = Math.max(Mth.floor(z - randomShapeOffset), pZ);
+        int maxX = Math.max(Mth.floor(x + randomShapeOffset), minX);
+        int maxY = Math.max(Mth.floor(y + randomShapeOffset), minY);
+        int maxZ = Math.max(Mth.floor(z + randomShapeOffset), minZ);
 
         for (int posX = minX; posX <= maxX; ++posX) {
-            double radX = ((double) posX + 0.5D - shapeX) / randomShapeOffset;
-            if (radX * radX >= 1.0D) {
+            double radX = ((double) posX + 0.5D - x) / randomShapeOffset;
+            if (!((radX * radX) < 1.0D))
                 continue;
-            }
             posCursor.setX(posX);
 
             for (int posY = minY; posY <= maxY; ++posY) {
-                double radY = ((double) posY + 0.5D - shapeY) / randomShapeOffset;
-                if (radX * radX + radY * radY >= 1.0D) {
+                double radY = ((double) posY + 0.5D - y) / randomShapeOffset;
+                if (!((radX * radX) + (radY * radY) < 1.0D))
                     continue;
-                }
                 posCursor.setY(posY);
 
                 for (int posZ = minZ; posZ <= maxZ; ++posZ) {
-                    double radZ = ((double) posZ + 0.5D - shapeZ) / randomShapeOffset;
-                    if (radX * radX + radY * radY + radZ * radZ >= 1.0D) {
+                    double radZ = ((double) posZ + 0.5D - z) / randomShapeOffset;
+                    if (!((radX * radX) + (radY * radY) + (radZ * radZ) < 1.0D))
                         continue;
-                    }
                     posCursor.setZ(posZ);
 
-                    int placedIndex = posX - x + (posY - y) * width + (posZ - z) * width * height;
-                    if (placedBlocks.get(placedIndex)) {
+                    int isPlaced = posX - pX + (posY - pY) * pWidth + (posZ - pZ) * pWidth * pHeight;
+                    if (placedBlocks.get(isPlaced))
                         continue;
-                    }
 
-                    placedBlocks.set(placedIndex);
+                    placedBlocks.set(isPlaced);
                     BlockPos pos = posCursor.immutable();
-                    long randomSeed = random.nextLong();
-                    generatedBlocks.put(pos, (access, section) -> placeBlock(access, randomSeed, definition, targets,
-                            pos, density, placedAmount));
+
+                    final var randomSeed = random.nextLong(); // Fully deterministic regardless of chunk order
+                    generatedBlocks.put(pos, (access, section) -> placeBlock(access, randomSeed, entry, targets, pos,
+                            density, placedAmount));
                 }
             }
         }
     }
 
-    private static void placeBlock(BulkSectionAccess access, long randomSeed, OreDefinition definition,
-                                   List<OreConfiguration.TargetBlockState> targets, BlockPos pos, float density,
-                                   MutableInt placedAmount) {
+    private static void placeBlock(BulkSectionAccess access, long randomSeed, GTOreDefinition entry,
+                                   Either<List<OreConfiguration.TargetBlockState>, Material> targets,
+                                   BlockPos pos,
+                                   float density, MutableInt placedAmount) {
         RandomSource random = new XoroshiroRandomSource(randomSeed);
         BlockPos.MutableBlockPos posCursor = pos.mutable();
-        LevelChunkSection section = access.getSection(posCursor);
-        if (section == null || !(random.nextFloat() <= density)) {
+
+        LevelChunkSection levelchunksection = access.getSection(posCursor);
+        if (levelchunksection == null)
             return;
-        }
 
         int sectionX = SectionPos.sectionRelative(pos.getX());
         int sectionY = SectionPos.sectionRelative(pos.getY());
         int sectionZ = SectionPos.sectionRelative(pos.getZ());
-        BlockState state = section.getBlockState(sectionX, sectionY, sectionZ);
+        BlockState blockstate = levelchunksection.getBlockState(sectionX, sectionY, sectionZ);
 
-        for (OreConfiguration.TargetBlockState targetState : targets) {
-            if (OreVeinUtil.canPlaceOre(state, access::getBlockState, random, definition, targetState, posCursor)) {
-                section.setBlockState(sectionX, sectionY, sectionZ, targetState.state, false);
-                placedAmount.increment();
-                break;
+        if (!(random.nextFloat() <= density))
+            return;
+
+        targets.ifLeft(blockStates -> {
+            for (OreConfiguration.TargetBlockState targetState : blockStates) {
+                if (OreVeinUtil.canPlaceOre(blockstate, access::getBlockState, random, entry, targetState, posCursor)) {
+                    levelchunksection.setBlockState(sectionX, sectionY, sectionZ, targetState.state, false);
+                    placedAmount.increment();
+                    break;
+                }
             }
-        }
+        }).ifRight(material -> {
+            if (!OreVeinUtil.canPlaceOre(blockstate, access::getBlockState, random, entry, posCursor))
+                return;
+            BlockState currentState = access.getBlockState(posCursor);
+            var prefix = ChemicalHelper.getOrePrefix(currentState);
+            if (prefix.isEmpty()) return;
+            Block toPlace = ChemicalHelper.getBlock(prefix.get(), material);
+            if (toPlace == null || toPlace.defaultBlockState().isAir())
+                return;
+            levelchunksection.setBlockState(sectionX, sectionY, sectionZ, toPlace.defaultBlockState(), false);
+            placedAmount.increment();
+        });
     }
 }

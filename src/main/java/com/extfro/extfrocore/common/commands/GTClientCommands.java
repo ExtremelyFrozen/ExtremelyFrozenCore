@@ -1,0 +1,63 @@
+package com.extfro.extfrocore.common.commands;
+
+import com.extfro.extfrocore.common.network.packets.SCPacketShareProspection;
+import com.extfro.extfrocore.integration.map.ClientCacheManager;
+
+import net.minecraft.commands.CommandBuildContext;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.arguments.EntityArgument;
+import net.minecraft.world.entity.player.Player;
+import net.neoforged.neoforge.network.PacketDistributor;
+
+import com.mojang.brigadier.CommandDispatcher;
+
+import java.util.List;
+import java.util.UUID;
+
+import static net.minecraft.commands.Commands.argument;
+import static net.minecraft.commands.Commands.literal;
+
+public class GTClientCommands {
+
+    public static void register(CommandDispatcher<CommandSourceStack> dispatcher, CommandBuildContext buildContext) {
+        dispatcher.register(literal("gtceu")
+                .then(literal("share_prospection_data")
+                        .then(argument("player", EntityArgument.player())
+                                .executes(ctx -> {
+                                    Player player = EntityArgument.getPlayer(ctx, "player");
+                                    Thread sendThread = new Thread(new ProspectingShareTask(
+                                            ctx.getSource().getPlayerOrException().getUUID(), player.getUUID()));
+                                    sendThread.start();
+                                    return 1;
+                                }))));
+    }
+
+    private static class ProspectingShareTask implements Runnable {
+
+        private final List<ClientCacheManager.ProspectionInfo> prospectionData;
+        private final UUID sender;
+        private final UUID receiver;
+
+        public ProspectingShareTask(UUID sender, UUID receiver) {
+            prospectionData = ClientCacheManager.getProspectionShareData();
+            this.sender = sender;
+            this.receiver = receiver;
+        }
+
+        @Override
+        public void run() {
+            boolean first = true;
+            for (ClientCacheManager.ProspectionInfo info : prospectionData) {
+                PacketDistributor.sendToServer(new SCPacketShareProspection(sender, receiver, info.cacheName, info.key,
+                        info.isDimCache, info.dim, info.data, first));
+                first = false;
+
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
+    }
+}

@@ -1,6 +1,6 @@
 package com.extfro.extfrocore.api.recipe.lookup;
 
-import com.extfro.extfrocore.api.recipe.MachineRecipe;
+import com.extfro.extfrocore.api.recipe.GTRecipe;
 import com.extfro.extfrocore.api.recipe.lookup.ingredient.AbstractMapIngredient;
 
 import com.mojang.datafixers.util.Either;
@@ -14,21 +14,33 @@ import java.util.stream.Stream;
 @ApiStatus.Internal
 final class Branch {
 
-    private Map<AbstractMapIngredient, Either<MachineRecipe, Branch>> nodes;
-    private Map<AbstractMapIngredient, Either<MachineRecipe, Branch>> specialNodes;
+    // Keys on this have *(should)* have unique hashcodes.
+    private Map<AbstractMapIngredient, Either<GTRecipe, Branch>> nodes;
+    // Keys on this have collisions, and must be differentiated by equality.
+    private Map<AbstractMapIngredient, Either<GTRecipe, Branch>> specialNodes;
 
-    public Stream<MachineRecipe> getRecipes() {
-        Stream<MachineRecipe> stream = null;
+    public Stream<GTRecipe> getRecipes(boolean filterHidden) {
+        Stream<GTRecipe> stream = null;
         if (nodes != null) {
             stream = nodes.values().stream()
-                    .flatMap(either -> either.map(Stream::of, Branch::getRecipes));
+                    .flatMap(either -> either.map(Stream::of, right -> right.getRecipes(filterHidden)));
         }
         if (specialNodes != null) {
-            Stream<MachineRecipe> special = specialNodes.values().stream()
-                    .flatMap(either -> either.map(Stream::of, Branch::getRecipes));
-            stream = stream == null ? special : Stream.concat(stream, special);
+            if (stream == null) {
+                stream = specialNodes.values().stream()
+                        .flatMap(either -> either.map(Stream::of, right -> right.getRecipes(filterHidden)));
+            } else {
+                stream = Stream.concat(stream, specialNodes.values().stream()
+                        .flatMap(either -> either.map(Stream::of, right -> right.getRecipes(filterHidden))));
+            }
         }
-        return stream == null ? Stream.empty() : stream;
+        if (stream == null) {
+            return Stream.empty();
+        }
+        if (filterHidden) {
+            // stream = stream.filter(t -> !t.isHidden());
+        }
+        return stream;
     }
 
     public boolean isEmptyBranch() {
@@ -36,7 +48,7 @@ final class Branch {
     }
 
     @NotNull
-    public Map<AbstractMapIngredient, Either<MachineRecipe, Branch>> getNodes() {
+    public Map<AbstractMapIngredient, Either<GTRecipe, Branch>> getNodes() {
         if (nodes == null) {
             nodes = new Object2ObjectOpenHashMap<>(2);
         }
@@ -44,15 +56,18 @@ final class Branch {
     }
 
     @NotNull
-    public Map<AbstractMapIngredient, Either<MachineRecipe, Branch>> getSpecialNodes() {
+    public Map<AbstractMapIngredient, Either<GTRecipe, Branch>> getSpecialNodes() {
         if (specialNodes == null) {
             specialNodes = new Object2ObjectOpenHashMap<>(2);
         }
         return specialNodes;
     }
 
+    /**
+     * Removes all nodes in the branch
+     */
     public void clear() {
-        specialNodes = null;
-        nodes = null;
+        this.specialNodes = null;
+        this.nodes = null;
     }
 }

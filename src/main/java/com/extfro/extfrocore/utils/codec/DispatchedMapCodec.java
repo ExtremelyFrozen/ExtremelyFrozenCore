@@ -4,11 +4,7 @@ import com.extfro.extfrocore.ExtForCore;
 
 import com.mojang.datafixers.util.Pair;
 import com.mojang.datafixers.util.Unit;
-import com.mojang.serialization.Codec;
-import com.mojang.serialization.DataResult;
-import com.mojang.serialization.DynamicOps;
-import com.mojang.serialization.Lifecycle;
-import com.mojang.serialization.RecordBuilder;
+import com.mojang.serialization.*;
 import it.unimi.dsi.fastutil.objects.Object2ObjectArrayMap;
 
 import java.util.Map;
@@ -16,13 +12,15 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-public record DispatchedMapCodec<K, V>(Codec<K> keyCodec, Function<K, Codec<? extends V>> valueCodecFunction)
+public record DispatchedMapCodec<K, V>(
+                                       Codec<K> keyCodec,
+                                       Function<K, Codec<? extends V>> valueCodecFunction)
         implements Codec<Map<K, V>> {
 
     @Override
-    public <T> DataResult<T> encode(Map<K, V> input, DynamicOps<T> ops, T prefix) {
-        RecordBuilder<T> mapBuilder = ops.mapBuilder();
-        for (Map.Entry<K, V> entry : input.entrySet()) {
+    public <T> DataResult<T> encode(final Map<K, V> input, final DynamicOps<T> ops, final T prefix) {
+        final RecordBuilder<T> mapBuilder = ops.mapBuilder();
+        for (final Map.Entry<K, V> entry : input.entrySet()) {
             mapBuilder.add(keyCodec.encodeStart(ops, entry.getKey()),
                     encodeValue(valueCodecFunction.apply(entry.getKey()), entry.getValue(), ops));
         }
@@ -30,43 +28,44 @@ public record DispatchedMapCodec<K, V>(Codec<K> keyCodec, Function<K, Codec<? ex
     }
 
     @SuppressWarnings("unchecked")
-    private <T, V2 extends V> DataResult<T> encodeValue(Codec<V2> codec, V input, DynamicOps<T> ops) {
+    private <T, V2 extends V> DataResult<T> encodeValue(final Codec<V2> codec, final V input, final DynamicOps<T> ops) {
         return codec.encodeStart(ops, (V2) input);
     }
 
     @Override
-    public <T> DataResult<Pair<Map<K, V>, T>> decode(DynamicOps<T> ops, T input) {
+    public <T> DataResult<Pair<Map<K, V>, T>> decode(final DynamicOps<T> ops, final T input) {
         return ops.getMap(input).flatMap(map -> {
-            Map<K, V> entries = new Object2ObjectArrayMap<>();
-            Stream.Builder<Pair<T, T>> failed = Stream.builder();
+            final Map<K, V> entries = new Object2ObjectArrayMap<>();
+            final Stream.Builder<Pair<T, T>> failed = Stream.builder();
 
-            DataResult<Unit> finalResult = map.entries().reduce(
+            final DataResult<Unit> finalResult = map.entries().reduce(
                     DataResult.success(Unit.INSTANCE, Lifecycle.stable()),
                     (result, entry) -> parseEntry(result, ops, entry, entries, failed),
-                    (left, right) -> left.apply2stable((ignoredLeft, ignoredRight) -> ignoredLeft, right));
+                    (r1, r2) -> r1.apply2stable((u1, u2) -> u1, r2));
 
-            Pair<Map<K, V>, T> pair = Pair.of(new Object2ObjectArrayMap<>(entries), input);
-            T errors = ops.createMap(failed.build());
+            final Pair<Map<K, V>, T> pair = Pair.of(new Object2ObjectArrayMap<>(entries), input);
+            final T errors = ops.createMap(failed.build());
 
             return finalResult.map(ignored -> pair).setPartial(pair)
                     .mapError(error -> error + " missed input: " + errors);
         });
     }
 
-    private <T> DataResult<Unit> parseEntry(DataResult<Unit> result, DynamicOps<T> ops, Pair<T, T> input,
-                                            Map<K, V> entries, Stream.Builder<Pair<T, T>> failed) {
-        DataResult<K> keyResult = keyCodec.parse(ops, input.getFirst());
-        DataResult<V> valueResult = keyResult.map(valueCodecFunction)
+    private <T> DataResult<Unit> parseEntry(final DataResult<Unit> result, final DynamicOps<T> ops,
+                                            final Pair<T, T> input, final Map<K, V> entries,
+                                            final Stream.Builder<Pair<T, T>> failed) {
+        final DataResult<K> keyResult = keyCodec.parse(ops, input.getFirst());
+        final DataResult<V> valueResult = keyResult.map(valueCodecFunction)
                 .flatMap(valueCodec -> valueCodec.parse(ops, input.getSecond()).map(Function.identity()));
-        DataResult<Pair<K, V>> entryResult = keyResult.apply2stable(Pair::of, valueResult);
+        final DataResult<Pair<K, V>> entryResult = keyResult.apply2stable(Pair::of, valueResult);
 
-        Optional<Pair<K, V>> entry = entryResult.resultOrPartial(ExtForCore.LOGGER::error);
+        final Optional<Pair<K, V>> entry = entryResult.resultOrPartial(ExtForCore.LOGGER::error);
         if (entry.isPresent()) {
-            K key = entry.get().getFirst();
-            V value = entry.get().getSecond();
+            final K key = entry.get().getFirst();
+            final V value = entry.get().getSecond();
             if (entries.putIfAbsent(key, value) != null) {
                 failed.add(input);
-                return result.apply2stable((ignored, pair) -> ignored,
+                return result.apply2stable((u, p) -> u,
                         DataResult.error(() -> "Duplicate entry for key: '" + key + "'"));
             }
         }
@@ -74,6 +73,6 @@ public record DispatchedMapCodec<K, V>(Codec<K> keyCodec, Function<K, Codec<? ex
             failed.add(input);
         }
 
-        return result.apply2stable((ignored, pair) -> ignored, entryResult);
+        return result.apply2stable((u, p) -> u, entryResult);
     }
 }

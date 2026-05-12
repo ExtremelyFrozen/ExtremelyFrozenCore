@@ -1,5 +1,5 @@
 {
-	"parent": "extfrocore:block/cube_2_layer/tinted_both/default",
+	"parent": "gtceu:block/cube_2_layer/tinted_both/default",
 	"textures": {
 		"particle": "#bot_all",
 		"bot_down": "#bot_all",

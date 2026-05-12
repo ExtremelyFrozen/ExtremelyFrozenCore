@@ -1,6 +1,6 @@
 {
-	"parent": "extfrocore:item/material_sets/metallic/dust_small",
+	"parent": "gtceu:item/material_sets/metallic/dust_small",
 	"textures": {
-		"layer1": "extfrocore:item/material_sets/radioactive/dust_small_secondary"
+		"layer1": "gtceu:item/material_sets/radioactive/dust_small_secondary"
 	}
 }

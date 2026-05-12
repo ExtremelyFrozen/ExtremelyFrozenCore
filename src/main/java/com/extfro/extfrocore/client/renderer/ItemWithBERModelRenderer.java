@@ -27,7 +27,8 @@ public class ItemWithBERModelRenderer extends BlockEntityWithoutLevelRenderer {
     protected final ItemRenderer itemRenderer;
 
     protected ItemWithBERModelRenderer() {
-        super(Minecraft.getInstance().getBlockEntityRenderDispatcher(), Minecraft.getInstance().getEntityModels());
+        super(Minecraft.getInstance().getBlockEntityRenderDispatcher(),
+                Minecraft.getInstance().getEntityModels());
         this.itemRenderer = Minecraft.getInstance().getItemRenderer();
     }
 
@@ -44,7 +45,8 @@ public class ItemWithBERModelRenderer extends BlockEntityWithoutLevelRenderer {
         } else {
             super.renderByItem(stack, displayContext, poseStack, buffer, packedLight, packedOverlay);
         }
-
+        // also render the normal model here
+        // because MC skips it if the model is a custom renderer
         boolean fabulous = true;
         if (displayContext != ItemDisplayContext.GUI && !displayContext.firstPerson() &&
                 stack.getItem() instanceof BlockItem blockItem) {
@@ -54,9 +56,13 @@ public class ItemWithBERModelRenderer extends BlockEntityWithoutLevelRenderer {
 
         for (var renderPass : model.getRenderPasses(stack, fabulous)) {
             for (var renderType : renderPass.getRenderTypes(stack, fabulous)) {
-                VertexConsumer consumer = fabulous ?
-                        ItemRenderer.getFoilBufferDirect(buffer, renderType, true, stack.hasFoil()) :
-                        ItemRenderer.getFoilBuffer(buffer, renderType, true, stack.hasFoil());
+                VertexConsumer consumer;
+                if (fabulous) {
+                    consumer = ItemRenderer.getFoilBufferDirect(buffer, renderType, true, stack.hasFoil());
+                } else {
+                    consumer = ItemRenderer.getFoilBuffer(buffer, renderType, true, stack.hasFoil());
+                }
+
                 itemRenderer.renderModelLists(renderPass, stack, packedLight, packedOverlay, poseStack, consumer);
             }
         }

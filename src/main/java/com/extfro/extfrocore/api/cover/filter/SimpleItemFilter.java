@@ -1,6 +1,7 @@
 package com.extfro.extfrocore.api.cover.filter;
 
-import com.extfro.extfrocore.api.sync_system.SyncedComponents;
+import com.extfro.extfrocore.api.gui.GuiTextures;
+import com.extfro.extfrocore.common.data.item.GTDataComponents;
 
 import net.minecraft.world.item.ItemStack;
 
@@ -16,42 +17,39 @@ import java.util.function.Consumer;
 public class SimpleItemFilter implements ItemFilter {
 
     public static final Codec<SimpleItemFilter> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-            Codec.BOOL.fieldOf("is_blacklist").forGetter(SimpleItemFilter::isBlackList),
-            Codec.BOOL.fieldOf("ignore_components").forGetter(SimpleItemFilter::isIgnoreComponents),
-            ItemStack.OPTIONAL_CODEC.listOf().fieldOf("matches")
-                    .forGetter(filter -> Arrays.stream(filter.matches).toList()))
+            Codec.BOOL.fieldOf("is_blacklist").forGetter(val -> val.isBlackList),
+            Codec.BOOL.fieldOf("ignore_components").forGetter(val -> val.ignoreNbt),
+            ItemStack.OPTIONAL_CODEC.listOf().fieldOf("matches").forGetter(val -> Arrays.stream(val.matches).toList()))
             .apply(instance, SimpleItemFilter::new));
 
     @Getter
     protected boolean isBlackList;
     @Getter
-    protected boolean ignoreComponents;
+    protected boolean ignoreNbt;
     @Getter
     protected ItemStack[] matches = new ItemStack[9];
-    @Getter
-    protected int maxStackSize = 1;
 
     protected Consumer<SimpleItemFilter> itemWriter = filter -> {};
     protected Consumer<SimpleItemFilter> onUpdated = filter -> itemWriter.accept(filter);
 
-    public SimpleItemFilter() {
+    @Getter
+    protected int maxStackSize;
+
+    protected SimpleItemFilter() {
         Arrays.fill(matches, ItemStack.EMPTY);
+        maxStackSize = 1;
     }
 
-    public SimpleItemFilter(boolean isBlackList, boolean ignoreComponents, List<ItemStack> matches) {
-        this();
+    public SimpleItemFilter(boolean isBlackList, boolean ignoreNbt, List<ItemStack> matches) {
         this.isBlackList = isBlackList;
-        this.ignoreComponents = ignoreComponents;
-        for (int i = 0; i < Math.min(this.matches.length, matches.size()); i++) {
-            this.matches[i] = matches.get(i);
-        }
+        this.ignoreNbt = ignoreNbt;
+        this.matches = matches.toArray(ItemStack[]::new);
     }
 
     public static SimpleItemFilter loadFilter(ItemStack itemStack) {
-        SimpleItemFilter filter = itemStack.getOrDefault(SyncedComponents.SIMPLE_ITEM_FILTER.get(),
-                new SimpleItemFilter());
-        filter.itemWriter = updated -> itemStack.set(SyncedComponents.SIMPLE_ITEM_FILTER.get(), updated);
-        return filter;
+        SimpleItemFilter handler = itemStack.getOrDefault(GTDataComponents.SIMPLE_ITEM_FILTER, new SimpleItemFilter());
+        handler.itemWriter = filter -> itemStack.set(GTDataComponents.SIMPLE_ITEM_FILTER, filter);
+        return handler;
     }
 
     @Override
@@ -64,7 +62,7 @@ public class SimpleItemFilter implements ItemFilter {
 
     @Override
     public boolean isBlank() {
-        return !isBlackList && !ignoreComponents && Arrays.stream(matches).allMatch(ItemStack::isEmpty);
+        return !isBlackList && !ignoreNbt && Arrays.stream(matches).allMatch(ItemStack::isEmpty);
     }
 
     public void setBlackList(boolean blackList) {
@@ -72,33 +70,32 @@ public class SimpleItemFilter implements ItemFilter {
         onUpdated.accept(this);
     }
 
-    public void setIgnoreComponents(boolean ignoreComponents) {
-        this.ignoreComponents = ignoreComponents;
+    public void setIgnoreNbt(boolean ingoreNbt) {
+        this.ignoreNbt = ingoreNbt;
         onUpdated.accept(this);
     }
 
-    public void setMatch(int slot, ItemStack itemStack) {
-        if (slot < 0 || slot >= matches.length) {
-            throw new IndexOutOfBoundsException(slot);
-        }
-        matches[slot] = itemStack.copyWithCount(Math.min(itemStack.getCount(), maxStackSize));
-        onUpdated.accept(this);
+    public boolean isIgnoreNbt() {
+        return ignoreNbt;
     }
 
-    public void setMaxStackSize(int maxStackSize) {
-        this.maxStackSize = maxStackSize;
-        for (ItemStack match : matches) {
-            match.setCount(Math.min(match.getCount(), maxStackSize));
-        }
-        onUpdated.accept(this);
-    }
-
-    @Override
     public UIElement openConfigurator(int x, int y) {
-        return new UIElement().layout(layout -> {
-            layout.width(18 * 3 + 25);
-            layout.height(18 * 3);
-        });
+        UIElement group = FilterUIElements.group(x, y, 18 * 3 + 25, 18 * 3); // 80 55
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                final int index = i * 3 + j;
+
+                group.addChild(FilterUIElements.phantomItemSlot(i * 18, j * 18, () -> matches[index], stack -> {
+                    matches[index] = stack;
+                    onUpdated.accept(this);
+                }, maxStackSize));
+            }
+        }
+        group.addChild(FilterUIElements.toggleButton(18 * 3 + 5, 0,
+                GuiTextures.BUTTON_BLACKLIST, this::isBlackList, this::setBlackList));
+        group.addChild(FilterUIElements.toggleButton(18 * 3 + 5, 20,
+                GuiTextures.BUTTON_FILTER_NBT, this::isIgnoreNbt, this::setIgnoreNbt));
+        return group;
     }
 
     @Override
@@ -109,23 +106,51 @@ public class SimpleItemFilter implements ItemFilter {
     @Override
     public int testItemCount(ItemStack itemStack) {
         int totalItemCount = getTotalConfiguredItemCount(itemStack);
+
         if (isBlackList) {
-            return totalItemCount > 0 ? 0 : Integer.MAX_VALUE;
+            return (totalItemCount > 0) ? 0 : Integer.MAX_VALUE;
         }
+
         return totalItemCount;
     }
 
     public int getTotalConfiguredItemCount(ItemStack itemStack) {
         int totalCount = 0;
-        for (ItemStack candidate : matches) {
-            if (ignoreComponents) {
-                if (ItemStack.isSameItem(candidate, itemStack)) {
-                    totalCount += candidate.getCount();
-                }
-            } else if (ItemStack.isSameItemSameComponents(candidate, itemStack)) {
-                totalCount += candidate.getCount();
+
+        for (var candidate : matches) {
+            if (ignoreNbt) {
+                if (ItemStack.isSameItem(candidate, itemStack)) totalCount += candidate.getCount();
+            } else {
+                if (ItemStack.isSameItemSameComponents(candidate, itemStack)) totalCount += candidate.getCount();
             }
         }
+
         return totalCount;
+    }
+
+    public void setMaxStackSize(int maxStackSize) {
+        this.maxStackSize = maxStackSize;
+
+        for (ItemStack match : matches) {
+            match.setCount(Math.min(match.getCount(), maxStackSize));
+        }
+    }
+
+    @Override
+    public final boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof SimpleItemFilter that)) return false;
+
+        return isBlackList == that.isBlackList && ignoreNbt == that.ignoreNbt && maxStackSize == that.maxStackSize &&
+                Arrays.equals(matches, that.matches);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Boolean.hashCode(isBlackList);
+        result = 31 * result + Boolean.hashCode(ignoreNbt);
+        result = 31 * result + Arrays.hashCode(matches);
+        result = 31 * result + maxStackSize;
+        return result;
     }
 }

@@ -1,5 +1,6 @@
 package com.extfro.extfrocore;
 
+import com.extfro.extfrocore.api.EFAPI;
 import com.extfro.extfrocore.api.EFValues;
 import com.extfro.extfrocore.common.CommonProxy;
 import com.extfro.extfrocore.config.ConfigHolder;
@@ -34,6 +35,8 @@ public class ExtForCore {
 
     public static final Logger LOGGER = LogManager.getLogger(MOD_NAME);
 
+    public static final Path EF_FOLDER = getGameDir().resolve("extfrocore");
+
     public static final Codec<ResourceLocation> ExtForCore_ID = Codec.STRING.comapFlatMap(
             str -> ResourceLocation.read(appendIdString(str)),
             s -> s.getNamespace().equals(MOD_ID) ? s.getPath() : s.toString());
@@ -44,6 +47,7 @@ public class ExtForCore {
     public static IEventBus modBus;
 
     public ExtForCore(IEventBus modBus, FMLModContainer container) {
+        EFAPI.instance = this;
         ExtForCore.modBus = modBus;
         ConfigHolder.init();
         CommonProxy.init(modBus);

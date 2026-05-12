@@ -1,11 +1,7 @@
 package com.extfro.extfrocore.client.model;
 
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
-import net.minecraft.client.resources.model.BakedModel;
-import net.minecraft.client.resources.model.Material;
-import net.minecraft.client.resources.model.ModelBaker;
-import net.minecraft.client.resources.model.ModelState;
-import net.minecraft.client.resources.model.UnbakedModel;
+import net.minecraft.client.resources.model.*;
 import net.minecraft.resources.ResourceLocation;
 
 import org.jetbrains.annotations.NotNull;
@@ -23,9 +19,9 @@ public class BasicUnbakedModel implements UnbakedModel {
     }
 
     @Override
-    public void resolveParents(@NotNull Function<ResourceLocation, UnbakedModel> resolver) {
+    public void resolveParents(@NotNull Function<ResourceLocation, UnbakedModel> function) {
         for (ResourceLocation dependency : getDependencies()) {
-            resolver.apply(dependency).resolveParents(resolver);
+            function.apply(dependency).resolveParents(function);
         }
     }
 

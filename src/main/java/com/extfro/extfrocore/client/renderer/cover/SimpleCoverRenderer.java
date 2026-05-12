@@ -1,8 +1,9 @@
 package com.extfro.extfrocore.client.renderer.cover;
 
 import com.extfro.extfrocore.api.cover.CoverBehavior;
+import com.extfro.extfrocore.client.util.ModelUtils;
+import com.extfro.extfrocore.client.util.StaticFaceBakery;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
@@ -23,65 +24,41 @@ import java.util.List;
 
 public class SimpleCoverRenderer implements ICoverRenderer {
 
-    private final ResourceLocation texture;
-    private final @Nullable ResourceLocation emissiveTexture;
-
     @OnlyIn(Dist.CLIENT)
-    protected TextureAtlasSprite sprite;
+    protected TextureAtlasSprite sprite = null;
     @OnlyIn(Dist.CLIENT)
-    protected TextureAtlasSprite emissiveSprite;
+    protected TextureAtlasSprite emissiveSprite = null;
 
     public SimpleCoverRenderer(ResourceLocation texture) {
         this(texture, null);
     }
 
-    public SimpleCoverRenderer(ResourceLocation texture, @Nullable ResourceLocation emissiveTexture) {
-        this.texture = texture;
-        this.emissiveTexture = emissiveTexture;
+    public SimpleCoverRenderer(ResourceLocation texture, ResourceLocation emissiveTexture) {
+        ModelUtils.registerAtlasStitchedEventListener(false, InventoryMenu.BLOCK_ATLAS, event -> {
+            var atlas = event.getAtlas();
+
+            sprite = atlas.getSprite(texture);
+            if (emissiveTexture != null) {
+                emissiveSprite = atlas.getSprite(emissiveTexture);
+            } else {
+                ResourceLocation emissiveTex = texture.withSuffix("_emissive");
+                if (atlas.getTextures().containsKey(emissiveTex)) {
+                    emissiveSprite = atlas.getSprite(emissiveTex);
+                }
+            }
+        });
     }
 
-    @Override
     @OnlyIn(Dist.CLIENT)
-    public void onResourceManagerReload() {
-        sprite = null;
-        emissiveSprite = null;
-    }
-
-    @Override
-    @OnlyIn(Dist.CLIENT)
-    public void renderCover(List<BakedQuad> quads, @Nullable Direction side, RandomSource rand,
+    public void renderCover(List<BakedQuad> quads, Direction side, RandomSource rand,
                             @NotNull CoverBehavior coverBehavior, BlockPos pos, BlockAndTintGetter level,
                             @NotNull ModelData modelData, @Nullable RenderType renderType) {
         if (side == null || side == coverBehavior.attachedSide) {
-            TextureAtlasSprite overlay = getSprite();
-            if (overlay != null) {
-                quads.add(StaticCoverFaceBakery.bakeFace(StaticCoverFaceBakery.COVER_OVERLAY,
-                        coverBehavior.attachedSide, overlay));
-            }
-            TextureAtlasSprite emissiveOverlay = getEmissiveSprite();
-            if (emissiveOverlay != null) {
-                quads.add(StaticCoverFaceBakery.bakeFace(StaticCoverFaceBakery.COVER_OVERLAY,
-                        coverBehavior.attachedSide, emissiveOverlay));
+            quads.add(StaticFaceBakery.bakeFace(StaticFaceBakery.COVER_OVERLAY, coverBehavior.attachedSide, sprite));
+            if (emissiveSprite != null) {
+                quads.add(StaticFaceBakery.bakeFace(StaticFaceBakery.COVER_OVERLAY, coverBehavior.attachedSide,
+                        emissiveSprite));
             }
         }
-    }
-
-    @OnlyIn(Dist.CLIENT)
-    protected @Nullable TextureAtlasSprite getSprite() {
-        if (sprite == null) {
-            sprite = Minecraft.getInstance().getTextureAtlas(InventoryMenu.BLOCK_ATLAS).apply(texture);
-        }
-        return sprite;
-    }
-
-    @OnlyIn(Dist.CLIENT)
-    protected @Nullable TextureAtlasSprite getEmissiveSprite() {
-        if (emissiveTexture == null) {
-            return null;
-        }
-        if (emissiveSprite == null) {
-            emissiveSprite = Minecraft.getInstance().getTextureAtlas(InventoryMenu.BLOCK_ATLAS).apply(emissiveTexture);
-        }
-        return emissiveSprite;
     }
 }

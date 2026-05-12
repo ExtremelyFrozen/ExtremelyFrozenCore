@@ -9,8 +9,8 @@ import org.jetbrains.annotations.Nullable;
 public interface ITickSubscription {
 
     /**
-     * For initialization. To get level and property fields after auto sync, subscribe in
-     * {@link BlockEntity#clearRemoved()}.
+     * For initialization. To get level and property fields after auto sync, you can subscribe it in
+     * {@link BlockEntity#clearRemoved()} event.
      */
     @Nullable
     TickableSubscription subscribeServerTick(Runnable runnable);

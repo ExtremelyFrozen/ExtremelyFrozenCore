@@ -1,6 +1,6 @@
 package com.extfro.extfrocore.api.data.worldgen.ores;
 
-import com.extfro.extfrocore.api.data.worldgen.OreDefinition;
+import com.extfro.extfrocore.api.data.worldgen.GTOreDefinition;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
@@ -18,13 +18,14 @@ import org.jetbrains.annotations.NotNull;
 public final class GeneratedVeinMetadata {
 
     public static final Codec<ChunkPos> CHUNK_POS_CODEC = Codec.LONG.xmap(ChunkPos::new, ChunkPos::toLong);
+    // spotless:off
     public static final Codec<GeneratedVeinMetadata> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-            CHUNK_POS_CODEC.fieldOf("origin_chunk").forGetter(GeneratedVeinMetadata::originChunk),
-            BlockPos.CODEC.fieldOf("center").forGetter(GeneratedVeinMetadata::center),
-            OreDefinition.CODEC.fieldOf("definition").forGetter(GeneratedVeinMetadata::definition),
-            Codec.BOOL.optionalFieldOf("depleted", false).forGetter(GeneratedVeinMetadata::depleted))
-            .apply(instance, GeneratedVeinMetadata::new));
-
+                    CHUNK_POS_CODEC.fieldOf("origin_chunk").forGetter(GeneratedVeinMetadata::originChunk),
+                    BlockPos.CODEC.fieldOf("center").forGetter(GeneratedVeinMetadata::center),
+                    GTOreDefinition.CODEC.fieldOf("definition").forGetter(GeneratedVeinMetadata::definition),
+                    Codec.BOOL.optionalFieldOf("depleted", false).forGetter(GeneratedVeinMetadata::depleted)
+    ).apply(instance, GeneratedVeinMetadata::new));
+    // spotless:on
     @Getter
     @NotNull
     private final ChunkPos originChunk;
@@ -34,42 +35,69 @@ public final class GeneratedVeinMetadata {
     @Getter
     @Setter
     @NotNull
-    private Holder<OreDefinition> definition;
+    private Holder<GTOreDefinition> definition;
     @Getter
     @Setter
     private boolean depleted;
 
     public GeneratedVeinMetadata(@NotNull ChunkPos originChunk, @NotNull BlockPos center,
-                                 @NotNull Holder<OreDefinition> definition) {
+                                 @NotNull Holder<GTOreDefinition> definition) {
         this(originChunk, center, definition, false);
     }
 
     public GeneratedVeinMetadata(@NotNull ChunkPos originChunk, @NotNull BlockPos center,
-                                 @NotNull Holder<OreDefinition> definition, boolean depleted) {
+                                 @NotNull Holder<GTOreDefinition> definition,
+                                 boolean depleted) {
         this.originChunk = originChunk;
         this.center = center;
         this.definition = definition;
         this.depleted = depleted;
     }
 
+    public @NotNull ChunkPos originChunk() {
+        return originChunk;
+    }
+
+    public @NotNull BlockPos center() {
+        return center;
+    }
+
+    public @NotNull Holder<GTOreDefinition> definition() {
+        return definition;
+    }
+
+    public void definition(@NotNull Holder<GTOreDefinition> definition) {
+        this.definition = definition;
+    }
+
+    public boolean depleted() {
+        return depleted;
+    }
+
+    public void depleted(boolean depleted) {
+        this.depleted = depleted;
+    }
+
     public static GeneratedVeinMetadata readFromPacket(RegistryFriendlyByteBuf buf) {
         ChunkPos origin = new ChunkPos(buf.readVarLong());
         BlockPos center = BlockPos.of(buf.readVarLong());
-        Holder<OreDefinition> definition = OreDefinition.STREAM_CODEC.decode(buf);
-        return new GeneratedVeinMetadata(origin, center, definition, false);
+        Holder<GTOreDefinition> def = GTOreDefinition.STREAM_CODEC.decode(buf);
+        return new GeneratedVeinMetadata(origin, center, def, false);
     }
 
     public void writeToPacket(RegistryFriendlyByteBuf buf) {
-        buf.writeVarLong(originChunk.toLong());
-        buf.writeVarLong(center.asLong());
-        OreDefinition.STREAM_CODEC.encode(buf, definition);
+        buf.writeVarLong(this.originChunk.toLong());
+        buf.writeVarLong(this.center.asLong());
+        GTOreDefinition.STREAM_CODEC.encode(buf, this.definition);
     }
 
     @Override
     public boolean equals(Object object) {
         if (this == object) return true;
         if (!(object instanceof GeneratedVeinMetadata that)) return false;
-        return originChunk.equals(that.originChunk) && center.equals(that.center) && definition == that.definition;
+
+        return originChunk.equals(that.originChunk) && center.equals(that.center) &&
+                definition == that.definition;
     }
 
     @Override

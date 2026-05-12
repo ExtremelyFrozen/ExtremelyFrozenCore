@@ -20,7 +20,7 @@ public class CycleItemEntryHandler implements IItemHandlerModifiable {
     private final List<ItemEntryList> entries;
 
     @Nullable
-    private List<List<ItemStack>> unwrapped;
+    private List<List<ItemStack>> unwrapped = null;
 
     public CycleItemEntryHandler(List<ItemEntryList> entries) {
         this.entries = new ArrayList<>(entries);
@@ -28,7 +28,7 @@ public class CycleItemEntryHandler implements IItemHandlerModifiable {
 
     public static CycleItemEntryHandler createFromStacks(List<List<ItemStack>> stacks) {
         List<ItemEntryList> entries = new ArrayList<>();
-        for (List<ItemStack> list : stacks) {
+        for (var list : stacks) {
             entries.add(ItemStackList.of(list));
         }
         CycleItemEntryHandler handler = new CycleItemEntryHandler(entries);
@@ -46,8 +46,9 @@ public class CycleItemEntryHandler implements IItemHandlerModifiable {
     }
 
     @Nullable
-    private static List<ItemStack> getStacksNullable(@Nullable ItemEntryList list) {
-        return list == null ? null : list.getStacks();
+    private static List<ItemStack> getStacksNullable(ItemEntryList list) {
+        if (list == null) return null;
+        return list.getStacks();
     }
 
     public ItemEntryList getEntry(int index) {
@@ -59,31 +60,31 @@ public class CycleItemEntryHandler implements IItemHandlerModifiable {
         return entries.size();
     }
 
+    @NotNull
     @Override
-    public @NotNull ItemStack getStackInSlot(int slot) {
+    public ItemStack getStackInSlot(int slot) {
         List<ItemStack> stackList = getUnwrapped().get(slot);
-        if (stackList == null || stackList.isEmpty()) {
-            return ItemStack.EMPTY;
-        }
-        int index = Math.abs((int) (System.currentTimeMillis() / 1000) % stackList.size());
-        return stackList.get(index);
+        return stackList == null || stackList.isEmpty() ? ItemStack.EMPTY :
+                stackList.get(Math.abs((int) (System.currentTimeMillis() / 1000) % stackList.size()));
     }
 
     @Override
-    public void setStackInSlot(int slot, @NotNull ItemStack stack) {
-        if (slot >= 0 && slot < entries.size()) {
-            entries.set(slot, ItemStackList.of(stack));
+    public void setStackInSlot(int index, @NotNull ItemStack stack) {
+        if (index >= 0 && index < entries.size()) {
+            entries.set(index, ItemStackList.of(stack));
             unwrapped = null;
         }
     }
 
+    @NotNull
     @Override
-    public @NotNull ItemStack insertItem(int slot, @NotNull ItemStack stack, boolean simulate) {
+    public ItemStack insertItem(int slot, @NotNull ItemStack stack, boolean simulate) {
         return stack;
     }
 
+    @NotNull
     @Override
-    public @NotNull ItemStack extractItem(int slot, int amount, boolean simulate) {
+    public ItemStack extractItem(int slot, int amount, boolean simulate) {
         return ItemStack.EMPTY;
     }
 

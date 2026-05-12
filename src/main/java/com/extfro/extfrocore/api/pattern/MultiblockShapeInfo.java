@@ -7,15 +7,14 @@ import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 
-import java.lang.reflect.Array;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import com.lowdragmc.lowdraglib2.utils.Builder;
+import com.lowdragmc.lowdraglib2.utils.data.BlockInfo;
+
 import java.util.function.Supplier;
 
 public class MultiblockShapeInfo {
 
-    private final BlockInfo[][][] blocks;
+    private final BlockInfo[][][] blocks; // [z][y][x]
 
     public MultiblockShapeInfo(BlockInfo[][][] blocks) {
         this.blocks = blocks;
@@ -29,23 +28,10 @@ public class MultiblockShapeInfo {
         return new ShapeInfoBuilder();
     }
 
-    public static class ShapeInfoBuilder {
-
-        private final List<String[]> shape = new ArrayList<>();
-        private final BlockInfo[] symbolMap = new BlockInfo[Character.MAX_VALUE + 1];
-
-        public ShapeInfoBuilder aisle(String... data) {
-            shape.add(data);
-            return this;
-        }
+    public static class ShapeInfoBuilder extends Builder<BlockInfo, ShapeInfoBuilder> {
 
         public ShapeInfoBuilder where(char symbol, BlockState blockState) {
             return where(symbol, BlockInfo.fromBlockState(blockState));
-        }
-
-        public ShapeInfoBuilder where(char symbol, BlockInfo blockInfo) {
-            symbolMap[symbol] = blockInfo;
-            return this;
         }
 
         public ShapeInfoBuilder where(char symbol, Supplier<? extends Block> block) {
@@ -67,21 +53,7 @@ public class MultiblockShapeInfo {
         }
 
         private BlockInfo[][][] bake() {
-            BlockInfo[][][] result = (BlockInfo[][][]) Array.newInstance(BlockInfo.class, shape.size(), 0, 0);
-            for (int z = 0; z < shape.size(); z++) {
-                String[] aisle = shape.get(z);
-                result[z] = (BlockInfo[][]) Array.newInstance(BlockInfo.class, aisle.length, 0);
-                for (int y = 0; y < aisle.length; y++) {
-                    result[z][y] = Arrays.stream(aisle[y].split(""))
-                            .map(symbol -> {
-                                char key = symbol.charAt(0);
-                                BlockInfo blockInfo = symbolMap[key];
-                                return blockInfo == null ? BlockInfo.EMPTY : blockInfo;
-                            })
-                            .toArray(BlockInfo[]::new);
-                }
-            }
-            return result;
+            return this.bakeArray(BlockInfo.class, BlockInfo.EMPTY);
         }
 
         public MultiblockShapeInfo build() {
