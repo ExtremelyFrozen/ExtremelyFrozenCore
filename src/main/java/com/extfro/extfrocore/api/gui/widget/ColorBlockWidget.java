@@ -1,21 +1,22 @@
 package com.extfro.extfrocore.api.gui.widget;
 
-import net.minecraft.client.gui.GuiGraphics;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
+import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
+import com.lowdragmc.lowdraglib2.gui.ui.event.UIEvents;
+import com.lowdragmc.lowdraglib2.gui.ui.rendering.GUIContext;
 import com.lowdragmc.lowdraglib2.gui.util.DrawerHelper;
-import com.lowdragmc.lowdraglib2.gui.widget.Widget;
+import com.lowdragmc.lowdraglib2.gui.util.UISoundUtils;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.function.IntSupplier;
 
 @Setter
 @Accessors(chain = true)
-public class ColorBlockWidget extends Widget {
+public class ColorBlockWidget extends UIElement {
 
     private IntSupplier colorSupplier;
     @Getter
@@ -23,42 +24,33 @@ public class ColorBlockWidget extends Widget {
     private static boolean isShowAlpha = false;
 
     public ColorBlockWidget(int x, int y, int width, int height) {
-        super(x, y, width, height);
+        layout(layout -> layout.left(x).top(y).width(width).height(height));
         this.currentColor = 0xFFFFFFFF;
-    }
-
-    @Override
-    public void updateScreen() {
-        super.updateScreen();
-        if (isClientSideWidget && colorSupplier != null) {
-            currentColor = colorSupplier.getAsInt();
-        }
-    }
-
-    @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (isMouseOverElement(mouseX, mouseY)) {
-            playButtonClickSound();
+        addEventListener(UIEvents.TICK, event -> {
+            if (colorSupplier != null) {
+                currentColor = colorSupplier.getAsInt();
+            }
+        });
+        addEventListener(UIEvents.MOUSE_DOWN, event -> {
+            UISoundUtils.playButtonClickSound();
             isShowAlpha = !isShowAlpha;
-            return true;
-        }
-        return super.mouseClicked(mouseX, mouseY, button);
+            event.stopPropagation();
+        });
     }
 
-    @OnlyIn(Dist.CLIENT)
     @Override
-    public void drawInBackground(@NotNull GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
-        int x = getPosition().x + 1;
-        int y = getPosition().y + 1;
-        int width = getSize().width - 2;
-        int height = getSize().height - 2;
+    @OnlyIn(Dist.CLIENT)
+    public void drawBackgroundAdditional(GUIContext guiContext) {
+        int x = Math.round(getPositionX()) + 1;
+        int y = Math.round(getPositionY()) + 1;
+        int width = Math.round(getSizeWidth()) - 2;
+        int height = Math.round(getSizeHeight()) - 2;
 
         if (colorSupplier != null) {
             currentColor = colorSupplier.getAsInt();
         }
-        final int BORDER_COLOR = 0xFF000000;
         int opaqueColor = isShowAlpha ? currentColor : currentColor | 0xFF000000;
-        graphics.fill(x, y, x + width, y + height, opaqueColor);
-        DrawerHelper.drawBorder(graphics, x, y, width, height, BORDER_COLOR, 1);
+        guiContext.graphics.fill(x, y, x + width, y + height, opaqueColor);
+        DrawerHelper.drawBorder(guiContext.graphics, x, y, width, height, 0xFF000000, 1);
     }
 }

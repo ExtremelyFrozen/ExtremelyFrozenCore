@@ -364,7 +364,7 @@ public class ProspectingMapWidget extends UIElement implements SearchComponent.I
     }
 
     private Position mapPosition() {
-        return new Position(getPositionX() + 3, getPositionY() + (getSizeHeight() - imageHeight) / 2f - 1);
+        return new Position((int) (getPositionX() + 3), (int) (getPositionY() + (getSizeHeight() - imageHeight) / 2f - 1));
     }
 
     @OnlyIn(Dist.CLIENT)

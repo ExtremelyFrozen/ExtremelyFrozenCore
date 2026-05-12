@@ -2,13 +2,10 @@ package com.extfro.extfrocore.api.gui.widget;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.items.IItemHandlerModifiable;
 
-import com.lowdragmc.lowdraglib2.gui.ui.ModularUIGuiContainer;
-import com.lowdragmc.lowdraglib2.gui.util.DrawerHelper;
-import com.lowdragmc.lowdraglib2.math.Position;
+import com.lowdragmc.lowdraglib2.gui.ui.rendering.GUIContext;
 import com.lowdragmc.lowdraglib2.utils.ColorUtils;
 import com.mojang.blaze3d.systems.RenderSystem;
 import org.jetbrains.annotations.NotNull;
@@ -26,41 +23,8 @@ public class PatternPreviewSlotWidget extends SlotWidget {
      * Override the draw method for regular slot widget since we do custom offsets when drawing the stack
      */
     @Override
-    public void drawInBackground(@NotNull GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
-        super.drawBackgroundTexture(graphics, mouseX, mouseY);
-        Position pos = this.getPosition();
-        if (this.slotReference != null) {
-            ItemStack itemStack = this.getRealStack(this.slotReference.getItem());
-            ModularUIGuiContainer modularUIGui = this.gui == null ? null : this.gui.getModularUIGui();
-            if (itemStack.isEmpty() && modularUIGui != null && modularUIGui.getQuickCrafting() &&
-                    modularUIGui.getQuickCraftSlots().contains(this.slotReference)) {
-                int splitSize = modularUIGui.getQuickCraftSlots().size();
-                itemStack = this.gui.getModularUIContainer().getCarried();
-                if (!itemStack.isEmpty() && splitSize > 1 &&
-                        AbstractContainerMenu.canItemQuickReplace(this.slotReference, itemStack, true)) {
-                    itemStack = itemStack.copy();
-                    itemStack.grow(AbstractContainerMenu.getQuickCraftPlaceCount(modularUIGui.getQuickCraftSlots(),
-                            modularUIGui.dragSplittingLimit, itemStack));
-                    int k = Math.min(itemStack.getMaxStackSize(), this.slotReference.getMaxStackSize(itemStack));
-                    if (itemStack.getCount() > k) {
-                        itemStack.setCount(k);
-                    }
-                }
-            }
-
-            if (!itemStack.isEmpty()) {
-                drawItemStack(graphics, itemStack, pos.x + 1, pos.y + 1, -1, (String) null);
-            }
-        }
-
-        this.drawOverlay(graphics, mouseX, mouseY, partialTicks);
-        if (this.drawHoverOverlay && this.isMouseOverElement((double) mouseX, (double) mouseY) &&
-                this.getHoverElement((double) mouseX, (double) mouseY) == this) {
-            RenderSystem.colorMask(true, true, true, false);
-            DrawerHelper.drawSolidRect(graphics, this.getPosition().x + 1, this.getPosition().y + 1, 16, 16,
-                    -2130706433);
-            RenderSystem.colorMask(true, true, true, true);
-        }
+    protected void drawItemStack(GUIContext guiContext, ItemStack itemStack) {
+        drawItemStack(guiContext.graphics, itemStack, 0, 0, guiContext.elementColor, null);
     }
 
     public static void drawItemStack(@NotNull GuiGraphics graphics, ItemStack itemStack, int x, int y, int color,

@@ -1,13 +1,12 @@
 package com.extfro.extfrocore.api.gui.widget;
 
-import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.world.Container;
 import net.neoforged.neoforge.items.IItemHandlerModifiable;
 
+import com.lowdragmc.lowdraglib2.gui.ui.rendering.GUIContext;
 import com.lowdragmc.lowdraglib2.math.Position;
 import com.lowdragmc.lowdraglib2.math.Size;
 import com.mojang.blaze3d.systems.RenderSystem;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.function.BooleanSupplier;
 
@@ -42,14 +41,14 @@ public class BlockableSlotWidget extends SlotWidget {
     }
 
     @Override
-    public void drawInBackground(@NotNull GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
-        super.drawInBackground(graphics, mouseX, mouseY, partialTicks);
+    public void drawBackgroundAdditional(GUIContext guiContext) {
+        super.drawBackgroundAdditional(guiContext);
         if (isBlocked.getAsBoolean()) {
             Position pos = getPosition();
             Size size = getSize();
             RenderSystem.disableDepthTest();
             RenderSystem.colorMask(true, true, true, false);
-            graphics.fill(pos.getX() + 1, pos.getY() + 1, pos.getX() + 1 + size.getWidth() - 2,
+            guiContext.graphics.fill(pos.getX() + 1, pos.getY() + 1, pos.getX() + 1 + size.getWidth() - 2,
                     pos.getY() + 1 + size.getHeight() - 2, OVERLAY_COLOR);
             RenderSystem.colorMask(true, true, true, true);
             RenderSystem.enableDepthTest();
@@ -58,7 +57,7 @@ public class BlockableSlotWidget extends SlotWidget {
     }
 
     @Override
-    public boolean isMouseOverElement(double mouseX, double mouseY) {
+    public boolean isMouseOverElement(float mouseX, float mouseY) {
         // prevent slot removal and hover highlighting when slot is blocked
         return super.isMouseOverElement(mouseX, mouseY) && !isBlocked.getAsBoolean();
     }

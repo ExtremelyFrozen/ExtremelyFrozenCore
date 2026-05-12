@@ -2,7 +2,7 @@ package com.extfro.extfrocore.api.gui.widget;
 
 import com.extfro.extfrocore.utils.GTMath;
 
-import com.lowdragmc.lowdraglib2.gui.widget.TextFieldWidget;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.TextField;
 import com.lowdragmc.lowdraglib2.math.Position;
 import com.lowdragmc.lowdraglib2.math.Size;
 
@@ -77,8 +77,8 @@ public class LongInputWidget extends NumberInputWidget<Long> {
     }
 
     @Override
-    protected void setTextFieldRange(TextFieldWidget textField, Long min, Long max) {
-        textField.setNumbersOnly(min, max);
+    protected void setTextFieldRange(TextField textField, Long min, Long max) {
+        textField.setNumbersOnlyLong(min, max);
     }
 
     @Override

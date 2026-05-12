@@ -5,73 +5,81 @@ import com.extfro.extfrocore.api.registry.GTRegistries;
 
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.NbtIo;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 
-import com.lowdragmc.lowdraglib2.LDLib;
+import com.lowdragmc.lowdraglib2.editor.project.IProject;
+import com.lowdragmc.lowdraglib2.editor.project.ProjectType;
 import com.lowdragmc.lowdraglib2.editor.resource.Resources;
 import com.lowdragmc.lowdraglib2.editor.ui.Editor;
-import com.lowdragmc.lowdraglib2.gui.ColorPattern;
-import com.lowdragmc.lowdraglib2.gui.editor.data.UIProject;
-import com.lowdragmc.lowdraglib2.gui.editor.ui.tool.WidgetToolBox;
-import com.lowdragmc.lowdraglib2.gui.texture.GuiTextureGroup;
+import com.lowdragmc.lowdraglib2.gui.editor.view.UIEditorView;
 import com.lowdragmc.lowdraglib2.gui.texture.Icons;
-import com.lowdragmc.lowdraglib2.gui.texture.ItemStackTexture;
-import com.lowdragmc.lowdraglib2.gui.texture.TextTexture;
 import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
-import com.lowdragmc.lowdraglib2.gui.util.TreeBuilder;
-import com.lowdragmc.lowdraglib2.gui.widget.TabButton;
-import com.lowdragmc.lowdraglib2.registry.annotation.LDLRegister;
+import com.lowdragmc.lowdraglib2.gui.ui.UITemplate;
+import com.lowdragmc.lowdraglib2.gui.ui.style.StylesheetManager;
 import lombok.Getter;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Path;
-import java.util.*;
+import javax.annotation.Nonnull;
 
-@LDLRegister(name = "mui", group = "editor.gtceu")
-public class MachineUIProject extends UIProject {
+public class MachineUIProject implements IProject {
 
+    public static final ProjectType TYPE = ProjectType.of(Icons.WIDGET_BASIC, "project.gtceu.machine_ui", ".mui",
+            MachineUIProject::new);
+
+    private UIElement root = createDefaultRoot(200, 150);
     @Nullable
     @Getter
     protected MachineDefinition machineDefinition;
-
-    private MachineUIProject() {
-        this(null, null);
-    }
-
-    public MachineUIProject(Resources resources, UIElement root) {
-        super(resources, root);
-    }
-
-    public MachineUIProject(CompoundTag tag) {
-        super(tag);
-    }
+    @Nullable
+    private UIEditorView editorView;
 
     public void setMachine(@Nullable MachineDefinition machineDefinition) {
         this.machineDefinition = machineDefinition;
     }
 
-    public MachineUIProject newEmptyProject() {
-        return new MachineUIProject(Resources.defaultResource(),
-                new UIElement().layout(layout -> layout.left(30).top(30).width(200).height(150)));
-    }
-
-    @Override
-    public UIProject loadProject(Path file) {
-        try {
-            var tag = NbtIo.read(file);
-            if (tag != null) {
-                return new MachineUIProject(tag);
+    public static MachineUIProject fromDefinition(MachineDefinition definition) {
+        var project = new MachineUIProject();
+        var editableUI = definition.getEditableUI();
+        if (editableUI != null) {
+            if (editableUI.hasCustomUI()) {
+                project.deserializeProject(GTRegistries.builtinRegistry(), editableUI.getCustomUI());
+            } else {
+                project.root = editableUI.createDefault();
             }
-        } catch (IOException ignored) {}
-        return null;
+        }
+        project.setMachine(definition);
+        return project;
     }
 
     @Override
-    public CompoundTag serializeNBT(HolderLookup.Provider provider) {
-        var tag = super.serializeNBT(provider);
+    public Resources getResources() {
+        return Resources.EMPTY;
+    }
+
+    @Override
+    public ProjectType getProjectType() {
+        return TYPE;
+    }
+
+    @Override
+    public void initNewProject() {
+        root = createDefaultRoot(200, 150);
+        machineDefinition = null;
+    }
+
+    @Override
+    public Component getDisplayName() {
+        return machineDefinition == null ? IProject.super.getDisplayName() :
+                Component.translatable(machineDefinition.getDescriptionId());
+    }
+
+    @Override
+    public CompoundTag serializeProject(@NotNull HolderLookup.Provider provider) {
+        syncRootFromEditorView();
+        var tag = new CompoundTag();
+        tag.put("root", root.serializeNBT(provider));
         if (machineDefinition != null) {
             tag.putString("machine", machineDefinition.getId().toString());
         }
@@ -79,77 +87,49 @@ public class MachineUIProject extends UIProject {
     }
 
     @Override
-    public void deserializeNBT(HolderLookup.Provider provider, CompoundTag tag) {
-        super.deserializeNBT(provider, tag);
+    public void deserializeProject(@NotNull HolderLookup.Provider provider, @NotNull CompoundTag tag) {
+        root = new UIElement();
+        root.deserializeNBT(provider, tag.getCompound("root"));
         if (tag.contains("machine")) {
             machineDefinition = GTRegistries.MACHINES.get(ResourceLocation.parse(tag.getString("machine")));
+        } else {
+            machineDefinition = null;
         }
     }
 
     @Override
-    public void onLoad(Editor editor) {
-        editor.getResourcePanel().loadResource(getResources(), false);
-        editor.getTabPages().addTab(new TabButton(50, 16, 60, 14).setTexture(
-                new GuiTextureGroup(ColorPattern.T_GREEN.rectTexture().setBottomRadius(10).transform(0, 0.4f),
-                        new TextTexture("Main")),
-                new GuiTextureGroup(ColorPattern.T_RED.rectTexture().setBottomRadius(10).transform(0, 0.4f),
-                        new TextTexture("Main"))),
-                new UIMainPanel(editor, root, machineDefinition == null ? null : machineDefinition.getDescriptionId()));
-
-        for (WidgetToolBox.Default tab : WidgetToolBox.Default.TABS) {
-            if (tab == WidgetToolBox.Default.CONTAINER) {
-                continue;
-            }
-            editor.getToolPanel().addNewToolBox("ldlib.gui.editor.group." + tab.groupName, tab.icon,
-                    tab::createToolBox);
-        }
+    public void onLoad(@Nonnull Editor editor) {
+        editorView = new UIEditorView().loadTemplate(createTemplate(), template -> root = createRoot(template));
+        editorView.setIcon(Icons.WIDGET_BASIC);
+        editorView.setDynamicName(this::getDisplayName);
+        editor.centerWindow.getLeftTop().addView(editorView);
     }
 
     @Override
-    public void attachMenu(Editor editor, String name, TreeBuilder.Menu menu) {
-        if (name.equals("file")) {
-            if (machineDefinition == null || machineDefinition.getEditableUI() == null) {
-                menu.remove("ldlib.gui.editor.menu.save");
-            } else {
-                menu.remove("ldlib.gui.editor.menu.save");
-                menu.leaf(Icons.SAVE, "ldlib.gui.editor.menu.save", () -> {
-                    var editableUI = machineDefinition.getEditableUI();
-                    var path = new File(LDLib.getLDLibDir(),
-                            "assets/%s/ui/machine".formatted(editableUI.getUiPath().getNamespace()));
-                    path.mkdirs();
-                    saveProject(Path.of(editableUI.getUiPath().getPath(), ".", this.getRegisterUI().name()));
-                    editableUI.reloadCustomUI();
-                });
-            }
-        } else if (name.equals("template_tab")) {
-            Map<String, List<MachineDefinition>> categories = new LinkedHashMap<>();
-            for (var definition : GTRegistries.MACHINES) {
-                final var editableUI = definition.getEditableUI();
-                if (editableUI != null) {
-                    // has editable UI
-                    categories.computeIfAbsent(editableUI.getGroupName(), group -> new ArrayList<>()).add(definition);
-                }
-            }
-            categories.forEach((groupName, definitions) -> menu.branch(groupName, m -> {
-                Set<EditableMachineUI> addedSet = new HashSet<>();
-                for (var definition : definitions) {
-                    var editableUI = definition.getEditableUI();
-                    if (editableUI != null && addedSet.add(editableUI)) {
-                        m.leaf(new ItemStackTexture(definition.asStack()), definition.getDescriptionId(), () -> {
-                            root.clearAllExternalChildren();
-                            if (editableUI.hasCustomUI()) {
-                                deserializeNBT(GTRegistries.builtinRegistry(), editableUI.getCustomUI());
-                            } else {
-                                var template = editableUI.createDefault();
-                                template.layout(layout -> layout.left(root.getLayoutX()).top(root.getLayoutY()));
-                                this.root = template;
-                            }
-                            setMachine(definition);
-                            editor.loadProject(this);
-                        });
-                    }
-                }
-            }));
+    public void onClosed(Editor editor) {
+        if (editorView != null) {
+            editorView.removeSelf();
+            editorView = null;
         }
+    }
+
+    private UITemplate createTemplate() {
+        return UITemplate.of(root, StylesheetManager.GDP);
+    }
+
+    private void syncRootFromEditorView() {
+        if (editorView != null && editorView.getCurrentUI() != null) {
+            root = createRoot(editorView.getCurrentUI().toTemplate());
+        }
+    }
+
+    private static UIElement createRoot(UITemplate template) {
+        var element = new UIElement();
+        template.initUI(element);
+        return element;
+    }
+
+    private static UIElement createDefaultRoot(int width, int height) {
+        return new UIElement().layout(layout -> layout.left(30).top(30).width(width).height(height));
     }
 }

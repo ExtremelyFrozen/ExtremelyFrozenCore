@@ -10,115 +10,69 @@ import com.extfro.extfrocore.integration.xei.entry.fluid.FluidTagList;
 import com.extfro.extfrocore.integration.xei.handlers.fluid.CycleFluidEntryHandler;
 import com.extfro.extfrocore.utils.FormattingUtil;
 
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.client.renderer.Rect2i;
 import net.minecraft.network.chat.Component;
-import net.minecraft.sounds.SoundEvent;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.sounds.SoundSource;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
-import net.minecraft.world.level.material.Fluids;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
-import net.neoforged.neoforge.common.SoundActions;
-import net.neoforged.neoforge.fluids.FluidActionResult;
 import net.neoforged.neoforge.fluids.FluidStack;
-import net.neoforged.neoforge.fluids.FluidUtil;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler;
-import net.neoforged.neoforge.fluids.capability.templates.FluidTank;
 
+import com.lowdragmc.lowdraglib2.configurator.annotation.ConfigSetter;
 import com.lowdragmc.lowdraglib2.configurator.annotation.Configurable;
-import com.lowdragmc.lowdraglib2.configurator.ui.ConfiguratorGroup;
-import com.lowdragmc.lowdraglib2.gui.editor.configurator.IConfigurableWidget;
-import com.lowdragmc.lowdraglib2.gui.editor.configurator.WrapperConfigurator;
-import com.lowdragmc.lowdraglib2.gui.ingredient.IRecipeIngredientSlot;
+import com.lowdragmc.lowdraglib2.gui.texture.ColorRectTexture;
 import com.lowdragmc.lowdraglib2.gui.texture.IGuiTexture;
-import com.lowdragmc.lowdraglib2.gui.texture.ProgressTexture;
-import com.lowdragmc.lowdraglib2.gui.texture.ResourceBorderTexture;
-import com.lowdragmc.lowdraglib2.gui.util.DrawerHelper;
-import com.lowdragmc.lowdraglib2.gui.util.TextFormattingUtil;
-import com.lowdragmc.lowdraglib2.gui.widget.Widget;
+import com.lowdragmc.lowdraglib2.gui.texture.SpriteTexture;
+import com.lowdragmc.lowdraglib2.gui.ui.data.FillDirection;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.FluidSlot;
+import com.lowdragmc.lowdraglib2.gui.ui.event.HoverTooltips;
+import com.lowdragmc.lowdraglib2.gui.ui.event.UIEvent;
 import com.lowdragmc.lowdraglib2.integration.xei.IngredientIO;
-import com.lowdragmc.lowdraglib2.jei.ClickableIngredient;
 import com.lowdragmc.lowdraglib2.math.Position;
 import com.lowdragmc.lowdraglib2.math.Size;
 import com.lowdragmc.lowdraglib2.registry.annotation.LDLRegister;
-import com.mojang.blaze3d.systems.RenderSystem;
 import dev.emi.emi.api.neoforge.NeoForgeEmiStack;
 import dev.emi.emi.api.stack.EmiIngredient;
 import lombok.Getter;
-import lombok.Setter;
-import lombok.experimental.Accessors;
-import mezz.jei.api.helpers.IPlatformFluidHelper;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.BiConsumer;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @SuppressWarnings("unused")
-@LDLRegister(name = "gtm_fluid_slot", group = "widget.gtm_container", priority = 50)
-@Accessors(chain = true)
-public class TankWidget extends Widget implements IRecipeIngredientSlot, IConfigurableWidget {
+@LDLRegister(name = "gtm_fluid_slot", group = "widget.gtm_container", priority = 50, registry = "ldlib2:ui_element")
+public class TankWidget extends FluidSlot {
 
-    public final static ResourceBorderTexture FLUID_SLOT_TEXTURE = new ResourceBorderTexture(
-            "ldlib2:textures/gui/fluid_slot.png", 18, 18, 1, 1);
+    public static final IGuiTexture FLUID_SLOT_TEXTURE = SpriteTexture.of("ldlib2:textures/gui/fluid_slot.png")
+            .setBorder(1);
 
     @Nullable
-    @Getter
     protected IFluidHandler fluidTank;
-    @Getter
     protected int tank;
     @Configurable(name = "ldlib.gui.editor.name.showAmount")
-    @Setter
-    protected boolean showAmount;
-    @Configurable(name = "ldlib.gui.editor.name.allowClickFilled")
-    @Setter
-    protected boolean allowClickFilled;
-    @Configurable(name = "ldlib.gui.editor.name.allowClickDrained")
-    @Setter
-    protected boolean allowClickDrained;
+    protected boolean showAmount = true;
     @Configurable(name = "ldlib.gui.editor.name.drawHoverOverlay")
-    @Setter
-    public boolean drawHoverOverlay = true;
+    protected boolean drawHoverOverlay = true;
     @Configurable(name = "ldlib.gui.editor.name.drawHoverTips")
-    @Setter
-    protected boolean drawHoverTips;
-    @Configurable(name = "ldlib.gui.editor.name.fillDirection")
-    @Setter
-    protected ProgressTexture.FillDirection fillDirection = ProgressTexture.FillDirection.ALWAYS_FULL;
-    @Setter
+    protected boolean drawHoverTips = true;
     protected BiConsumer<TankWidget, List<Component>> onAddedTooltips;
-    @Setter
     @Getter
-    protected IngredientIO ingredientIO = IngredientIO.RENDER_ONLY;
-    @Setter
+    protected IngredientIO ingredientIO = IngredientIO.NONE;
     @Getter
     protected float XEIChance = 1f;
-    protected FluidStack lastFluidInTank;
-    protected int lastTankCapacity;
-    @Setter
     protected Runnable changeListener;
-    @Setter
     protected boolean showAmountOverlay = true;
 
     public TankWidget() {
         this(null, 0, 0, 18, 18, true, true);
     }
 
-    @Override
     public void initTemplate() {
         setBackground(FLUID_SLOT_TEXTURE);
-        setFillDirection(ProgressTexture.FillDirection.DOWN_TO_UP);
+        setFillDirection(FillDirection.DOWN_TO_UP);
     }
 
     public TankWidget(IFluidHandler fluidTank, int x, int y, boolean allowClickContainerFilling,
@@ -128,12 +82,7 @@ public class TankWidget extends Widget implements IRecipeIngredientSlot, IConfig
 
     public TankWidget(@Nullable IFluidHandler fluidTank, int x, int y, int width, int height,
                       boolean allowClickContainerFilling, boolean allowClickContainerEmptying) {
-        super(new Position(x, y), new Size(width, height));
-        setFluidTank(fluidTank, 0);
-        this.showAmount = true;
-        this.allowClickFilled = allowClickContainerFilling;
-        this.allowClickDrained = allowClickContainerEmptying;
-        this.drawHoverTips = true;
+        this(fluidTank, 0, x, y, width, height, allowClickContainerFilling, allowClickContainerEmptying);
     }
 
     public TankWidget(IFluidHandler fluidHandler, int tank, int x, int y, boolean allowClickContainerFilling,
@@ -143,19 +92,22 @@ public class TankWidget extends Widget implements IRecipeIngredientSlot, IConfig
 
     public TankWidget(@Nullable IFluidHandler fluidHandler, int tank, int x, int y, int width, int height,
                       boolean allowClickContainerFilling, boolean allowClickContainerEmptying) {
-        super(new Position(x, y), new Size(width, height));
+        super();
+        layout(layout -> layout.left(x).top(y).width(width).height(height));
         setFluidTank(fluidHandler, tank);
-        this.showAmount = true;
-        this.allowClickFilled = allowClickContainerFilling;
-        this.allowClickDrained = allowClickContainerEmptying;
-        this.drawHoverTips = true;
+        setAllowClickFilled(allowClickContainerFilling);
+        setAllowClickDrained(allowClickContainerEmptying);
+        setDrawHoverTips(true);
+        setDrawHoverOverlay(true);
+        addEventListener(com.lowdragmc.lowdraglib2.gui.ui.event.UIEvents.HOVER_TOOLTIPS, this::addExtraTooltips);
+        registerValueListener(value -> onValueChanged());
     }
 
     public TankWidget setFluidTank(IFluidHandler fluidTank) {
         return setFluidTank(fluidTank, 0);
     }
 
-    public TankWidget setFluidTank(IFluidHandler fluidTank, int tank) {
+    public TankWidget setFluidTank(@Nullable IFluidHandler fluidTank, int tank) {
         if (fluidTank instanceof NotifiableFluidTank notifiable) {
             this.fluidTank = notifiable.getStorages()[tank];
             this.tank = 0;
@@ -163,100 +115,172 @@ public class TankWidget extends Widget implements IRecipeIngredientSlot, IConfig
             this.fluidTank = fluidTank;
             this.tank = tank;
         }
-        if (isClientSideWidget) {
-            setClientSideWidget();
-        }
+        bind(this.fluidTank, this.tank);
+        refreshFromTank();
         return this;
     }
 
-    // for kjs
-    public FluidStack getFluid() {
-        if (isClientSideWidget || isRemote()) {
-            return lastFluidInTank == null ? FluidStack.EMPTY : lastFluidInTank;
-        }
-        return fluidTank != null ? fluidTank.getFluidInTank(tank) : FluidStack.EMPTY;
+    @Nullable
+    public IFluidHandler getFluidTank() {
+        return fluidTank;
     }
 
+    public int getTank() {
+        return tank;
+    }
+
+    public FluidStack getFluid() {
+        return getValue();
+    }
+
+    public FluidStack getLastFluidInTank() {
+        return getValue();
+    }
+
+    @Override
     public TankWidget setFluid(FluidStack fluidStack) {
         return setFluid(fluidStack, true);
     }
 
+    @Override
     public TankWidget setFluid(FluidStack fluidStack, boolean notify) {
         if (fluidTank instanceof IFluidHandlerModifiable modifiable) {
             modifiable.setFluidInTank(tank, fluidStack);
-            if (notify) {
-                detectAndSendChanges();
-            }
         }
-        return this;
-    }
-
-    @Override
-    public TankWidget setClientSideWidget() {
-        super.setClientSideWidget();
-        if (fluidTank != null) {
-            this.lastFluidInTank = fluidTank.getFluidInTank(tank).copy();
-        } else {
-            this.lastFluidInTank = null;
-        }
-        this.lastTankCapacity = fluidTank != null ? fluidTank.getTankCapacity(tank) : 0;
+        setValue(fluidStack, notify);
+        refreshCapacityFromTank();
         return this;
     }
 
     public TankWidget setBackground(IGuiTexture background) {
-        super.setBackground(background);
+        style(style -> style.backgroundTexture(background));
         return this;
     }
 
-    private Object convertIngredient(FluidStack fluidStack) {
-        if (ExtForCore.Mods.isEMILoaded()) {
-            return EMICallWrapper.getEMIIngredient(fluidStack, getXEIChance());
-        } else if (ExtForCore.Mods.isJEILoaded() && !fluidStack.isEmpty()) {
-            return JEICallWrapper.getJEIFluidClickable(fluidStack, getPosition(), getSize());
-        }
-        return fluidStack;
+    public Position getPosition() {
+        return new Position(Math.round(getPositionX()), Math.round(getPositionY()));
     }
 
-    @Nullable
-    @Override
-    public Object getXEIIngredientOverMouse(double mouseX, double mouseY) {
-        if (self().isMouseOverElement(mouseX, mouseY)) {
-            if (lastFluidInTank == null || lastFluidInTank.isEmpty()) return null;
+    public Size getSize() {
+        return new Size(Math.round(getSizeWidth()), Math.round(getSizeHeight()));
+    }
 
-            if (fluidTank instanceof CycleFluidEntryHandler entryHandler) {
-                return getXEIIngredientsClickable(entryHandler, tank).getFirst();
+    public Rect2i toRectangleBox() {
+        var pos = getPosition();
+        var size = getSize();
+        return new Rect2i(pos.x, pos.y, size.width, size.height);
+    }
+
+    @ConfigSetter(field = "showAmount")
+    public TankWidget setShowAmount(boolean showAmount) {
+        this.showAmount = showAmount;
+        amountLabel.setDisplay(showAmount && showAmountOverlay);
+        return this;
+    }
+
+    @Override
+    @ConfigSetter(field = "allowClickFilled")
+    public TankWidget setAllowClickFilled(boolean allowClickFilled) {
+        super.setAllowClickFilled(allowClickFilled);
+        return this;
+    }
+
+    @Override
+    @ConfigSetter(field = "allowClickDrained")
+    public TankWidget setAllowClickDrained(boolean allowClickDrained) {
+        super.setAllowClickDrained(allowClickDrained);
+        return this;
+    }
+
+    public TankWidget setDrawHoverOverlay(boolean drawHoverOverlay) {
+        this.drawHoverOverlay = drawHoverOverlay;
+        slotStyle(style -> style.hoverOverlay(drawHoverOverlay ? new ColorRectTexture(0x80FFFFFF) : IGuiTexture.EMPTY));
+        return this;
+    }
+
+    public TankWidget setDrawHoverTips(boolean drawHoverTips) {
+        this.drawHoverTips = drawHoverTips;
+        slotStyle(style -> style.showFluidTooltips(drawHoverTips));
+        return this;
+    }
+
+    public TankWidget setFillDirection(FillDirection fillDirection) {
+        slotStyle(style -> style.fillDirection(fillDirection));
+        return this;
+    }
+
+    public TankWidget setFillDirection(Enum<?> fillDirection) {
+        if (fillDirection != null) {
+            setFillDirection(FillDirection.valueOf(fillDirection.name()));
+        }
+        return this;
+    }
+
+    public TankWidget setOnAddedTooltips(BiConsumer<TankWidget, List<Component>> onAddedTooltips) {
+        this.onAddedTooltips = onAddedTooltips;
+        return this;
+    }
+
+    public TankWidget setIngredientIO(IngredientIO ingredientIO) {
+        this.ingredientIO = ingredientIO == null ? IngredientIO.NONE : ingredientIO;
+        xeiRecipeIngredient(this.ingredientIO);
+        return this;
+    }
+
+    public TankWidget setXEIChance(float XEIChance) {
+        this.XEIChance = XEIChance;
+        return this;
+    }
+
+    public float getXEIChance() {
+        return XEIChance;
+    }
+
+    public TankWidget setChangeListener(Runnable changeListener) {
+        this.changeListener = changeListener;
+        return this;
+    }
+
+    public TankWidget setShowAmountOverlay(boolean showAmountOverlay) {
+        this.showAmountOverlay = showAmountOverlay;
+        amountLabel.setDisplay(showAmount && showAmountOverlay);
+        return this;
+    }
+
+    public TankWidget setHoverTooltips(String... tooltips) {
+        style(style -> style.tooltips(tooltips));
+        return this;
+    }
+
+    public TankWidget setHoverTooltips(Component... tooltips) {
+        style(style -> style.tooltips(tooltips));
+        return this;
+    }
+
+    @Override
+    public List<Component> getFullTooltipTexts() {
+        refreshCapacityFromTank();
+        List<Component> tooltips = new ArrayList<>();
+        boolean isPhantom = this instanceof PhantomFluidWidget;
+        var fluidStack = getValue();
+        if (!fluidStack.isEmpty()) {
+            tooltips.add(fluidStack.getHoverName());
+            if (!isPhantom && showAmount) {
+                tooltips.add(Component.translatable("gtceu.fluid.amount",
+                        FormattingUtil.formatNumbers(fluidStack.getAmount()),
+                        FormattingUtil.formatNumbers(getCapacity())));
             }
-
-            return convertIngredient(lastFluidInTank);
+            TooltipsHandler.appendFluidTooltips(fluidStack, tooltips::add,
+                    TooltipFlag.NORMAL, Item.TooltipContext.of(getModularUI().player.level()));
+        } else {
+            tooltips.add(Component.translatable("gtceu.fluid.empty"));
+            if (!isPhantom && showAmount) {
+                tooltips.add(Component.translatable("gtceu.fluid.amount", 0,
+                        FormattingUtil.formatNumbers(getCapacity())));
+            }
         }
-        return null;
-    }
-
-    @Override
-    public List<Object> getXEIIngredients() {
-        if (lastFluidInTank == null || lastFluidInTank.isEmpty()) return Collections.emptyList();
-
-        if (fluidTank instanceof CycleFluidEntryHandler entryHandler) {
-            return getXEIIngredientsClickable(entryHandler, tank);
-        }
-
-        return List.of(convertIngredient(lastFluidInTank));
-    }
-
-    private List<Object> getXEIIngredientsClickable(CycleFluidEntryHandler handler, int index) {
-        FluidEntryList entryList = handler.getEntry(index);
-        if (ExtForCore.Mods.isEMILoaded()) {
-            return EMICallWrapper.getEMIIngredients(entryList, getXEIChance());
-        } else if (ExtForCore.Mods.isJEILoaded()) {
-            return JEICallWrapper.getJEIIngredientsClickable(entryList, getPosition(), getSize());
-        }
-        return Collections.emptyList();
-    }
-
-    @Override
-    public List<Component> getTooltipTexts() {
-        List<Component> tooltips = getAdditionalTooltips(new ArrayList<>());
-        tooltips.addAll(tooltipTexts);
+        tooltips.addAll(getAdditionalTooltips(new ArrayList<>()));
+        tooltips.addAll(getStyle().tooltips().asList());
         return tooltips;
     }
 
@@ -267,358 +291,70 @@ public class TankWidget extends Widget implements IRecipeIngredientSlot, IConfig
         return list;
     }
 
-    @Override
-    public List<Component> getFullTooltipTexts() {
-        List<Component> tooltips = new ArrayList<>();
-        boolean isPhantom = this instanceof PhantomFluidWidget;
-        var fluidStack = this.lastFluidInTank;
-        if (fluidStack != null && !fluidStack.isEmpty()) {
-            tooltips.add(fluidStack.getHoverName());
-            if (!isPhantom && showAmount) {
-                tooltips.add(
-                        Component.translatable("gtceu.fluid.amount",
-                                FormattingUtil.formatNumbers(fluidStack.getAmount()),
-                                FormattingUtil.formatNumbers(lastTankCapacity)));
-            }
-            TooltipsHandler.appendFluidTooltips(fluidStack, tooltips::add,
-                    TooltipFlag.NORMAL, Item.TooltipContext.of(gui.entityPlayer.level()));
-        } else {
-            tooltips.add(Component.translatable("gtceu.fluid.empty"));
-            if (!isPhantom && showAmount) {
-                tooltips.add(Component.translatable("gtceu.fluid.amount", 0,
-                        FormattingUtil.formatNumbers(lastTankCapacity)));
-            }
+    public List<Object> getXEIIngredients() {
+        var fluid = getValue();
+        if (fluid.isEmpty()) return Collections.emptyList();
+        if (fluidTank instanceof CycleFluidEntryHandler entryHandler) {
+            return getXEIIngredientsClickable(entryHandler, tank);
         }
-        tooltips.addAll(getTooltipTexts());
-        return tooltips;
+        return List.of(convertIngredient(fluid));
     }
 
-    @Override
-    public Object getXEICurrentIngredient() {
-        if (lastFluidInTank == null || lastFluidInTank.isEmpty()) return null;
-        if (ExtForCore.Mods.isJEILoaded()) {
-            return JEICallWrapper.getJEIFluidClickable(lastFluidInTank, getPosition(), getSize());
+    @Nullable
+    public Object getXEIIngredientOverMouse(double mouseX, double mouseY) {
+        if (isMouseOverElement((float) mouseX, (float) mouseY)) {
+            var ingredients = getXEIIngredients();
+            return ingredients.isEmpty() ? null : ingredients.getFirst();
         }
         return null;
     }
 
-    @Override
-    @OnlyIn(Dist.CLIENT)
-    public void drawInBackground(@NotNull GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
-        super.drawInBackground(graphics, mouseX, mouseY, partialTicks);
-        if (isClientSideWidget && fluidTank != null) {
-            FluidStack fluidStack = fluidTank.getFluidInTank(tank);
-            int capacity = fluidTank.getTankCapacity(tank);
-            if (capacity != lastTankCapacity) {
-                this.lastTankCapacity = capacity;
-            }
-            if (!FluidStack.isSameFluidSameComponents(fluidStack, lastFluidInTank)) {
-                this.lastFluidInTank = fluidStack.copy();
-            } else if (fluidStack.getAmount() != lastFluidInTank.getAmount()) {
-                this.lastFluidInTank.setAmount(fluidStack.getAmount());
-            }
-        }
-        Position pos = getPosition();
-        Size size = getSize();
-        var renderedFluid = lastFluidInTank;
-        if (renderedFluid != null) {
-            RenderSystem.disableBlend();
-            if (!renderedFluid.isEmpty()) {
-                double progress = renderedFluid.getAmount() * 1.0 /
-                        Math.max(Math.max(renderedFluid.getAmount(), lastTankCapacity), 1);
-                float drawnU = (float) fillDirection.getDrawnU(progress);
-                float drawnV = (float) fillDirection.getDrawnV(progress);
-                float drawnWidth = (float) fillDirection.getDrawnWidth(progress);
-                float drawnHeight = (float) fillDirection.getDrawnHeight(progress);
-                int width = size.width - 2;
-                int height = size.height - 2;
-                int x = pos.x + 1;
-                int y = pos.y + 1;
-                DrawerHelper.drawFluidForGui(graphics, renderedFluid,
-                        (int) (x + drawnU * width), (int) (y + drawnV * height),
-                        ((int) (width * drawnWidth)), ((int) (height * drawnHeight)));
-            }
-
-            if (showAmount && showAmountOverlay && !renderedFluid.isEmpty()) {
-                graphics.pose().pushPose();
-                graphics.pose().scale(0.5F, 0.5F, 1);
-                String s = TextFormattingUtil.formatLongToCompactStringBuckets(renderedFluid.getAmount(), 3) + "B";
-                Font fontRenderer = Minecraft.getInstance().font;
-                graphics.drawString(fontRenderer, s,
-                        (int) ((pos.x + (size.width / 3f)) * 2 - fontRenderer.width(s) + 21),
-                        (int) ((pos.y + (size.height / 3f) + 6) * 2), 0xFFFFFF, true);
-                graphics.pose().popPose();
-            }
-
-            RenderSystem.enableBlend();
-            RenderSystem.setShaderColor(1, 1, 1, 1);
-        }
-        drawOverlay(graphics, mouseX, mouseY, partialTicks);
-        if (drawHoverOverlay && isMouseOverElement(mouseX, mouseY) && getHoverElement(mouseX, mouseY) == this) {
-            RenderSystem.colorMask(true, true, true, false);
-            DrawerHelper.drawSolidRect(graphics, getPosition().x + 1, getPosition().y + 1, getSize().width - 2,
-                    getSize().height - 2, 0x80FFFFFF);
-            RenderSystem.colorMask(true, true, true, true);
-        }
+    public Object getXEICurrentIngredient() {
+        var fluid = getValue();
+        return fluid.isEmpty() ? null : convertIngredient(fluid);
     }
 
-    @Override
-    @OnlyIn(Dist.CLIENT)
-    public void drawInForeground(@NotNull GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
-        if (drawHoverTips && isMouseOverElement(mouseX, mouseY) && getHoverElement(mouseX, mouseY) == this) {
-            if (gui != null) {
-                gui.getModularUIGui().setHoverTooltip(getFullTooltipTexts(), ItemStack.EMPTY, null, null);
-            }
-            RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1f);
-        } else {
-            super.drawInForeground(graphics, mouseX, mouseY, partialTicks);
+    private Object convertIngredient(FluidStack fluidStack) {
+        if (ExtForCore.Mods.isEMILoaded()) {
+            return EMICallWrapper.getEMIIngredient(fluidStack, getXEIChance());
         }
+        return fluidStack;
     }
 
-    @Override
-    public void detectAndSendChanges() {
-        if (fluidTank != null) {
-            FluidStack fluidStack = fluidTank.getFluidInTank(tank);
-            int capacity = fluidTank.getTankCapacity(tank);
-            if (capacity != lastTankCapacity) {
-                this.lastTankCapacity = capacity;
-                writeUpdateInfo(0, buffer -> buffer.writeVarInt(lastTankCapacity));
-            }
-            if (!FluidStack.isSameFluidSameComponents(fluidStack, lastFluidInTank)) {
-                this.lastFluidInTank = fluidStack.copy();
-                writeUpdateInfo(2, buffer -> FluidStack.OPTIONAL_STREAM_CODEC.encode(buffer, fluidStack));
-            } else if (fluidStack.getAmount() != lastFluidInTank.getAmount()) {
-                this.lastFluidInTank.setAmount(fluidStack.getAmount());
-                writeUpdateInfo(3, buffer -> buffer.writeVarInt(lastFluidInTank.getAmount()));
-            } else {
-                super.detectAndSendChanges();
-                return;
-            }
-            if (changeListener != null) {
-                changeListener.run();
-            }
+    private List<Object> getXEIIngredientsClickable(CycleFluidEntryHandler handler, int index) {
+        FluidEntryList entryList = handler.getEntry(index);
+        if (ExtForCore.Mods.isEMILoaded()) {
+            return EMICallWrapper.getEMIIngredients(entryList, getXEIChance());
         }
+        return Collections.emptyList();
     }
 
-    @Override
-    public void writeInitialData(RegistryFriendlyByteBuf buffer) {
-        buffer.writeBoolean(fluidTank != null);
-        if (fluidTank != null) {
-            this.lastTankCapacity = fluidTank.getTankCapacity(tank);
-            buffer.writeVarInt(lastTankCapacity);
-            FluidStack fluidStack = fluidTank.getFluidInTank(tank);
-            this.lastFluidInTank = fluidStack.copy();
-            FluidStack.OPTIONAL_STREAM_CODEC.encode(buffer, fluidStack);
-        }
-    }
-
-    @Override
-    public void readInitialData(RegistryFriendlyByteBuf buffer) {
-        if (buffer.readBoolean()) {
-            this.lastTankCapacity = buffer.readVarInt();
-            readUpdateInfo(2, buffer);
-        }
-    }
-
-    @Override
-    @OnlyIn(Dist.CLIENT)
-    public void readUpdateInfo(int id, RegistryFriendlyByteBuf buffer) {
-        if (id == 0) {
-            this.lastTankCapacity = buffer.readVarInt();
-        } else if (id == 1) {
-            this.lastFluidInTank = null;
-        } else if (id == 2) {
-            this.lastFluidInTank = FluidStack.OPTIONAL_STREAM_CODEC.decode(buffer);
-        } else if (id == 3 && lastFluidInTank != null) {
-            this.lastFluidInTank.setAmount(buffer.readVarInt());
-        } else if (id == 4) {
-            ItemStack currentStack = gui.getModularUIContainer().getCarried();
-            int newStackSize = buffer.readVarInt();
-            currentStack.setCount(newStackSize);
-            gui.getModularUIContainer().setCarried(currentStack);
-        } else {
-            super.readUpdateInfo(id, buffer);
+    private void addExtraTooltips(UIEvent event) {
+        if (!drawHoverTips) {
             return;
         }
+        event.hoverTooltips = new HoverTooltips(getFullTooltipTexts(), null, null, ItemStack.EMPTY);
+    }
+
+    private void onValueChanged() {
         if (changeListener != null) {
             changeListener.run();
         }
     }
 
-    @Override
-    public void handleClientAction(int id, RegistryFriendlyByteBuf buffer) {
-        super.handleClientAction(id, buffer);
-        if (id == 1) {
-            boolean isShiftKeyDown = buffer.readBoolean();
-            int clickResult = tryClickContainer(isShiftKeyDown);
-            if (clickResult >= 0) {
-                writeUpdateInfo(4, buf -> buf.writeVarInt(clickResult));
-            }
+    protected void refreshFromTank() {
+        if (fluidTank == null || tank < 0 || tank >= fluidTank.getTanks()) {
+            setValue(FluidStack.EMPTY, false);
+            setCapacity(0);
+            return;
         }
+        setCapacity(fluidTank.getTankCapacity(tank));
+        setValue(fluidTank.getFluidInTank(tank), false);
     }
 
-    private int tryClickContainer(boolean isShiftKeyDown) {
-        if (fluidTank == null) return -1;
-        Player player = gui.entityPlayer;
-        ItemStack currentStack = gui.getModularUIContainer().getCarried();
-        var handler = FluidUtil.getFluidHandler(currentStack).orElse(null);
-        if (handler == null) return -1;
-        int maxAttempts = isShiftKeyDown ? currentStack.getCount() : 1;
-        FluidStack initialFluid = fluidTank.getFluidInTank(tank).copy();
-        if (allowClickFilled && initialFluid.getAmount() > 0) {
-            boolean performedFill = false;
-            ItemStack filledResult = ItemStack.EMPTY;
-            for (int i = 0; i < maxAttempts; i++) {
-                FluidActionResult result = FluidUtil.tryFillContainer(currentStack, fluidTank, Integer.MAX_VALUE, null,
-                        false);
-                if (!result.isSuccess()) break;
-                ItemStack remainingStack = FluidUtil
-                        .tryFillContainer(currentStack, fluidTank, Integer.MAX_VALUE, null, true).getResult();
-                performedFill = true;
-
-                currentStack.shrink(1);
-
-                if (filledResult.isEmpty()) {
-                    filledResult = remainingStack.copy();
-                } else if (ItemStack.isSameItemSameComponents(filledResult, remainingStack)) {
-                    if (filledResult.getCount() < filledResult.getMaxStackSize())
-                        filledResult.grow(1);
-                    else
-                        player.getInventory().placeItemBackInInventory(remainingStack);
-                } else {
-                    player.getInventory().placeItemBackInInventory(filledResult);
-                    filledResult = remainingStack.copy();
-                }
-            }
-            if (performedFill) {
-                SoundEvent soundevent = initialFluid.getFluid().getFluidType().getSound(initialFluid,
-                        SoundActions.BUCKET_FILL);
-                if (soundevent == null)
-                    soundevent = SoundEvents.BUCKET_FILL;
-                player.level().playSound(null, player, soundevent, SoundSource.BLOCKS, 1.0F, 1.0F);
-
-                if (currentStack.isEmpty()) {
-                    gui.getModularUIContainer().setCarried(filledResult);
-                } else {
-                    gui.getModularUIContainer().setCarried(currentStack);
-                    player.getInventory().placeItemBackInInventory(filledResult);
-                }
-                return gui.getModularUIContainer().getCarried().getCount();
-            }
-        }
-
-        if (allowClickDrained) {
-            boolean performedEmptying = false;
-            ItemStack drainedResult = ItemStack.EMPTY;
-            for (int i = 0; i < maxAttempts; i++) {
-                int remainingCapacity = fluidTank.getTankCapacity(tank) - fluidTank.getFluidInTank(tank).getAmount();
-                FluidActionResult result = FluidUtil.tryEmptyContainer(currentStack, fluidTank, remainingCapacity, null,
-                        false);
-                if (!result.isSuccess()) break;
-
-                ItemStack remainingStack = FluidUtil
-                        .tryEmptyContainer(currentStack, fluidTank, remainingCapacity, null, true)
-                        .getResult();
-                performedEmptying = true;
-
-                currentStack.shrink(1);
-
-                if (drainedResult.isEmpty()) {
-                    drainedResult = remainingStack.copy();
-                } else if (ItemStack.isSameItemSameComponents(drainedResult, remainingStack)) {
-                    if (drainedResult.getCount() < drainedResult.getMaxStackSize())
-                        drainedResult.grow(1);
-                    else
-                        player.getInventory().placeItemBackInInventory(remainingStack);
-                } else {
-                    player.getInventory().placeItemBackInInventory(drainedResult);
-                    drainedResult = remainingStack.copy();
-                }
-            }
-            var filledFluid = fluidTank.getFluidInTank(tank);
-            if (performedEmptying) {
-                SoundEvent soundevent = filledFluid.getFluid().getFluidType().getSound(filledFluid,
-                        SoundActions.BUCKET_EMPTY);
-                if (soundevent == null)
-                    soundevent = SoundEvents.BUCKET_EMPTY;
-                player.level().playSound(null, player, soundevent, SoundSource.BLOCKS, 1.0F, 1.0F);
-
-                if (currentStack.isEmpty()) {
-                    gui.getModularUIContainer().setCarried(drainedResult);
-                } else {
-                    gui.getModularUIContainer().setCarried(currentStack);
-                    player.getInventory().placeItemBackInInventory(drainedResult);
-                }
-                return gui.getModularUIContainer().getCarried().getCount();
-            }
-        }
-
-        return -1;
-    }
-
-    @OnlyIn(Dist.CLIENT)
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if ((allowClickDrained || allowClickFilled) && isMouseOverElement(mouseX, mouseY)) {
-            if (button == 0) {
-                if (FluidUtil.getFluidHandler(gui.getModularUIContainer().getCarried()).isPresent()) {
-                    boolean isShiftKeyDown = isShiftDown();
-                    writeClientAction(1, writer -> writer.writeBoolean(isShiftKeyDown));
-                    playButtonClickSound();
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    @Override
-    public void buildConfigurator(ConfiguratorGroup father) {
-        var handler = new FluidTank(5000);
-        handler.fill(new FluidStack(Fluids.WATER, 3000), IFluidHandler.FluidAction.EXECUTE);
-        father.addConfigurators(new WrapperConfigurator("ldlib.gui.editor.group.preview", new TankWidget() {
-
-            @Override
-            public void updateScreen() {
-                super.updateScreen();
-                setHoverTooltips(TankWidget.this.tooltipTexts);
-                this.backgroundTexture = TankWidget.this.backgroundTexture;
-                this.hoverTexture = TankWidget.this.hoverTexture;
-                this.showAmount = TankWidget.this.showAmount;
-                this.drawHoverTips = TankWidget.this.drawHoverTips;
-                this.fillDirection = TankWidget.this.fillDirection;
-                this.overlay = TankWidget.this.overlay;
-            }
-        }.setAllowClickDrained(false).setAllowClickFilled(false).setFluidTank(handler)));
-
-        IConfigurableWidget.super.buildConfigurator(father);
-    }
-
-    /**
-     * Wrapper for methods that use JEI classes so that classloading doesn't brick itself.
-     */
-    public static final class JEICallWrapper {
-
-        public static List<Object> getJEIIngredientsClickable(FluidEntryList list, Position pos, Size size) {
-            return list.getStacks()
-                    .stream()
-                    .filter(stack -> !stack.isEmpty())
-                    .map(stack -> getJEIFluidClickable(stack, pos, size))
-                    .toList();
-        }
-
-        public static Object getJEIFluidClickable(FluidStack fluidStack, Position pos, Size size) {
-            return _getJEIFluidClickable(JEIPlugin.jeiHelpers.getPlatformFluidHelper(), fluidStack, pos,
-                    size);
-        }
-
-        private static <T> Object _getJEIFluidClickable(IPlatformFluidHelper<T> helper,
-                                                        FluidStack fluidStack, Position pos, Size size) {
-            T ingredient = helper.create(fluidStack.getFluidHolder(), fluidStack.getAmount(),
-                    fluidStack.getComponentsPatch());
-            return JEIPlugin.jeiHelpers.getIngredientManager().createTypedIngredient(ingredient, false)
-                    .map(typedIngredient -> new ClickableIngredient<>(typedIngredient, pos.x, pos.y, size.width,
-                            size.height))
-                    .orElse(null);
+    protected void refreshCapacityFromTank() {
+        if (fluidTank != null && tank >= 0 && tank < fluidTank.getTanks()) {
+            setCapacity(fluidTank.getTankCapacity(tank));
         }
     }
 
@@ -633,10 +369,7 @@ public class TankWidget extends Widget implements IRecipeIngredientSlot, IConfig
         }
 
         public static List<Object> getEMIIngredients(FluidTagList list, float xeiChance) {
-            return list.getEntries().stream()
-                    .map(FluidTagList.FluidTagEntry::stacks)
-                    .map(stream -> toEMIIngredient(stream).setChance(xeiChance))
-                    .collect(Collectors.toList());
+            return List.of(toEMIIngredient(list.getStacks().stream()).setChance(xeiChance));
         }
 
         public static List<Object> getEMIIngredients(FluidEntryList list, float xeiChance) {

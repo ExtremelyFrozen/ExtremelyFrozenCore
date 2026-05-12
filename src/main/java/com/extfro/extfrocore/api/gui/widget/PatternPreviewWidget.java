@@ -13,59 +13,54 @@ import com.extfro.extfrocore.config.ConfigHolder;
 import com.extfro.extfrocore.integration.xei.handlers.item.CycleItemEntryHandler;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.Fluid;
-import net.minecraft.world.phys.BlockHitResult;
-import net.minecraft.world.phys.HitResult;
-import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
-import com.lowdragmc.lowdraglib2.client.scene.WorldSceneRenderer;
-import com.lowdragmc.lowdraglib2.client.utils.RenderUtils;
 import com.lowdragmc.lowdraglib2.gui.ColorPattern;
 import com.lowdragmc.lowdraglib2.gui.texture.ColorRectTexture;
 import com.lowdragmc.lowdraglib2.gui.texture.GuiTextureGroup;
 import com.lowdragmc.lowdraglib2.gui.texture.TextTexture;
-import com.lowdragmc.lowdraglib2.gui.widget.*;
+import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
+import com.lowdragmc.lowdraglib2.gui.ui.data.ScrollerMode;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.Button;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.Label;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.Scene;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.ScrollerView;
 import com.lowdragmc.lowdraglib2.integration.xei.IngredientIO;
 import com.lowdragmc.lowdraglib2.utils.data.BlockInfo;
-import com.lowdragmc.lowdraglib2.utils.data.BlockPosFace;
 import com.lowdragmc.lowdraglib2.utils.data.ItemStackKey;
 import com.lowdragmc.lowdraglib2.utils.virtuallevel.TrackedDummyWorld;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.PoseStack;
 import dev.emi.emi.screen.RecipeScreen;
+import dev.vfyjxf.taffy.style.TaffyPosition;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.longs.LongSets;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import org.jetbrains.annotations.NotNull;
-import org.joml.Vector3f;
 
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @OnlyIn(Dist.CLIENT)
-public class PatternPreviewWidget extends WidgetGroup {
+public class PatternPreviewWidget extends UIElement {
 
     private boolean isLoaded;
     private static TrackedDummyWorld LEVEL;
     private static final int REGION_SIZE = 512;
     private static int LAST_OFFSET_INDEX = 0;
     private static final Map<MultiblockMachineDefinition, MBPattern[]> CACHE = new HashMap<>();
-    private final SceneWidget sceneWidget;
-    private final DraggableScrollableWidgetGroup scrollableWidgetGroup;
+    private final Scene sceneWidget;
+    private final ScrollerView scrollableWidgetGroup;
     public final MultiblockMachineDefinition controllerDefinition;
     private final MBPattern[] patterns;
     private final List<SimplePredicate> predicates;
@@ -75,83 +70,25 @@ public class PatternPreviewWidget extends WidgetGroup {
     private SlotWidget[] candidates;
 
     protected PatternPreviewWidget(MultiblockMachineDefinition controllerDefinition) {
-        super(0, 0, 160, 160);
-        setClientSideWidget();
+        layout(layout -> layout.width(160).height(160));
         this.controllerDefinition = controllerDefinition;
         predicates = new ArrayList<>();
         layer = -1;
 
-        addWidget(sceneWidget = new SceneWidget(3, 3, 150, 150, LEVEL) {
-
-            @Override
-            public void renderBlockOverLay(WorldSceneRenderer renderer) {
-                PoseStack poseStack = new PoseStack();
-                hoverPosFace = null;
-                hoverItem = null;
-                if (isMouseOverElement(currentMouseX, currentMouseY)) {
-                    BlockHitResult hit = renderer.getLastTraceResult();
-                    if (hit != null) {
-                        if (core.contains(hit.getBlockPos())) {
-                            hoverPosFace = new BlockPosFace(hit.getBlockPos(), hit.getDirection());
-                        } else if (!useOrtho) {
-                            Vector3f hitPos = hit.getLocation().toVector3f();
-                            Level world = renderer.world;
-                            Vec3 eyePos = new Vec3(renderer.getEyePos());
-                            hitPos.mul(2); // Double view range to ensure pos can be seen.
-                            Vec3 endPos = new Vec3((hitPos.x - eyePos.x), (hitPos.y - eyePos.y), (hitPos.z - eyePos.z));
-                            double min = Float.MAX_VALUE;
-                            for (BlockPos pos : core) {
-                                BlockState blockState = world.getBlockState(pos);
-                                if (blockState.getBlock() == Blocks.AIR) {
-                                    continue;
-                                }
-                                hit = world.clipWithInteractionOverride(eyePos, endPos, pos,
-                                        blockState.getShape(world, pos), blockState);
-                                if (hit != null && hit.getType() != HitResult.Type.MISS) {
-                                    double dist = eyePos.distanceToSqr(hit.getLocation());
-                                    if (dist < min) {
-                                        min = dist;
-                                        hoverPosFace = new BlockPosFace(hit.getBlockPos(), hit.getDirection());
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                if (hoverPosFace != null) {
-                    var state = getDummyWorld().getBlockState(hoverPosFace.pos());
-                    hoverItem = state.getBlock().getCloneItemStack(getDummyWorld(), hoverPosFace.pos(), state);
-                }
-                BlockPosFace tmp = dragging ? clickPosFace : hoverPosFace;
-                if (selectedPosFace != null || tmp != null) {
-                    if (selectedPosFace != null && renderFacing) {
-                        drawFacingBorder(poseStack, selectedPosFace, 0xff00ff00);
-                    }
-                    if (tmp != null && !tmp.equals(selectedPosFace) && renderFacing) {
-                        drawFacingBorder(poseStack, tmp, 0xffffffff);
-                    }
-                }
-                if (selectedPosFace != null && renderSelect) {
-                    RenderUtils.renderBlockOverLay(poseStack, selectedPosFace.pos(), 0.6f, 0, 0, 1.03f);
-                }
-
-                if (this.afterWorldRender != null) {
-                    this.afterWorldRender.accept(this);
-                }
-            }
-        }
+        sceneWidget = new Scene();
+        sceneWidget.layout(layout -> layout.positionType(TaffyPosition.ABSOLUTE).left(3).top(3).width(150).height(150));
+        sceneWidget.createScene(LEVEL)
                 .setOnSelected(this::onPosSelected)
                 .setRenderFacing(false)
-                .setRenderFacing(false));
+                .setShowHoverBlockTips(true);
+        addChild(sceneWidget);
 
-        scrollableWidgetGroup = new DraggableScrollableWidgetGroup(3, 132, 154, 22)
-                .setXScrollBarHeight(4)
-                .setXBarStyle(GuiTextures.SLIDER_BACKGROUND, GuiTextures.BUTTON)
-                .setScrollable(true)
-                .setDraggable(true)
-                .setScrollWheelDirection(DraggableScrollableWidgetGroup.ScrollWheelDirection.HORIZONTAL);
-        scrollableWidgetGroup.setScrollYOffset(0);
-        addWidget(scrollableWidgetGroup);
+        scrollableWidgetGroup = new ScrollerView();
+        scrollableWidgetGroup.layout(layout -> layout.positionType(TaffyPosition.ABSOLUTE).left(3).top(132).width(154).height(22));
+        scrollableWidgetGroup.scrollerStyle(style -> style.mode(ScrollerMode.HORIZONTAL));
+        scrollableWidgetGroup.viewPort(viewPort -> viewPort.style(style -> style.backgroundTexture(GuiTextures.SLOT)));
+        scrollableWidgetGroup.viewContainer(viewContainer -> viewContainer.layout(layout -> layout.height(18)));
+        addChild(scrollableWidgetGroup);
 
         if (ConfigHolder.INSTANCE.client.useVBO) {
             if (!RenderSystem.isOnRenderThread()) {
@@ -161,32 +98,29 @@ public class PatternPreviewWidget extends WidgetGroup {
             }
         }
 
-        addWidget(new ImageWidget(3, 3, 160, 10,
-                new TextTexture(controllerDefinition.getDescriptionId(), -1)
-                        .setType(TextTexture.TextType.ROLL)
-                        .setWidth(170)
-                        .setDropShadow(true)));
+        var title = new Label().setText(Component.translatable(controllerDefinition.getDescriptionId()));
+        title.layout(layout -> layout.positionType(TaffyPosition.ABSOLUTE).left(3).top(3).width(160).height(10));
+        title.textStyle(style -> style.textShadow(true));
+        addChild(title);
 
         this.patterns = CACHE.computeIfAbsent(controllerDefinition, definition -> {
             HashSet<ItemStackKey> drops = new HashSet<>();
-            drops.add(new ItemStackKey(this.controllerDefinition.asStack()));
+            drops.add(ItemStackKey.of(this.controllerDefinition.asStack()));
             return controllerDefinition.getMatchingShapes().stream()
                     .map(it -> initializePattern(it, drops))
                     .filter(Objects::nonNull)
                     .toArray(MBPattern[]::new);
         });
 
-        addWidget(new ButtonWidget(138, 30, 18, 18, new GuiTextureGroup(
+        addChild(button(138, 30, 18, 18, new GuiTextureGroup(
                 ColorPattern.T_GRAY.rectTexture(),
                 new TextTexture("1").setSupplier(() -> "P:" + index)),
-                (x) -> setPage((index + 1 >= patterns.length) ? 0 : index + 1))
-                .setHoverBorderTexture(1, -1));
+                () -> setPage((index + 1 >= patterns.length) ? 0 : index + 1)));
 
-        addWidget(new ButtonWidget(138, 50, 18, 18, new GuiTextureGroup(
+        addChild(button(138, 50, 18, 18, new GuiTextureGroup(
                 ColorPattern.T_GRAY.rectTexture(),
                 new TextTexture("1").setSupplier(() -> layer >= 0 ? "L:" + layer : "ALL")),
-                cd -> updateLayer())
-                .setHoverBorderTexture(1, -1));
+                this::updateLayer));
 
         setPage(0);
     }
@@ -240,7 +174,7 @@ public class PatternPreviewWidget extends WidgetGroup {
         setupScene(pattern);
         if (slotWidgets != null) {
             for (SlotWidget slotWidget : slotWidgets) {
-                scrollableWidgetGroup.removeWidget(slotWidget);
+                scrollableWidgetGroup.removeScrollViewChild(slotWidget);
             }
         }
         slotWidgets = new SlotWidget[Math.min(pattern.parts.size(), 18)];
@@ -260,7 +194,7 @@ public class PatternPreviewWidget extends WidgetGroup {
                     .setBackgroundTexture(ColorPattern.T_GRAY.rectTexture())
                     .setIngredientIO(IngredientIO.INPUT);
             xOffset += 18 + (2 * padding);
-            scrollableWidgetGroup.addWidget(slotWidgets[i]);
+            scrollableWidgetGroup.addScrollViewChild(slotWidgets[i]);
         }
     }
 
@@ -286,7 +220,7 @@ public class PatternPreviewWidget extends WidgetGroup {
             predicates.removeIf(p -> p == null || p.candidates == null); // why it happens?
             if (candidates != null) {
                 for (SlotWidget candidate : candidates) {
-                    removeWidget(candidate);
+                    removeChild(candidate);
                 }
             }
             List<List<ItemStack>> candidateStacks = new ArrayList<>();
@@ -308,7 +242,7 @@ public class PatternPreviewWidget extends WidgetGroup {
                         .setIngredientIO(IngredientIO.INPUT)
                         .setBackgroundTexture(new ColorRectTexture(0x4fffffff))
                         .setOnAddedTooltips((slot, list) -> list.addAll(predicateTips.get(finalI)));
-                addWidget(candidates[i]);
+                addChild(candidates[i]);
             }
         }
     }
@@ -353,19 +287,13 @@ public class PatternPreviewWidget extends WidgetGroup {
     }
 
     @Override
-    public void updateScreen() {
-        super.updateScreen();
+    public void screenTick() {
+        super.screenTick();
         // I can only think of this way
         if (!isLoaded && ExtForCore.Mods.isEMILoaded() && Minecraft.getInstance().screen instanceof RecipeScreen) {
             setPage(0);
             isLoaded = true;
         }
-    }
-
-    @Override
-    public void drawInBackground(@NotNull GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
-        RenderSystem.enableBlend();
-        super.drawInBackground(graphics, mouseX, mouseY, partialTicks);
     }
 
     private MBPattern initializePattern(MultiblockShapeInfo shapeInfo, HashSet<ItemStackKey> blockDrops) {
@@ -382,20 +310,21 @@ public class PatternPreviewWidget extends WidgetGroup {
                 for (int z = 0; z < column.length; z++) {
                     BlockState blockState = column[z].getBlockState();
                     BlockPos pos = multiPos.offset(x, y, z);
-                    if (column[z].getBlockEntity(pos,
-                            LEVEL.getLevel().registryAccess()) instanceof MultiblockControllerMachine controller) {
-                        controller.setLevel(LEVEL);
-                        blockEntitiesToAdd.add(controller);
-                        controllerBase = controller;
-                    }
                     blockMap.put(pos, BlockInfo.fromBlockState(blockState));
                 }
             }
         }
 
         LEVEL.addBlocks(blockMap);
+        for (BlockPos pos : blockMap.keySet()) {
+            if (LEVEL.getBlockEntity(pos) instanceof MultiblockControllerMachine controller) {
+                controller.setLevel(LEVEL);
+                blockEntitiesToAdd.add(controller);
+                controllerBase = controller;
+            }
+        }
         for (BlockEntity blockEntity : blockEntitiesToAdd) {
-            LEVEL.setInnerBlockEntity(blockEntity);
+            LEVEL.addBlock(blockEntity.getBlockPos(), BlockInfo.fromBlockState(blockEntity.getBlockState()));
         }
 
         Map<ItemStackKey, PartInfo> parts = gatherBlockDrops(blockMap);
@@ -440,17 +369,29 @@ public class PatternPreviewWidget extends WidgetGroup {
         for (Map.Entry<BlockPos, BlockInfo> entry : blocks.entrySet()) {
             BlockPos pos = entry.getKey();
             BlockState blockState = PatternPreviewWidget.LEVEL.getBlockState(pos);
-            ItemStack itemStack = blockState.getBlock().getCloneItemStack(PatternPreviewWidget.LEVEL, pos, blockState);
+            ItemStack itemStack = BlockInfo.fromBlockState(blockState).getItemStackForm();
 
             if (itemStack.isEmpty() && !blockState.getFluidState().isEmpty()) {
                 Fluid fluid = blockState.getFluidState().getType();
                 itemStack = fluid.getBucket().getDefaultInstance();
             }
 
-            ItemStackKey itemStackKey = new ItemStackKey(itemStack);
+            ItemStackKey itemStackKey = ItemStackKey.of(itemStack);
             partsMap.computeIfAbsent(itemStackKey, key -> new PartInfo(key, entry.getValue())).amount++;
         }
         return partsMap;
+    }
+
+    private Button button(int x, int y, int width, int height, GuiTextureGroup texture, Runnable onClick) {
+        var button = new Button().noText();
+        button.layout(layout -> layout.positionType(TaffyPosition.ABSOLUTE).left(x).top(y).width(width).height(height));
+        button.buttonStyle(style -> style.baseTexture(texture).hoverTexture(texture).pressedTexture(texture));
+        button.style(style -> style.backgroundTexture(texture));
+        button.setOnClick(event -> {
+            onClick.run();
+            event.stopPropagation();
+        });
+        return button;
     }
 
     private static class PartInfo {

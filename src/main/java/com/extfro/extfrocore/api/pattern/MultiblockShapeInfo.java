@@ -7,7 +7,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 
-import com.lowdragmc.lowdraglib2.utils.Builder;
+import com.lowdragmc.lowdraglib2.utils.Builder3D;
 import com.lowdragmc.lowdraglib2.utils.data.BlockInfo;
 
 import java.util.function.Supplier;
@@ -28,7 +28,7 @@ public class MultiblockShapeInfo {
         return new ShapeInfoBuilder();
     }
 
-    public static class ShapeInfoBuilder extends Builder<BlockInfo, ShapeInfoBuilder> {
+    public static class ShapeInfoBuilder extends Builder3D<BlockInfo, ShapeInfoBuilder> {
 
         public ShapeInfoBuilder where(char symbol, BlockState blockState) {
             return where(symbol, BlockInfo.fromBlockState(blockState));

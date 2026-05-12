@@ -7,7 +7,6 @@ import net.minecraft.network.chat.Component;
 
 import com.lowdragmc.lowdraglib2.gui.texture.GuiTextureGroup;
 import com.lowdragmc.lowdraglib2.gui.texture.IGuiTexture;
-import com.lowdragmc.lowdraglib2.gui.texture.ResourceTexture;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.Toggle;
 import com.lowdragmc.lowdraglib2.gui.ui.event.UIEvents;
 import it.unimi.dsi.fastutil.booleans.BooleanConsumer;
@@ -44,24 +43,14 @@ public class ToggleButtonWidget extends Toggle {
     }
 
     private void applyTexture(IGuiTexture buttonTexture) {
-        IGuiTexture offTexture = buttonTexture;
-        IGuiTexture onTexture = buttonTexture;
-        if (buttonTexture instanceof ResourceTexture resourceTexture) {
-            offTexture = resourceTexture.getSubTexture(0, 0, 1, 0.5);
-            onTexture = resourceTexture.getSubTexture(0, 0.5, 1, 0.5);
-        }
-        IGuiTexture finalOffTexture = offTexture;
-        IGuiTexture finalOnTexture = onTexture;
-        toggleStyle(style -> style.unmarkTexture(finalOffTexture).markTexture(finalOnTexture));
+        toggleStyle(style -> style.unmarkTexture(buttonTexture).markTexture(buttonTexture));
     }
 
     public ToggleButtonWidget setShouldUseBaseBackground() {
         if (texture != null) {
             toggleStyle(style -> style
-                    .unmarkTexture(new GuiTextureGroup(GuiTextures.TOGGLE_BUTTON_BACK.getSubTexture(0, 0, 1, 0.5),
-                            texture))
-                    .markTexture(new GuiTextureGroup(GuiTextures.TOGGLE_BUTTON_BACK.getSubTexture(0, 0.5, 1, 0.5),
-                            texture)));
+                    .unmarkTexture(new GuiTextureGroup(GuiTextures.TOGGLE_BUTTON_BACK, texture))
+                    .markTexture(new GuiTextureGroup(GuiTextures.TOGGLE_BUTTON_BACK, texture)));
         }
         return this;
     }

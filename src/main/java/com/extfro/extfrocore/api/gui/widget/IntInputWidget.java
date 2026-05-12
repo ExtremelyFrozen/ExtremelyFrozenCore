@@ -2,7 +2,7 @@ package com.extfro.extfrocore.api.gui.widget;
 
 import net.minecraft.util.Mth;
 
-import com.lowdragmc.lowdraglib2.gui.widget.TextFieldWidget;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.TextField;
 import com.lowdragmc.lowdraglib2.math.Position;
 import com.lowdragmc.lowdraglib2.math.Size;
 
@@ -82,7 +82,7 @@ public class IntInputWidget extends NumberInputWidget<Integer> {
     }
 
     @Override
-    protected void setTextFieldRange(TextFieldWidget textField, Integer min, Integer max) {
-        textField.setNumbersOnly(min, max);
+    protected void setTextFieldRange(TextField textField, Integer min, Integer max) {
+        textField.setNumbersOnlyInt(min, max);
     }
 }

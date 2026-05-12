@@ -10,8 +10,6 @@ import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.Button;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.TextField;
 import com.lowdragmc.lowdraglib2.gui.ui.event.UIEvents;
-import lombok.AccessLevel;
-import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.jetbrains.annotations.Nullable;
@@ -26,8 +24,6 @@ public class ConfirmTextInputWidget extends UIElement {
     @Nullable
     private final Function<String, String> returnValidator;
     private Function<String, String> validator = s -> s;
-    @Getter(AccessLevel.PRIVATE)
-    @Setter(AccessLevel.PRIVATE)
     private String inputText = "";
     @Setter
     private String tooltip = "";
@@ -66,7 +62,7 @@ public class ConfirmTextInputWidget extends UIElement {
         TextField textField = new TextField();
         textField.layout(layout -> layout.left(1).top(1).width(width - height - 4).height(height - 2));
         textField.setTextValidator(s -> this.validator.apply(s).equals(s));
-        textField.bindDataSource(DataBindingBuilder.create(this::getInputText, this::setInputText)
+        textField.bind(DataBindingBuilder.string(this::getInputText, this::setInputText)
                 .syncType(String.class)
                 .remoteSetter(this::setInputText)
                 .build());
@@ -75,5 +71,13 @@ public class ConfirmTextInputWidget extends UIElement {
             textField.style(style -> style.tooltips(Component.translatable(tooltip)));
         }
         addChild(textField);
+    }
+
+    private String getInputText() {
+        return inputText;
+    }
+
+    private void setInputText(String inputText) {
+        this.inputText = inputText;
     }
 }

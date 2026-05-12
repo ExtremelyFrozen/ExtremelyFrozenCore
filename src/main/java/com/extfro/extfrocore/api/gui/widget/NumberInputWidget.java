@@ -5,17 +5,16 @@ import com.extfro.extfrocore.api.gui.GuiTextures;
 import com.extfro.extfrocore.utils.GTUtil;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.util.Mth;
 
+import com.lowdragmc.lowdraglib2.gui.sync.rpc.RPCEmitter;
+import com.lowdragmc.lowdraglib2.gui.sync.rpc.RPCEventBuilder;
 import com.lowdragmc.lowdraglib2.gui.texture.GuiTextureGroup;
 import com.lowdragmc.lowdraglib2.gui.texture.IGuiTexture;
 import com.lowdragmc.lowdraglib2.gui.texture.TextTexture;
-import com.lowdragmc.lowdraglib2.gui.util.ClickData;
-import com.lowdragmc.lowdraglib2.gui.widget.ButtonWidget;
-import com.lowdragmc.lowdraglib2.gui.widget.TextFieldWidget;
-import com.lowdragmc.lowdraglib2.gui.widget.Widget;
-import com.lowdragmc.lowdraglib2.gui.widget.WidgetGroup;
+import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.Button;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.TextField;
 import com.lowdragmc.lowdraglib2.math.Position;
 import com.lowdragmc.lowdraglib2.math.Size;
 import lombok.Getter;
@@ -24,14 +23,9 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /**
- * A widget containing an integer input field, as well as adjacent buttons for increasing or decreasing the value.
- *
- * <p>
- * The buttons' change amount can be altered with Ctrl, Shift, or both.<br>
- * The input is limited by a minimum and maximum value.
- * </p>
+ * A UIElement containing a numeric input field and adjacent decrement/increment buttons.
  */
-public abstract class NumberInputWidget<T extends Number> extends WidgetGroup {
+public abstract class NumberInputWidget<T extends Number> extends UIElement {
 
     protected abstract T defaultMin();
 
@@ -51,17 +45,13 @@ public abstract class NumberInputWidget<T extends Number> extends WidgetGroup {
 
     protected abstract T clamp(T value, T min, T max);
 
-    protected abstract void setTextFieldRange(TextFieldWidget textField, T min, T max);
+    protected abstract void setTextFieldRange(TextField textField, T min, T max);
 
     protected abstract T getOne(boolean positive);
 
-    /////////////////////////////////////////////////
-    // *********** IMPLEMENTATION ***********//
-    /////////////////////////////////////////////////
-
-    private final ChangeValues<T> CHANGE_VALUES = getChangeValues();
-    private final T ONE_POSITIVE = getOne(true);
-    private final T ONE_NEGATIVE = getOne(false);
+    private final ChangeValues<T> changeValues = getChangeValues();
+    private final T onePositive = getOne(true);
+    private final T oneNegative = getOne(false);
 
     @Getter
     private Supplier<T> valueSupplier;
@@ -71,8 +61,13 @@ public abstract class NumberInputWidget<T extends Number> extends WidgetGroup {
     private T max = defaultMax();
 
     private final Consumer<T> onChanged;
-
-    private TextFieldWidget textField;
+    private TextField textField;
+    private String[] hoverTooltips = new String[0];
+    private final RPCEmitter setTextRpc = addRPCEvent(RPCEventBuilder.simple(String.class, this::setValueFromText));
+    private final RPCEmitter decreaseRpc = addRPCEvent(RPCEventBuilder.simple(Boolean.class, Boolean.class,
+            (shift, ctrl) -> changeValue(shift, ctrl, oneNegative)));
+    private final RPCEmitter increaseRpc = addRPCEvent(RPCEventBuilder.simple(Boolean.class, Boolean.class,
+            (shift, ctrl) -> changeValue(shift, ctrl, onePositive)));
 
     public NumberInputWidget(Supplier<T> valueSupplier, Consumer<T> onChanged) {
         this(0, 0, 100, 20, valueSupplier, onChanged);
@@ -87,53 +82,51 @@ public abstract class NumberInputWidget<T extends Number> extends WidgetGroup {
     }
 
     public NumberInputWidget(int x, int y, int width, int height, Supplier<T> valueSupplier, Consumer<T> onChanged) {
-        super(x, y, width, height);
         this.valueSupplier = valueSupplier;
         this.onChanged = onChanged;
-        buildUI();
+        layout(layout -> layout.left(x).top(y).width(width).height(height));
+        buildUI(width);
     }
 
-    @Override
-    public void initWidget() {
-        super.initWidget();
-        textField.setCurrentString(toText(valueSupplier.get()));
+    public NumberInputWidget<T> setHoverTooltips(String... tooltipText) {
+        this.hoverTooltips = tooltipText;
+        if (textField != null) {
+            textField.style(style -> style.tooltips(tooltipText));
+        }
+        return this;
     }
 
-    @Override
-    public void writeInitialData(RegistryFriendlyByteBuf buffer) {
-        super.writeInitialData(buffer);
-        buffer.writeUtf(toText(valueSupplier.get()));
+    private void buildUI(int width) {
+        int buttonWidth = Mth.clamp(width / 5, 15, 40);
+        int textFieldWidth = width - (2 * buttonWidth) - 4;
+
+        addChild(createButton(0, buttonWidth, "-", decreaseRpc));
+
+        this.textField = new TextField()
+                .setText(toText(valueSupplier.get()), false)
+                .setTextResponder(stringValue -> {
+                    setTextRpc.send(stringValue);
+                });
+        textField.layout(layout -> layout.left(buttonWidth + 2).top(0).width(textFieldWidth).height(20));
+        updateTextFieldRange();
+        addChild(textField);
+
+        addChild(createButton(buttonWidth + textFieldWidth + 4, buttonWidth, "+", increaseRpc));
     }
 
-    @Override
-    public void readInitialData(RegistryFriendlyByteBuf buffer) {
-        super.readInitialData(buffer);
-        textField.setCurrentString(buffer.readUtf());
-    }
-
-    @Override
-    public Widget setHoverTooltips(String... tooltipText) {
-        textField.setHoverTooltips(tooltipText);
-        return super.setHoverTooltips(tooltipText);
-    }
-
-    private void buildUI() {
-        int buttonWidth = Mth.clamp(this.getSize().width / 5, 15, 40);
-        int textFieldWidth = this.getSize().width - (2 * buttonWidth) - 4;
-
-        this.addWidget(new ButtonWidget(0, 0, buttonWidth, 20,
-                new GuiTextureGroup(GuiTextures.VANILLA_BUTTON, getButtonTexture("-", buttonWidth)),
-                this::decrease).setHoverTooltips("gui.widget.incrementButton.default_tooltip"));
-
-        this.textField = new TextFieldWidget(buttonWidth + 2, 0, textFieldWidth, 20,
-                () -> toText(valueSupplier.get()),
-                stringValue -> this.setValue(clamp(fromText(stringValue), min, max)));
-        this.updateTextFieldRange();
-        this.addWidget(this.textField);
-
-        this.addWidget(new ButtonWidget(buttonWidth + textFieldWidth + 4, 0, buttonWidth, 20,
-                new GuiTextureGroup(GuiTextures.VANILLA_BUTTON, getButtonTexture("+", buttonWidth)),
-                this::increase).setHoverTooltips("gui.widget.incrementButton.default_tooltip"));
+    private Button createButton(int x, int width, String prefix, RPCEmitter clickRpc) {
+        var button = new Button().noText();
+        button.layout(layout -> layout.left(x).top(0).width(width).height(20));
+        button.buttonStyle(style -> style
+                .baseTexture(new GuiTextureGroup(GuiTextures.VANILLA_BUTTON, getButtonTexture(prefix, width)))
+                .hoverTexture(new GuiTextureGroup(GuiTextures.VANILLA_BUTTON, getButtonTexture(prefix, width)))
+                .pressedTexture(new GuiTextureGroup(GuiTextures.VANILLA_BUTTON, getButtonTexture(prefix, width))));
+        button.style(style -> style.tooltips("gui.widget.incrementButton.default_tooltip"));
+        button.setOnClick(event -> {
+            clickRpc.send(event.isShiftDown(), event.isCtrlDown());
+            event.stopPropagation();
+        });
+        return button;
     }
 
     private IGuiTexture getButtonTexture(String prefix, int buttonWidth) {
@@ -143,65 +136,60 @@ public abstract class NumberInputWidget<T extends Number> extends WidgetGroup {
             return texture;
         }
 
-        // Dynamic text is only necessary on the remote side:
-
         int maxTextWidth = buttonWidth - 4;
-
         texture.setSupplier(() -> {
             T amount = GTUtil.isCtrlDown() ?
-                    GTUtil.isShiftDown() ? CHANGE_VALUES.ctrlShift : CHANGE_VALUES.ctrl :
-                    GTUtil.isShiftDown() ? CHANGE_VALUES.shift : CHANGE_VALUES.regular;
+                    GTUtil.isShiftDown() ? changeValues.ctrlShift : changeValues.ctrl :
+                    GTUtil.isShiftDown() ? changeValues.shift : changeValues.regular;
 
             String text = prefix + toText(amount);
-
             texture.scale(maxTextWidth / (float) Math.max(Minecraft.getInstance().font.width(text), maxTextWidth));
-
             return text;
         });
 
         return texture;
     }
 
-    private void increase(ClickData cd) {
-        this.changeValue(cd, ONE_POSITIVE);
+    private void changeValue(boolean shift, boolean ctrl, T multiplier) {
+        T amount = ctrl ?
+                shift ? changeValues.ctrlShift : changeValues.ctrl :
+                shift ? changeValues.shift : changeValues.regular;
+
+        setValue(clamp(add(valueSupplier.get(), multiply(amount, multiplier)), min, max));
     }
 
-    private void decrease(ClickData cd) {
-        this.changeValue(cd, ONE_NEGATIVE);
-    }
-
-    private void changeValue(ClickData cd, T multiplier) {
-        if (!cd.isRemote) {
-            T amount = cd.isCtrlClick ?
-                    cd.isShiftClick ? CHANGE_VALUES.ctrlShift : CHANGE_VALUES.ctrl :
-                    cd.isShiftClick ? CHANGE_VALUES.shift : CHANGE_VALUES.regular;
-
-            this.setValue(clamp(add(valueSupplier.get(), multiply(amount, multiplier)), min, max));
-        }
+    private void setValueFromText(String stringValue) {
+        try {
+            setValue(clamp(fromText(stringValue), min, max));
+        } catch (NumberFormatException ignored) {}
     }
 
     public NumberInputWidget<T> setMin(T min) {
         this.min = min;
         updateTextFieldRange();
-
         return this;
     }
 
     public NumberInputWidget<T> setMax(T max) {
         this.max = max;
         updateTextFieldRange();
-
         return this;
     }
 
     public NumberInputWidget<T> setValue(T value) {
         onChanged.accept(value);
+        if (textField != null) {
+            textField.setText(toText(valueSupplier.get()), false);
+        }
         return this;
     }
 
     protected void updateTextFieldRange() {
+        if (textField == null) {
+            return;
+        }
         setTextFieldRange(textField, min, max);
-
-        this.setValue(clamp(valueSupplier.get(), min, max));
+        textField.style(style -> style.tooltips(hoverTooltips));
+        setValue(clamp(valueSupplier.get(), min, max));
     }
 }

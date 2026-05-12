@@ -1,40 +1,21 @@
 package com.extfro.extfrocore.api.gui.widget;
 
-import com.extfro.extfrocore.ExtForCore;
-
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.Rect2i;
-import net.minecraft.network.RegistryFriendlyByteBuf;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.inventory.Slot;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.items.IItemHandlerModifiable;
 
-import com.google.common.collect.Lists;
 import com.lowdragmc.lowdraglib2.configurator.annotation.ConfigNumber;
 import com.lowdragmc.lowdraglib2.configurator.annotation.ConfigSetter;
 import com.lowdragmc.lowdraglib2.configurator.annotation.Configurable;
-import com.lowdragmc.lowdraglib2.gui.editor.configurator.IConfigurableWidget;
-import com.lowdragmc.lowdraglib2.gui.ingredient.IGhostIngredientTarget;
-import com.lowdragmc.lowdraglib2.gui.ingredient.Target;
+import com.lowdragmc.lowdraglib2.gui.ui.event.UIEvent;
+import com.lowdragmc.lowdraglib2.gui.ui.event.UIEvents;
 import com.lowdragmc.lowdraglib2.registry.annotation.LDLRegister;
-import com.mojang.blaze3d.platform.InputConstants;
-import dev.emi.emi.api.stack.EmiStack;
-import mezz.jei.api.ingredients.ITypedIngredient;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-import org.lwjgl.glfw.GLFW;
 
-import java.util.Collections;
-import java.util.List;
 import java.util.function.Predicate;
 
-@LDLRegister(name = "gtm_phantom_item_slot", group = "widget.gtm_container", priority = 50)
-public class PhantomSlotWidget extends SlotWidget implements IGhostIngredientTarget, IConfigurableWidget {
+@LDLRegister(name = "gtm_phantom_item_slot", group = "widget.gtm_container", priority = 50, registry = "ldlib2:ui_element")
+public class PhantomSlotWidget extends SlotWidget {
 
     private boolean clearSlotOnRightClick;
 
@@ -46,16 +27,23 @@ public class PhantomSlotWidget extends SlotWidget implements IGhostIngredientTar
 
     public PhantomSlotWidget() {
         super();
+        initPhantom();
     }
 
     public PhantomSlotWidget(IItemHandlerModifiable itemHandler, int slotIndex, int xPosition, int yPosition) {
         super(itemHandler, slotIndex, xPosition, yPosition, true, true);
+        initPhantom();
     }
 
     public PhantomSlotWidget(IItemHandlerModifiable itemHandler, int slotIndex, int xPosition, int yPosition,
                              Predicate<ItemStack> validator) {
-        super(itemHandler, slotIndex, xPosition, yPosition, true, true);
+        this(itemHandler, slotIndex, xPosition, yPosition);
         this.validator = validator;
+    }
+
+    private void initPhantom() {
+        xeiPhantom();
+        addServerEventListener(UIEvents.MOUSE_DOWN, this::handlePhantomMouseDown);
     }
 
     public PhantomSlotWidget setClearSlotOnRightClick(boolean clearSlotOnRightClick) {
@@ -65,13 +53,11 @@ public class PhantomSlotWidget extends SlotWidget implements IGhostIngredientTar
 
     @ConfigSetter(field = "canTakeItems")
     public PhantomSlotWidget setCanTakeItems(boolean v) {
-        // you cant modify it
         return this;
     }
 
     @ConfigSetter(field = "canPutItems")
     public PhantomSlotWidget setCanPutItems(boolean v) {
-        // you cant modify it
         return this;
     }
 
@@ -80,31 +66,20 @@ public class PhantomSlotWidget extends SlotWidget implements IGhostIngredientTar
         return this;
     }
 
-    @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (slotReference != null && isMouseOverElement(mouseX, mouseY) && gui != null) {
-            if (isClientSideWidget && !gui.getModularUIContainer().getCarried().isEmpty()) {
-                slotReference.set(gui.getModularUIContainer().getCarried());
-            } else if (button == 1 && clearSlotOnRightClick && !slotReference.getItem().isEmpty()) {
-                slotReference.set(ItemStack.EMPTY);
-                writeClientAction(2, buf -> {});
-            } else {
-                HOVER_SLOT = slotReference;
-                gui.getModularUIGui().superMouseClicked(mouseX, mouseY, button);
-                HOVER_SLOT = null;
-            }
-            return true;
+    private void handlePhantomMouseDown(UIEvent event) {
+        if (!isMouseOverElement(event.x, event.y)) {
+            return;
         }
-        return false;
-    }
-
-    @Override
-    public ItemStack slotClick(int dragType, ClickType clickTypeIn, Player player) {
-        if (slotReference != null && gui != null) {
-            ItemStack stackHeld = gui.getModularUIContainer().getCarried();
-            return slotClickPhantom(slotReference, dragType, clickTypeIn, stackHeld);
+        var slot = getSlot();
+        if (event.button == 1 && clearSlotOnRightClick && !slot.getItem().isEmpty()) {
+            slot.set(ItemStack.EMPTY);
+        } else {
+            var mui = getModularUI();
+            var stackHeld = mui == null || mui.getMenu() == null ? ItemStack.EMPTY : mui.getMenu().getCarried();
+            ClickType clickType = event.isShiftDown() ? ClickType.QUICK_MOVE : ClickType.PICKUP;
+            slotClickPhantom(slot, event.button, clickType, stackHeld);
         }
-        return ItemStack.EMPTY;
+        event.stopPropagation();
     }
 
     @Override
@@ -113,75 +88,13 @@ public class PhantomSlotWidget extends SlotWidget implements IGhostIngredientTar
     }
 
     @Override
-    public boolean canTakeStack(Player player) {
+    public boolean canTakeStack(net.minecraft.world.entity.player.Player player) {
         return false;
     }
 
     @Override
     public boolean canPutStack(ItemStack stack) {
         return false;
-    }
-
-    @Nullable
-    private static Object convertIngredient(Object ingredient) {
-        if (ExtForCore.Mods.isEMILoaded() && ingredient instanceof EmiStack emiStack) {
-            Item item = emiStack.getKeyOfType(Item.class);
-            if (item != null) {
-                ingredient = new ItemStack(item, (int) emiStack.getAmount());
-                ((ItemStack) ingredient).applyComponents(emiStack.getComponentChanges());
-            }
-        } else if (ExtForCore.Mods.isJEILoaded() && ingredient instanceof ITypedIngredient<?> jeiStack) {
-            ingredient = jeiStack.getItemStack().orElse(null);
-        }
-        return ingredient;
-    }
-
-    @Override
-    @OnlyIn(Dist.CLIENT)
-    public List<Target> getPhantomTargets(Object ingredient) {
-        ingredient = convertIngredient(ingredient);
-        if (!(ingredient instanceof ItemStack)) {
-            return Collections.emptyList();
-        }
-
-        Rect2i rectangle = toRectangleBox();
-        return Lists.newArrayList(new Target() {
-
-            @NotNull
-            @Override
-            public Rect2i getArea() {
-                return rectangle;
-            }
-
-            @Override
-            public void accept(@NotNull Object ingredient) {
-                ingredient = convertIngredient(ingredient);
-                if (slotReference != null && ingredient instanceof ItemStack stack) {
-                    long id = Minecraft.getInstance().getWindow().getWindow();
-                    boolean shiftDown = InputConstants.isKeyDown(id, GLFW.GLFW_KEY_LEFT_SHIFT);
-                    ClickType clickType = shiftDown ? ClickType.QUICK_MOVE : ClickType.PICKUP;
-                    slotClickPhantom(slotReference, 0, clickType, stack);
-                    writeClientAction(1, buffer -> {
-                        ItemStack.OPTIONAL_STREAM_CODEC.encode(buffer, stack);
-                        buffer.writeVarInt(0);
-                        buffer.writeBoolean(shiftDown);
-                    });
-                }
-            }
-        });
-    }
-
-    @Override
-    public void handleClientAction(int id, RegistryFriendlyByteBuf buffer) {
-        if (slotReference != null && id == 1) {
-            ItemStack stackHeld = ItemStack.OPTIONAL_STREAM_CODEC.decode(buffer);
-            int mouseButton = buffer.readVarInt();
-            boolean shiftKeyDown = buffer.readBoolean();
-            ClickType clickType = shiftKeyDown ? ClickType.QUICK_MOVE : ClickType.PICKUP;
-            slotClickPhantom(slotReference, mouseButton, clickType, stackHeld);
-        } else if (slotReference != null && id == 2) {
-            slotReference.set(ItemStack.EMPTY);
-        }
     }
 
     public ItemStack slotClickPhantom(Slot slot, int mouseButton, ClickType clickTypeIn, ItemStack stackHeld) {
@@ -195,7 +108,6 @@ public class PhantomSlotWidget extends SlotWidget implements IGhostIngredientTar
         if (mouseButton == 2) {
             fillPhantomSlot(slot, ItemStack.EMPTY, mouseButton);
         } else if (mouseButton == 0 || mouseButton == 1) {
-
             if (stackSlot.isEmpty()) {
                 if (!stackHeld.isEmpty()) {
                     fillPhantomSlot(slot, stackHeld, mouseButton);
@@ -208,10 +120,8 @@ public class PhantomSlotWidget extends SlotWidget implements IGhostIngredientTar
                 }
                 fillPhantomSlot(slot, stackHeld, mouseButton);
             }
-        } else if (mouseButton == 5) {
-            if (!slot.hasItem()) {
-                fillPhantomSlot(slot, stackHeld, mouseButton);
-            }
+        } else if (mouseButton == 5 && !slot.hasItem()) {
+            fillPhantomSlot(slot, stackHeld, mouseButton);
         }
         return stack;
     }
@@ -230,7 +140,6 @@ public class PhantomSlotWidget extends SlotWidget implements IGhostIngredientTar
         }
 
         stackSlot.setCount(Math.min(maxStackSize, stackSize));
-
         slot.set(stackSlot);
     }
 
