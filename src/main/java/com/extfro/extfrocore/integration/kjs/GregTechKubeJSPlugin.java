@@ -172,16 +172,14 @@ public class GregTechKubeJSPlugin implements KubeJSPlugin {
         registry.of(GTRegistries.MACHINE_REGISTRY, reg -> {
             reg.addDefault(KJSWrappingMachineBuilder.class,
                     (id) -> new KJSWrappingMachineBuilder(id,
-                            new KJSTieredMachineBuilder(id, SimpleTieredMachine::new,
-                                    SimpleTieredMachine.EDITABLE_UI_CREATOR, false)));
+                            new KJSTieredMachineBuilder(id, SimpleTieredMachine::new, false)));
 
             reg.add(ExtForCore.id("custom"), KJSWrappingMachineBuilder.class,
                     (id) -> new KJSWrappingMachineBuilder(id, new KJSTieredMachineBuilder(id)));
             reg.add(ExtForCore.id("steam"), KJSSteamMachineBuilder.class, KJSSteamMachineBuilder::new);
             reg.add(ExtForCore.id("generator"), KJSWrappingMachineBuilder.class,
                     (id) -> new KJSWrappingMachineBuilder(id,
-                            new KJSTieredMachineBuilder(id, SimpleGeneratorMachine::new,
-                                    SimpleGeneratorMachine.EDITABLE_UI_CREATOR, true)));
+                            new KJSTieredMachineBuilder(id, SimpleGeneratorMachine::new, true)));
 
             reg.add(ExtForCore.id("multiblock"), MultiblockMachineBuilderWrapper.class,
                     MultiblockMachineBuilderWrapper::createKJSMulti);

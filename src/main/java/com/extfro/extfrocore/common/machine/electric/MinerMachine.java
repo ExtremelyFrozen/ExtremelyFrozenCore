@@ -6,10 +6,6 @@ import com.extfro.extfrocore.api.capability.GTCapabilityHelper;
 import com.extfro.extfrocore.api.capability.IControllable;
 import com.extfro.extfrocore.api.capability.IMiner;
 import com.extfro.extfrocore.api.gui.GuiTextures;
-import com.extfro.extfrocore.api.gui.WidgetUtils;
-import com.extfro.extfrocore.api.gui.editor.EditableMachineUI;
-import com.extfro.extfrocore.api.gui.editor.EditableUI;
-import com.extfro.extfrocore.api.gui.widget.SlotWidget;
 import com.extfro.extfrocore.api.machine.TickableSubscription;
 import com.extfro.extfrocore.api.machine.WorkableTieredMachine;
 import com.extfro.extfrocore.api.machine.feature.IDataInfoProvider;
@@ -21,24 +17,19 @@ import com.extfro.extfrocore.api.transfer.item.CustomItemStackHandler;
 import com.extfro.extfrocore.common.item.behavior.PortableScannerBehavior;
 import com.extfro.extfrocore.common.machine.trait.miner.MinerLogic;
 import com.extfro.extfrocore.config.ConfigHolder;
-import com.extfro.extfrocore.data.lang.LangHandler;
 import com.extfro.extfrocore.utils.ExtendedUseOnContext;
 import com.extfro.extfrocore.utils.ISubscription;
 
 import net.minecraft.ChatFormatting;
-import net.minecraft.Util;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.InteractionResult;
 
-import com.lowdragmc.lowdraglib2.gui.widget.ComponentPanelWidget;
-import com.lowdragmc.lowdraglib2.gui.widget.DraggableScrollableWidgetGroup;
-import com.lowdragmc.lowdraglib2.gui.widget.WidgetGroup;
-import com.lowdragmc.lowdraglib2.math.Position;
-import com.lowdragmc.lowdraglib2.math.Size;
+import com.lowdragmc.lowdraglib2.gui.texture.GuiTextureGroup;
+import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.Label;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.ScrollerView;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -46,7 +37,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.function.BiFunction;
 
 public class MinerMachine extends WorkableTieredMachine
                           implements IControllable, IFancyUIMachine, IDataInfoProvider, IMiner {
@@ -139,92 +129,58 @@ public class MinerMachine extends WorkableTieredMachine
     // *********** GUI ***********//
     //////////////////////////////////////
 
-    public static BiFunction<ResourceLocation, Integer, EditableMachineUI> EDITABLE_UI_CREATOR = Util
-            .memoize((path, inventorySize) -> new EditableMachineUI("misc", path, () -> {
-                WidgetGroup template = createTemplate(inventorySize).createDefault();
-                SlotWidget batterySlot = createBatterySlot().createDefault();
-                batterySlot.setSelfPosition(new Position(100, 10));
-                WidgetGroup group = new WidgetGroup(0, 0, Math.max(template.getSize().width + 12, 172),
-                        template.getSize().height + 8);
-                Size size = group.getSize();
+    @Override
+    public UIElement createUIWidget() {
+        int rowSize = (int) Math.sqrt(exportItems.getSlots());
+        int templateWidth = rowSize * 18 + 120;
+        int templateHeight = Math.max(rowSize * 18, 80);
 
-                template.setSelfPosition(new Position(
-                        (size.width - 4 - template.getSize().width) / 2 + 4,
-                        (size.height - template.getSize().height) / 2));
-
-                group.addWidget(template);
-                group.addWidget(batterySlot);
-                return group;
-            }, (template, machine) -> {
-                if (machine instanceof MinerMachine minerMachine) {
-                    createTemplate(inventorySize).setupUI(template, minerMachine);
-                    createEnergyBar().setupUI(template, minerMachine);
-                    createBatterySlot().setupUI(template, minerMachine);
-                }
-            }));
-
-    protected static EditableUI<WidgetGroup, MinerMachine> createTemplate(int inventorySize) {
-        return new EditableUI<>("miner", WidgetGroup.class, () -> {
-            int rowSize = (int) Math.sqrt(inventorySize);
-            int width = rowSize * 18 + 120;
-            int height = Math.max(rowSize * 18, 80);
-            WidgetGroup group = new WidgetGroup(0, 0, width, height);
-
-            WidgetGroup slots = new WidgetGroup(120, (height - rowSize * 18) / 2, rowSize * 18, rowSize * 18);
-            for (int y = 0; y < rowSize; y++) {
-                for (int x = 0; x < rowSize; x++) {
-                    int index = y * rowSize + x;
-                    var slot = new SlotWidget();
-                    slot.initTemplate();
-                    slot.setSelfPosition(new Position(x * 18, y * 18));
-                    slot.setBackground(GuiTextures.SLOT);
-                    slot.setId("slot_" + index);
-                    slots.addWidget(slot);
-                }
+        UIElement template = new UIElement().layout(layout -> layout.width(templateWidth).height(templateHeight));
+        UIElement slots = new UIElement().layout(layout -> layout.left(120)
+                .top((templateHeight - rowSize * 18) / 2f).width(rowSize * 18).height(rowSize * 18));
+        for (int y = 0; y < rowSize; y++) {
+            for (int x = 0; x < rowSize; x++) {
+                int index = y * rowSize + x;
+                slots.addChild(itemSlot(exportItems, index, x * 18, y * 18, GuiTextures.SLOT, true, false));
             }
+        }
 
-            var componentPanel = new ComponentPanelWidget(4, 5, list -> {});
-            componentPanel.setMaxWidthLimit(110);
-            componentPanel.setId("component_panel");
+        UIElement infoPanel = panel(117, templateHeight, GuiTextures.BACKGROUND_INVERSE);
+        ScrollerView textScroller = new ScrollerView();
+        textScroller.layout(layout -> layout.left(4).top(4).width(109).height(templateHeight - 8));
+        textScroller.style(style -> style.background(GuiTextures.DISPLAY));
+        List<Component> displayText = new ArrayList<>();
+        addDisplayText(displayText);
+        int lineY = 2;
+        for (Component component : displayText) {
+            Label line = new Label();
+            line.setValue(component);
+            line.layout(layout -> layout.left(2).top(lineY).width(102).height(10));
+            line.textStyle(style -> style.textColor(0x404040).textShadow(false));
+            line.style(style -> style.tooltips(component));
+            textScroller.addScrollViewChild(line);
+            lineY += 10;
+        }
+        infoPanel.addChild(textScroller);
+        template.addChild(infoPanel);
+        template.addChild(slots);
 
-            var container = new WidgetGroup(0, 0, 117, height);
-            container.addWidget(new DraggableScrollableWidgetGroup(4, 4, container.getSize().width - 8,
-                    container.getSize().height - 8)
-                    .setBackground(GuiTextures.DISPLAY)
-                    .addWidget(componentPanel));
-            container.setBackground(GuiTextures.BACKGROUND_INVERSE);
-            group.addWidget(container);
-            group.addWidget(slots);
-            return group;
-        }, (group, machine) -> {
-            WidgetUtils.widgetByIdForEach(group, "^slot_[0-9]+$", SlotWidget.class, slot -> {
-                var index = WidgetUtils.widgetIdIndex(slot);
-                if (index >= 0 && index < machine.exportItems.getSlots()) {
-                    slot.setHandlerSlot(machine.exportItems, index);
-                    slot.setCanTakeItems(true);
-                    slot.setCanPutItems(false);
-                }
-            });
-            WidgetUtils.widgetByIdForEach(group, "^component_panel$", ComponentPanelWidget.class,
-                    panel -> panel.textSupplier(machine::addDisplayText));
-        });
-    }
+        UIElement energyGroup = new UIElement().layout(layout -> layout.width(18).height(79));
+        energyGroup.addChild(createEnergyBar(this));
+        energyGroup.addChild(itemSlot(chargerInventory, 0, 0, 61,
+                new GuiTextureGroup(GuiTextures.SLOT, GuiTextures.CHARGER_OVERLAY), true, true,
+                Component.translatable("gtceu.gui.charger_slot.tooltip", EFValues.VNF[getTier()],
+                        EFValues.VNF[getTier()])));
 
-    /**
-     * Create an energy bar widget.
-     */
-    protected static EditableUI<SlotWidget, MinerMachine> createBatterySlot() {
-        return new EditableUI<>("battery_slot", SlotWidget.class, () -> {
-            var slotWidget = new SlotWidget();
-            slotWidget.setBackground(GuiTextures.SLOT, GuiTextures.CHARGER_OVERLAY);
-            return slotWidget;
-        }, (slotWidget, machine) -> {
-            slotWidget.setHandlerSlot(machine.chargerInventory, 0);
-            slotWidget.setCanPutItems(true);
-            slotWidget.setCanTakeItems(true);
-            slotWidget.setHoverTooltips(LangHandler.getMultiLang("gtceu.gui.charger_slot.tooltip",
-                    EFValues.VNF[machine.getTier()], EFValues.VNF[machine.getTier()]).toArray(new MutableComponent[0]));
-        });
+        int groupWidth = Math.max(templateWidth + 12, 172);
+        int groupHeight = templateHeight + 8;
+        UIElement group = new UIElement().layout(layout -> layout.width(groupWidth).height(groupHeight));
+        energyGroup.layout(layout -> layout.left(3).top((groupHeight - 79) / 2f).width(18).height(79));
+        template.layout(layout -> layout.left((groupWidth - 4 - templateWidth) / 2f + 4)
+                .top((groupHeight - templateHeight) / 2f).width(templateWidth).height(templateHeight));
+        group.addChild(energyGroup);
+        group.addChild(template);
+        return group;
     }
 
     private void addDisplayText(List<Component> textList) {

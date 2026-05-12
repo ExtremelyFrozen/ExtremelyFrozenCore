@@ -3,16 +3,18 @@ package com.extfro.extfrocore.api.gui.widget;
 import com.extfro.extfrocore.api.gui.GuiTextures;
 import com.extfro.extfrocore.data.lang.LangHandler;
 
+import net.minecraft.network.chat.Component;
+
 import com.lowdragmc.lowdraglib2.gui.texture.GuiTextureGroup;
 import com.lowdragmc.lowdraglib2.gui.texture.IGuiTexture;
 import com.lowdragmc.lowdraglib2.gui.texture.ResourceTexture;
-import com.lowdragmc.lowdraglib2.gui.widget.SwitchWidget;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.Toggle;
+import com.lowdragmc.lowdraglib2.gui.ui.event.UIEvents;
 import it.unimi.dsi.fastutil.booleans.BooleanConsumer;
 
-import java.util.List;
 import java.util.function.BooleanSupplier;
 
-public class ToggleButtonWidget extends SwitchWidget {
+public class ToggleButtonWidget extends Toggle {
 
     private final IGuiTexture texture;
     private String tooltipText;
@@ -25,23 +27,41 @@ public class ToggleButtonWidget extends SwitchWidget {
 
     public ToggleButtonWidget(int xPosition, int yPosition, int width, int height, IGuiTexture buttonTexture,
                               BooleanSupplier isPressedCondition, BooleanConsumer setPressedExecutor) {
-        super(xPosition, yPosition, width, height,
-                (clickData, aBoolean) -> setPressedExecutor.accept(aBoolean.booleanValue()));
+        super();
+        noText();
+        layout(layout -> layout.left(xPosition).top(yPosition).width(width).height(height));
         texture = buttonTexture;
-        if (buttonTexture instanceof ResourceTexture resourceTexture) {
-            setTexture(resourceTexture.getSubTexture(0, 0, 1, 0.5), resourceTexture.getSubTexture(0, 0.5, 1, 0.5));
-        } else {
-            setTexture(buttonTexture, buttonTexture);
-        }
+        applyTexture(buttonTexture);
+        setOn(isPressedCondition.getAsBoolean(), false);
+        setOnToggleChanged(value -> setPressedExecutor.accept(value));
+        addEventListener(UIEvents.TICK, event -> {
+            boolean value = isPressedCondition.getAsBoolean();
+            if (getValue() != value) {
+                setOn(value, false);
+                updateHoverTooltips();
+            }
+        });
+    }
 
-        setSupplier(isPressedCondition::getAsBoolean);
+    private void applyTexture(IGuiTexture buttonTexture) {
+        IGuiTexture offTexture = buttonTexture;
+        IGuiTexture onTexture = buttonTexture;
+        if (buttonTexture instanceof ResourceTexture resourceTexture) {
+            offTexture = resourceTexture.getSubTexture(0, 0, 1, 0.5);
+            onTexture = resourceTexture.getSubTexture(0, 0.5, 1, 0.5);
+        }
+        IGuiTexture finalOffTexture = offTexture;
+        IGuiTexture finalOnTexture = onTexture;
+        toggleStyle(style -> style.unmarkTexture(finalOffTexture).markTexture(finalOnTexture));
     }
 
     public ToggleButtonWidget setShouldUseBaseBackground() {
         if (texture != null) {
-            setTexture(
-                    new GuiTextureGroup(GuiTextures.TOGGLE_BUTTON_BACK.getSubTexture(0, 0, 1, 0.5), texture),
-                    new GuiTextureGroup(GuiTextures.TOGGLE_BUTTON_BACK.getSubTexture(0, 0.5, 1, 0.5), texture));
+            toggleStyle(style -> style
+                    .unmarkTexture(new GuiTextureGroup(GuiTextures.TOGGLE_BUTTON_BACK.getSubTexture(0, 0, 1, 0.5),
+                            texture))
+                    .markTexture(new GuiTextureGroup(GuiTextures.TOGGLE_BUTTON_BACK.getSubTexture(0, 0.5, 1, 0.5),
+                            texture)));
         }
         return this;
     }
@@ -60,11 +80,11 @@ public class ToggleButtonWidget extends SwitchWidget {
 
     protected void updateHoverTooltips() {
         if (tooltipText != null) {
+            var key = tooltipText + (getValue() ? ".enabled" : ".disabled");
             if (!isMultiLang) {
-                setHoverTooltips(tooltipText + (isPressed ? ".enabled" : ".disabled"));
+                style(style -> style.tooltips(key));
             } else {
-                setHoverTooltips(
-                        List.copyOf(LangHandler.getMultiLang(tooltipText + (isPressed ? ".enabled" : ".disabled"))));
+                style(style -> style.tooltips(LangHandler.getMultiLang(key).toArray(Component[]::new)));
             }
         }
     }

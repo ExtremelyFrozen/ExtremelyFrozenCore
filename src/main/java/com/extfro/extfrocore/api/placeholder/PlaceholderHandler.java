@@ -1,12 +1,12 @@
 package com.extfro.extfrocore.api.placeholder;
 
 import com.extfro.extfrocore.ExtForCore;
+import com.extfro.extfrocore.api.gui.GuiTextures;
 import com.extfro.extfrocore.api.placeholder.exceptions.PlaceholderException;
 import com.extfro.extfrocore.api.placeholder.exceptions.UnclosedBracketException;
 import com.extfro.extfrocore.api.placeholder.exceptions.UnexpectedBracketException;
 import com.extfro.extfrocore.api.placeholder.exceptions.UnknownPlaceholderException;
 import com.extfro.extfrocore.client.renderer.monitor.IMonitorRenderer;
-import com.extfro.extfrocore.api.gui.GuiTextures;
 import com.extfro.extfrocore.data.lang.LangHandler;
 import com.extfro.extfrocore.utils.GTUtil;
 

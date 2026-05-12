@@ -2,10 +2,14 @@ package com.extfro.extfrocore.api.gui.widget;
 
 import com.extfro.extfrocore.api.gui.GuiTextures;
 
+import net.minecraft.network.chat.Component;
+
+import com.lowdragmc.lowdraglib2.gui.sync.bindings.impl.DataBindingBuilder;
 import com.lowdragmc.lowdraglib2.gui.texture.GuiTextureGroup;
-import com.lowdragmc.lowdraglib2.gui.widget.ButtonWidget;
-import com.lowdragmc.lowdraglib2.gui.widget.TextFieldWidget;
-import com.lowdragmc.lowdraglib2.gui.widget.WidgetGroup;
+import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.Button;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.TextField;
+import com.lowdragmc.lowdraglib2.gui.ui.event.UIEvents;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
@@ -16,12 +20,12 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 @Accessors(chain = true)
-public class ConfirmTextInputWidget extends WidgetGroup {
+public class ConfirmTextInputWidget extends UIElement {
 
     private final Consumer<String> textResponder;
     @Nullable
     private final Function<String, String> returnValidator;
-    private Function<String, String> validator = (s) -> s;
+    private Function<String, String> validator = s -> s;
     @Getter(AccessLevel.PRIVATE)
     @Setter(AccessLevel.PRIVATE)
     private String inputText = "";
@@ -32,7 +36,6 @@ public class ConfirmTextInputWidget extends WidgetGroup {
                                   Consumer<String> textResponder,
                                   @Nullable Function<String, String> validator,
                                   @Nullable Function<String, String> returnValidator) {
-        super(x, y, width, height);
         this.textResponder = textResponder;
         this.returnValidator = returnValidator;
         if (validator != null) {
@@ -41,32 +44,36 @@ public class ConfirmTextInputWidget extends WidgetGroup {
         if (text != null) {
             this.inputText = text;
         }
+        layout(layout -> layout.left(x).top(y).width(width).height(height));
+        buildUI(width, height);
     }
 
-    @Override
-    public void initWidget() {
-        super.initWidget();
-        this.addWidget(new ButtonWidget(
-                getSizeWidth() - getSizeHeight(),
-                0,
-                getSizeHeight(),
-                getSizeHeight(),
-                pressed -> {
+    private void buildUI(int width, int height) {
+        Button confirmButton = new Button().noText()
+                .buttonStyle(style -> style
+                        .baseTexture(new GuiTextureGroup(GuiTextures.VANILLA_BUTTON, GuiTextures.BUTTON_CHECK))
+                        .hoverTexture(new GuiTextureGroup(GuiTextures.VANILLA_BUTTON, GuiTextures.BUTTON_CHECK))
+                        .pressedTexture(new GuiTextureGroup(GuiTextures.VANILLA_BUTTON, GuiTextures.BUTTON_CHECK)))
+                .setOnServerClick(event -> {
                     if (returnValidator != null) {
                         inputText = returnValidator.apply(inputText);
                     }
                     textResponder.accept(inputText);
-                })
-                .setButtonTexture(
-                        new GuiTextureGroup(GuiTextures.VANILLA_BUTTON, GuiTextures.BUTTON_CHECK)));
-        this.addWidget(new TextFieldWidget(
-                1,
-                1,
-                getSizeWidth() - getSizeHeight() - 4,
-                getSizeHeight() - 2,
-                this::getInputText,
-                this::setInputText)
-                .setValidator(validator)
-                .setHoverTooltips(tooltip));
+                });
+        confirmButton.layout(layout -> layout.left(width - height).top(0).width(height).height(height));
+        addChild(confirmButton);
+
+        TextField textField = new TextField();
+        textField.layout(layout -> layout.left(1).top(1).width(width - height - 4).height(height - 2));
+        textField.setTextValidator(s -> this.validator.apply(s).equals(s));
+        textField.bindDataSource(DataBindingBuilder.create(this::getInputText, this::setInputText)
+                .syncType(String.class)
+                .remoteSetter(this::setInputText)
+                .build());
+        textField.addEventListener(UIEvents.BLUR, event -> setInputText(validator.apply(textField.getText())));
+        if (!tooltip.isEmpty()) {
+            textField.style(style -> style.tooltips(Component.translatable(tooltip)));
+        }
+        addChild(textField);
     }
 }

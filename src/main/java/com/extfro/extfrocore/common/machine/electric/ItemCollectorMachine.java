@@ -108,6 +108,10 @@ public class ItemCollectorMachine extends TieredEnergyMachine
         range = maxRange;
     }
 
+    public static int[] getINVENTORY_SIZES() {
+        return INVENTORY_SIZES;
+    }
+
     //////////////////////////////////////
     // ***** Initialization *****//
     //////////////////////////////////////

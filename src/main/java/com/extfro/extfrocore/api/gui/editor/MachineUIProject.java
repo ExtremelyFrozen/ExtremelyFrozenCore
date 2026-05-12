@@ -18,10 +18,9 @@ import com.lowdragmc.lowdraglib2.gui.texture.GuiTextureGroup;
 import com.lowdragmc.lowdraglib2.gui.texture.Icons;
 import com.lowdragmc.lowdraglib2.gui.texture.ItemStackTexture;
 import com.lowdragmc.lowdraglib2.gui.texture.TextTexture;
+import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
 import com.lowdragmc.lowdraglib2.gui.util.TreeBuilder;
 import com.lowdragmc.lowdraglib2.gui.widget.TabButton;
-import com.lowdragmc.lowdraglib2.gui.widget.WidgetGroup;
-import com.lowdragmc.lowdraglib2.math.Position;
 import com.lowdragmc.lowdraglib2.registry.annotation.LDLRegister;
 import lombok.Getter;
 import org.jetbrains.annotations.Nullable;
@@ -42,7 +41,7 @@ public class MachineUIProject extends UIProject {
         this(null, null);
     }
 
-    public MachineUIProject(Resources resources, WidgetGroup root) {
+    public MachineUIProject(Resources resources, UIElement root) {
         super(resources, root);
     }
 
@@ -55,7 +54,8 @@ public class MachineUIProject extends UIProject {
     }
 
     public MachineUIProject newEmptyProject() {
-        return new MachineUIProject(Resources.defaultResource(), new WidgetGroup(30, 30, 200, 150));
+        return new MachineUIProject(Resources.defaultResource(),
+                new UIElement().layout(layout -> layout.left(30).top(30).width(200).height(150)));
     }
 
     @Override
@@ -136,13 +136,12 @@ public class MachineUIProject extends UIProject {
                     var editableUI = definition.getEditableUI();
                     if (editableUI != null && addedSet.add(editableUI)) {
                         m.leaf(new ItemStackTexture(definition.asStack()), definition.getDescriptionId(), () -> {
-                            root.clearAllWidgets();
+                            root.clearAllExternalChildren();
                             if (editableUI.hasCustomUI()) {
                                 deserializeNBT(GTRegistries.builtinRegistry(), editableUI.getCustomUI());
                             } else {
                                 var template = editableUI.createDefault();
-                                template.setSelfPosition(
-                                        new Position(root.getSelfPosition().x, root.getSelfPosition().y));
+                                template.layout(layout -> layout.left(root.getLayoutX()).top(root.getLayoutY()));
                                 this.root = template;
                             }
                             setMachine(definition);

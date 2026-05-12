@@ -2,12 +2,13 @@ package com.extfro.extfrocore.integration.ae2.gui.widget.list;
 
 import com.extfro.extfrocore.api.gui.GuiTextures;
 import com.extfro.extfrocore.integration.ae2.utils.AEUtil;
-import com.lowdragmc.lowdraglib2.gui.ui.event.HoverTooltips;
-import com.lowdragmc.lowdraglib2.gui.ui.event.UIEvents;
-import com.lowdragmc.lowdraglib2.gui.ui.rendering.GUIContext;
+
 import net.minecraft.world.item.ItemStack;
 
 import appeng.api.stacks.GenericStack;
+import com.lowdragmc.lowdraglib2.gui.ui.event.HoverTooltips;
+import com.lowdragmc.lowdraglib2.gui.ui.event.UIEvents;
+import com.lowdragmc.lowdraglib2.gui.ui.rendering.GUIContext;
 
 import static com.lowdragmc.lowdraglib2.gui.util.DrawerHelper.drawItemStack;
 

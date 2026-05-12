@@ -2,12 +2,14 @@ package com.extfro.extfrocore.integration.ae2.gui.widget.slot;
 
 import com.extfro.extfrocore.integration.ae2.gui.widget.ConfigWidget;
 import com.extfro.extfrocore.integration.ae2.slot.IConfigurableSlot;
+
+import net.minecraft.network.chat.Component;
+
+import appeng.api.stacks.GenericStack;
 import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
 import com.lowdragmc.lowdraglib2.gui.ui.event.HoverTooltips;
 import com.lowdragmc.lowdraglib2.gui.ui.event.UIEvents;
 import dev.vfyjxf.taffy.style.TaffyPosition;
-import net.minecraft.network.chat.Component;
-import appeng.api.stacks.GenericStack;
 
 import java.util.ArrayList;
 
@@ -74,5 +76,4 @@ public class AEConfigSlotWidget extends UIElement {
     protected boolean isStackValidForSlot(GenericStack stack) {
         return this.parentWidget.isStackValidForSlot(stack);
     }
-
 }

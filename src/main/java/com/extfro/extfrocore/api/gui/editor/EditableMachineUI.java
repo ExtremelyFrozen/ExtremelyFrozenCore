@@ -11,10 +11,7 @@ import net.minecraft.nbt.NbtIo;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 
-import com.lowdragmc.lowdraglib2.editor.resource.Resources;
-import com.lowdragmc.lowdraglib2.gui.editor.configurator.IConfigurableWidget;
-import com.lowdragmc.lowdraglib2.gui.widget.WidgetGroup;
-import com.lowdragmc.lowdraglib2.math.Position;
+import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
 import lombok.Getter;
 import org.jetbrains.annotations.Nullable;
 
@@ -23,30 +20,30 @@ import java.io.InputStream;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
-public class EditableMachineUI implements IEditableUI<WidgetGroup, MetaMachine> {
+public class EditableMachineUI implements IEditableUI<UIElement, MetaMachine> {
 
     @Getter
     final String groupName;
     @Getter
     final ResourceLocation uiPath;
-    final Supplier<WidgetGroup> widgetSupplier;
-    final BiConsumer<WidgetGroup, MetaMachine> binder;
+    final Supplier<UIElement> widgetSupplier;
+    final BiConsumer<UIElement, MetaMachine> binder;
     @Nullable
     private CompoundTag customUICache;
 
-    public EditableMachineUI(String groupName, ResourceLocation uiPath, Supplier<WidgetGroup> widgetSupplier,
-                             BiConsumer<WidgetGroup, MetaMachine> binder) {
+    public EditableMachineUI(String groupName, ResourceLocation uiPath, Supplier<UIElement> widgetSupplier,
+                             BiConsumer<UIElement, MetaMachine> binder) {
         this.groupName = groupName;
         this.uiPath = uiPath;
         this.widgetSupplier = widgetSupplier;
         this.binder = binder;
     }
 
-    public WidgetGroup createDefault() {
+    public UIElement createDefault() {
         return widgetSupplier.get();
     }
 
-    public void setupUI(WidgetGroup template, MetaMachine machine) {
+    public void setupUI(UIElement template, MetaMachine machine) {
         binder.accept(template, machine);
     }
 
@@ -55,13 +52,12 @@ public class EditableMachineUI implements IEditableUI<WidgetGroup, MetaMachine> 
     //////////////////////////////////////
 
     @Nullable
-    public WidgetGroup createCustomUI() {
+    public UIElement createCustomUI() {
         if (hasCustomUI()) {
             var nbt = getCustomUI();
-            var group = new WidgetGroup();
-            IConfigurableWidget.deserializeNBT(group, nbt.getCompound("root"),
-                    Resources.fromNBT(nbt.getCompound("resources")), false, GTRegistries.builtinRegistry());
-            group.setSelfPosition(new Position(0, 0));
+            var group = new UIElement();
+            group.deserializeNBT(GTRegistries.builtinRegistry(), nbt.getCompound("root"));
+            group.layout(layout -> layout.left(0).top(0));
             return group;
         }
         return null;

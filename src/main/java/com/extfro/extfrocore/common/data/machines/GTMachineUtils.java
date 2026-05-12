@@ -177,7 +177,6 @@ public class GTMachineUtils {
                     }
                     return builder
                             .langValue("%s %s %s".formatted(VLVH[tier], toEnglishName(name), VLVT[tier]))
-                            .editableUI(SimpleTieredMachine.EDITABLE_UI_CREATOR.apply(ExtForCore.id(name), recipeType))
                             .rotationState(RotationState.NON_Y_AXIS)
                             .recipeType(recipeType)
                             .workableTieredHullModel(ExtForCore.id("block/machines/" + name))
@@ -332,7 +331,6 @@ public class GTMachineUtils {
                         tankScalingFunction),
                 (tier, builder) -> builder
                         .langValue("%s %s Generator %s".formatted(VLVH[tier], toEnglishName(name), VLVT[tier]))
-                        .editableUI(SimpleGeneratorMachine.EDITABLE_UI_CREATOR.apply(ExtForCore.id(name), recipeType))
                         .rotationState(RotationState.ALL)
                         .recipeType(recipeType)
                         .recipeModifier(SimpleGeneratorMachine::recipeModifier, true)

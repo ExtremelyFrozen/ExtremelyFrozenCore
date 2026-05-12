@@ -15,13 +15,13 @@ import com.lowdragmc.lowdraglib2.LDLib;
 import com.lowdragmc.lowdraglib2.editor.resource.Resources;
 import com.lowdragmc.lowdraglib2.editor.ui.Editor;
 import com.lowdragmc.lowdraglib2.gui.ColorPattern;
-import com.lowdragmc.lowdraglib2.gui.editor.configurator.IConfigurableWidget;
 import com.lowdragmc.lowdraglib2.gui.editor.data.UIProject;
 import com.lowdragmc.lowdraglib2.gui.editor.ui.tool.WidgetToolBox;
 import com.lowdragmc.lowdraglib2.gui.texture.*;
 import com.lowdragmc.lowdraglib2.gui.texture.Icons;
+import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
 import com.lowdragmc.lowdraglib2.gui.util.TreeBuilder;
-import com.lowdragmc.lowdraglib2.gui.widget.*;
+import com.lowdragmc.lowdraglib2.gui.widget.TabButton;
 import com.lowdragmc.lowdraglib2.registry.annotation.LDLRegister;
 import lombok.Getter;
 import lombok.Setter;
@@ -47,7 +47,7 @@ public class RecipeTypeUIProject extends UIProject {
         this(null, null);
     }
 
-    public RecipeTypeUIProject(Resources resources, WidgetGroup root) {
+    public RecipeTypeUIProject(Resources resources, UIElement root) {
         super(resources, root);
     }
 
@@ -57,7 +57,8 @@ public class RecipeTypeUIProject extends UIProject {
 
     @Override
     public RecipeTypeUIProject newEmptyProject() {
-        return new RecipeTypeUIProject(Resources.defaultResource(), new WidgetGroup(30, 30, 200, 200));
+        return new RecipeTypeUIProject(Resources.defaultResource(),
+                new UIElement().layout(layout -> layout.left(30).top(30).width(200).height(200)));
     }
 
     @Override
@@ -139,18 +140,16 @@ public class RecipeTypeUIProject extends UIProject {
                         icon = new ItemStackTexture(Items.BARRIER);
                     }
                     m.leaf(icon, recipeType.getTranslationKey(), () -> {
-                        root.clearAllWidgets();
+                        root.clearAllExternalChildren();
                         if (recipeType.getRecipeUI().hasCustomUI()) {
                             var nbt = recipeType.getRecipeUI().getCustomUI();
-                            IConfigurableWidget.deserializeNBT(root, nbt.getCompound("root"),
-                                    Resources.fromNBT(nbt.getCompound("resources")), false,
-                                    GTRegistries.builtinRegistry());
+                            root.deserializeNBT(GTRegistries.builtinRegistry(), nbt.getCompound("root"));
                         } else {
                             var widget = recipeType.getRecipeUI().createEditableUITemplate(false, false)
                                     .createDefault();
-                            root.setSize(widget.getSize());
-                            for (Widget children : widget.widgets) {
-                                root.addWidget(children);
+                            root.layout(layout -> layout.width(widget.getSizeWidth()).height(widget.getSizeHeight()));
+                            for (UIElement child : List.copyOf(widget.getChildren())) {
+                                root.addChild(child);
                             }
                         }
                         setRecipeType(recipeType);

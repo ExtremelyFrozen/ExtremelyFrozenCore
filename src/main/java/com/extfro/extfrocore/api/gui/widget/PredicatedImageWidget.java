@@ -1,68 +1,22 @@
 package com.extfro.extfrocore.api.gui.widget;
 
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.network.RegistryFriendlyByteBuf;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
-
 import com.lowdragmc.lowdraglib2.gui.texture.IGuiTexture;
-import com.lowdragmc.lowdraglib2.gui.widget.ImageWidget;
+import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
+import com.lowdragmc.lowdraglib2.gui.ui.event.UIEvents;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.function.BooleanSupplier;
 
 @Accessors(chain = true)
-public class PredicatedImageWidget extends ImageWidget {
+public class PredicatedImageWidget extends UIElement {
 
     @Setter
     private BooleanSupplier predicate;
-    private boolean isVisible = true;
 
     public PredicatedImageWidget(int xPosition, int yPosition, int width, int height, IGuiTexture area) {
-        super(xPosition, yPosition, width, height, area);
-    }
-
-    @Override
-    public void writeInitialData(RegistryFriendlyByteBuf buffer) {
-        super.writeInitialData(buffer);
-        isVisible = predicate == null || predicate.getAsBoolean();
-        buffer.writeBoolean(isVisible);
-    }
-
-    @Override
-    public void readInitialData(RegistryFriendlyByteBuf buffer) {
-        super.readInitialData(buffer);
-        isVisible = buffer.readBoolean();
-    }
-
-    @Override
-    public void detectAndSendChanges() {
-        super.detectAndSendChanges();
-        if (predicate != null) {
-            if (isVisible != predicate.getAsBoolean()) {
-                isVisible = !isVisible;
-                writeUpdateInfo(1, buf -> buf.writeBoolean(isVisible));
-            }
-        }
-    }
-
-    @Override
-    @OnlyIn(Dist.CLIENT)
-    public void readUpdateInfo(int id, RegistryFriendlyByteBuf buffer) {
-        if (id == 1) {
-            isVisible = buffer.readBoolean();
-        } else {
-            super.readUpdateInfo(id, buffer);
-        }
-    }
-
-    @Override
-    @OnlyIn(Dist.CLIENT)
-    public void drawInBackground(@NotNull GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
-        if (isVisible) {
-            super.drawInBackground(graphics, mouseX, mouseY, partialTicks);
-        }
+        layout(layout -> layout.left(xPosition).top(yPosition).width(width).height(height));
+        style(style -> style.background(area));
+        addEventListener(UIEvents.TICK, event -> setVisible(predicate == null || predicate.getAsBoolean()));
     }
 }

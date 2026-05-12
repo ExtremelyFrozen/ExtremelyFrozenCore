@@ -6,11 +6,6 @@ import com.extfro.extfrocore.api.capability.GTCapabilityHelper;
 import com.extfro.extfrocore.api.capability.IWorkable;
 import com.extfro.extfrocore.api.capability.recipe.IO;
 import com.extfro.extfrocore.api.gui.GuiTextures;
-import com.extfro.extfrocore.api.gui.WidgetUtils;
-import com.extfro.extfrocore.api.gui.editor.EditableMachineUI;
-import com.extfro.extfrocore.api.gui.editor.EditableUI;
-import com.extfro.extfrocore.api.gui.widget.SlotWidget;
-import com.extfro.extfrocore.api.gui.widget.ToggleButtonWidget;
 import com.extfro.extfrocore.api.machine.TickableSubscription;
 import com.extfro.extfrocore.api.machine.TieredEnergyMachine;
 import com.extfro.extfrocore.api.machine.feature.IFancyUIMachine;
@@ -20,15 +15,11 @@ import com.extfro.extfrocore.api.sync_system.annotations.SaveField;
 import com.extfro.extfrocore.api.sync_system.annotations.SyncToClient;
 import com.extfro.extfrocore.api.transfer.item.CustomItemStackHandler;
 import com.extfro.extfrocore.config.ConfigHolder;
-import com.extfro.extfrocore.data.lang.LangHandler;
 import com.extfro.extfrocore.utils.ISubscription;
 
-import net.minecraft.Util;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.NonNullList;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.projectile.FishingHook;
@@ -42,14 +33,13 @@ import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.world.phys.Vec3;
 
+import com.lowdragmc.lowdraglib2.gui.texture.GuiTextureGroup;
 import com.lowdragmc.lowdraglib2.gui.texture.ItemStackTexture;
-import com.lowdragmc.lowdraglib2.gui.widget.WidgetGroup;
-import com.lowdragmc.lowdraglib2.math.Position;
+import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.Button;
 import lombok.Getter;
 import lombok.Setter;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.function.BiFunction;
 
 /**
  * @author h3tr
@@ -283,111 +273,50 @@ public class FisherMachine extends TieredEnergyMachine
     // ********** GUI ***********//
     //////////////////////////////////////
 
-    public static BiFunction<ResourceLocation, Integer, EditableMachineUI> EDITABLE_UI_CREATOR = Util
-            .memoize((path, inventorySize) -> new EditableMachineUI("misc", path, () -> {
-                var template = createTemplate(inventorySize).createDefault();
-                var energyBar = createEnergyBar().createDefault();
-                var batterySlot = createBatterySlot().createDefault();
-                var energyGroup = new WidgetGroup(0, 0, energyBar.getSize().width, energyBar.getSize().height + 20);
-                batterySlot.setSelfPosition(
-                        new Position((energyBar.getSize().width - 18) / 2, energyBar.getSize().height + 1));
-                energyGroup.addWidget(energyBar);
-                energyGroup.addWidget(batterySlot);
-                var group = new WidgetGroup(0, 0,
-                        Math.max(energyGroup.getSize().width + template.getSize().width + 4 + 8, 172),
-                        Math.max(template.getSize().height + 8, energyGroup.getSize().height + 8));
-                var size = group.getSize();
-                energyGroup.setSelfPosition(new Position(3, (size.height - energyGroup.getSize().height) / 2));
-
-                template.setSelfPosition(new Position(
-                        (size.width - energyGroup.getSize().width - 4 - template.getSize().width) / 2 + 2 +
-                                energyGroup.getSize().width + 2,
-                        (size.height - template.getSize().height) / 2));
-
-                group.addWidget(energyGroup);
-                group.addWidget(template);
-                return group;
-            }, (template, machine) -> {
-                if (machine instanceof FisherMachine fisherMachine) {
-                    createTemplate(inventorySize).setupUI(template, fisherMachine);
-                    createEnergyBar().setupUI(template, fisherMachine);
-                    createBatterySlot().setupUI(template, fisherMachine);
-                    createJunkButton().setupUI(template, fisherMachine);
-                }
-            }));
-
-    protected static EditableUI<SlotWidget, FisherMachine> createBatterySlot() {
-        return new EditableUI<>("battery_slot", SlotWidget.class, () -> {
-            var slotWidget = new SlotWidget();
-            slotWidget.setBackground(GuiTextures.SLOT, GuiTextures.CHARGER_OVERLAY);
-            return slotWidget;
-        }, (slotWidget, machine) -> {
-            slotWidget.setHandlerSlot(machine.chargerInventory, 0);
-            slotWidget.setCanPutItems(true);
-            slotWidget.setCanTakeItems(true);
-            slotWidget.setHoverTooltips(LangHandler.getMultiLang("gtceu.gui.charger_slot.tooltip",
-                    EFValues.VNF[machine.getTier()], EFValues.VNF[machine.getTier()]).toArray(new MutableComponent[0]));
-        });
-    }
-
-    protected static EditableUI<ToggleButtonWidget, FisherMachine> createJunkButton() {
-        return new EditableUI<>("junk_button", ToggleButtonWidget.class, () -> {
-            var toggleButtonWidget = new ToggleButtonWidget(10, 20, 18, 18,
-                    new ItemStackTexture(Items.NAME_TAG).scale(0.9F), () -> false, b -> {});
-            toggleButtonWidget.setShouldUseBaseBackground();
-            return toggleButtonWidget;
-        }, (toggleButtonWidget, machine) -> {
-            toggleButtonWidget.setSupplier(machine::isJunkEnabled);
-            toggleButtonWidget.setOnPressCallback((data, bool) -> machine.setJunkEnabled(bool));
-            toggleButtonWidget.setHoverTooltips(LangHandler.getMultiLang("gtceu.gui.fisher_mode.tooltip",
-                    EFValues.VNF[machine.getTier()], EFValues.VNF[machine.getTier()]).toArray(new MutableComponent[0]));
-        });
-    }
-
-    protected static EditableUI<WidgetGroup, FisherMachine> createTemplate(int inventorySize) {
-        return new EditableUI<>("functional_container", WidgetGroup.class, () -> {
-            int rowSize = (int) Math.sqrt(inventorySize);
-            WidgetGroup main = new WidgetGroup(0, 0, rowSize * 18 + 8 + 20, rowSize * 18 + 8);
-
-            for (int y = 0; y < rowSize; y++) {
-                for (int x = 0; x < rowSize; x++) {
-                    int index = y * rowSize + x;
-                    SlotWidget slotWidget = new SlotWidget();
-                    slotWidget.initTemplate();
-                    slotWidget.setSelfPosition(new Position(24 + x * 18, 4 + y * 18));
-                    slotWidget.setBackground(GuiTextures.SLOT);
-                    slotWidget.setId("slot_" + index);
-                    main.addWidget(slotWidget);
-                }
+    @Override
+    public UIElement createUIWidget() {
+        int rowSize = (int) Math.sqrt(inventorySize);
+        int templateWidth = rowSize * 18 + 8 + 20;
+        int templateHeight = rowSize * 18 + 8;
+        UIElement template = panel(templateWidth, templateHeight, GuiTextures.BACKGROUND_INVERSE);
+        for (int y = 0; y < rowSize; y++) {
+            for (int x = 0; x < rowSize; x++) {
+                int index = y * rowSize + x;
+                template.addChild(itemSlot(cache, index, 24 + x * 18, 4 + y * 18, GuiTextures.SLOT, true, false));
             }
+        }
+        template.addChild(itemSlot(baitHandler.storage, 0, 4, (templateHeight - 18) / 2,
+                new GuiTextureGroup(GuiTextures.SLOT, GuiTextures.STRING_SLOT_OVERLAY), true, true));
 
-            SlotWidget baitSlotWidget = new SlotWidget();
-            baitSlotWidget.initTemplate();
-            baitSlotWidget
-                    .setSelfPosition(new Position(4, (main.getSize().height - baitSlotWidget.getSize().height) / 2));
-            baitSlotWidget.setBackground(GuiTextures.SLOT, GuiTextures.STRING_SLOT_OVERLAY);
-            baitSlotWidget.setId("bait_slot");
-            main.addWidget(baitSlotWidget);
-            var junkButton = createJunkButton().createDefault();
-            junkButton.setSelfPosition(new Position(4, (main.getSize().height - junkButton.getSize().height) - 4));
-            junkButton.setId("junk_button");
-            main.addWidget(junkButton);
-            main.setBackground(GuiTextures.BACKGROUND_INVERSE);
-            return main;
-        }, (group, machine) -> {
-            WidgetUtils.widgetByIdForEach(group, "^slot_[0-9]+$", SlotWidget.class, slot -> {
-                var index = WidgetUtils.widgetIdIndex(slot);
-                if (index >= 0 && index < machine.cache.getSlots()) {
-                    slot.setHandlerSlot(machine.cache, index);
-                    slot.setCanTakeItems(true);
-                    slot.setCanPutItems(false);
-                }
-            });
-            WidgetUtils.widgetByIdForEach(group, "^bait_slot$", SlotWidget.class, slot -> {
-                slot.setHandlerSlot(machine.baitHandler.storage, 0);
-                slot.setCanTakeItems(true);
-                slot.setCanPutItems(true);
-            });
-        });
+        Button junkButton = new Button().noText();
+        junkButton.layout(layout -> layout.left(4).top(templateHeight - 22).width(18).height(18));
+        junkButton.buttonStyle(style -> style
+                .baseTexture(new GuiTextureGroup(GuiTextures.TOGGLE_BUTTON_BACK,
+                        new ItemStackTexture(Items.NAME_TAG).scale(0.9F)))
+                .hoverTexture(new GuiTextureGroup(GuiTextures.TOGGLE_BUTTON_BACK,
+                        new ItemStackTexture(Items.NAME_TAG).scale(0.9F)))
+                .pressedTexture(new GuiTextureGroup(GuiTextures.TOGGLE_BUTTON_BACK,
+                        new ItemStackTexture(Items.NAME_TAG).scale(0.9F))));
+        junkButton.setOnServerClick(event -> setJunkEnabled(!isJunkEnabled()));
+        junkButton.style(style -> style.tooltips(Component.translatable("gtceu.gui.fisher_mode.tooltip",
+                EFValues.VNF[getTier()], EFValues.VNF[getTier()])));
+        template.addChild(junkButton);
+
+        UIElement energyGroup = new UIElement().layout(layout -> layout.width(18).height(79));
+        energyGroup.addChild(createEnergyBar(this));
+        energyGroup.addChild(itemSlot(chargerInventory, 0, 0, 61,
+                new GuiTextureGroup(GuiTextures.SLOT, GuiTextures.CHARGER_OVERLAY), true, true,
+                Component.translatable("gtceu.gui.charger_slot.tooltip", EFValues.VNF[getTier()],
+                        EFValues.VNF[getTier()])));
+
+        int groupWidth = Math.max(18 + templateWidth + 4 + 8, 172);
+        int groupHeight = Math.max(templateHeight + 8, 87);
+        UIElement group = new UIElement().layout(layout -> layout.width(groupWidth).height(groupHeight));
+        energyGroup.layout(layout -> layout.left(3).top((groupHeight - 79) / 2).width(18).height(79));
+        template.layout(layout -> layout.left((groupWidth - 18 - 4 - templateWidth) / 2 + 2 + 18 + 2)
+                .top((groupHeight - templateHeight) / 2).width(templateWidth).height(templateHeight));
+        group.addChild(energyGroup);
+        group.addChild(template);
+        return group;
     }
 }

@@ -5,8 +5,8 @@ import com.extfro.extfrocore.api.capability.recipe.IO;
 import com.extfro.extfrocore.api.machine.trait.NotifiableItemStackHandler;
 import com.extfro.extfrocore.api.sync_system.annotations.SaveField;
 import com.extfro.extfrocore.api.transfer.item.CustomItemStackHandler;
-import com.extfro.extfrocore.integration.ae2.gui.widget.list.AEListGridWidget;
 import com.extfro.extfrocore.integration.ae2.gui.AEUIHelper;
+import com.extfro.extfrocore.integration.ae2.gui.widget.list.AEListGridWidget;
 import com.extfro.extfrocore.integration.ae2.utils.KeyStorage;
 
 import net.minecraft.world.item.ItemStack;

@@ -7,8 +7,8 @@ import com.extfro.extfrocore.api.machine.trait.NotifiableFluidTank;
 import com.extfro.extfrocore.api.recipe.GTRecipe;
 import com.extfro.extfrocore.api.sync_system.annotations.SaveField;
 import com.extfro.extfrocore.api.transfer.fluid.CustomFluidTank;
-import com.extfro.extfrocore.integration.ae2.gui.widget.list.AEListGridWidget;
 import com.extfro.extfrocore.integration.ae2.gui.AEUIHelper;
+import com.extfro.extfrocore.integration.ae2.gui.widget.list.AEListGridWidget;
 import com.extfro.extfrocore.integration.ae2.utils.KeyStorage;
 import com.extfro.extfrocore.utils.GTMath;
 

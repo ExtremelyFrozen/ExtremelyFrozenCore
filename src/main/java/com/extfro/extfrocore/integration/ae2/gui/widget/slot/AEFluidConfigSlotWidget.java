@@ -10,12 +10,7 @@ import com.extfro.extfrocore.integration.ae2.slot.ExportOnlyAESlot;
 import com.extfro.extfrocore.integration.ae2.slot.IConfigurableSlot;
 import com.extfro.extfrocore.integration.ae2.utils.AEUtil;
 import com.extfro.extfrocore.utils.FormattingUtil;
-import com.extfro.extfrocore.utils.GTMath;
-import com.lowdragmc.lowdraglib2.gui.sync.rpc.RPCEmitter;
-import com.lowdragmc.lowdraglib2.gui.sync.rpc.RPCEventBuilder;
-import com.lowdragmc.lowdraglib2.gui.ui.event.UIEvents;
-import com.lowdragmc.lowdraglib2.gui.ui.rendering.GUIContext;
-import com.lowdragmc.lowdraglib2.gui.util.DrawerHelper;
+
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.player.Player;
@@ -26,8 +21,12 @@ import net.neoforged.neoforge.fluids.FluidActionResult;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.FluidUtil;
 
-import appeng.api.stacks.AEFluidKey;
 import appeng.api.stacks.GenericStack;
+import com.lowdragmc.lowdraglib2.gui.sync.rpc.RPCEmitter;
+import com.lowdragmc.lowdraglib2.gui.sync.rpc.RPCEventBuilder;
+import com.lowdragmc.lowdraglib2.gui.ui.event.UIEvents;
+import com.lowdragmc.lowdraglib2.gui.ui.rendering.GUIContext;
+import com.lowdragmc.lowdraglib2.gui.util.DrawerHelper;
 
 import static com.lowdragmc.lowdraglib2.gui.util.DrawerHelper.drawStringFixedCorner;
 

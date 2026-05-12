@@ -1,24 +1,24 @@
 package com.extfro.extfrocore.api.gui.widget;
 
-import net.minecraft.network.RegistryFriendlyByteBuf;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
-
 import com.lowdragmc.lowdraglib2.gui.texture.IGuiTexture;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.Button;
+import com.lowdragmc.lowdraglib2.gui.ui.event.UIEvents;
 import com.lowdragmc.lowdraglib2.gui.util.ClickData;
-import com.lowdragmc.lowdraglib2.gui.widget.ButtonWidget;
 
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
-public class PredicatedButtonWidget extends ButtonWidget {
+public class PredicatedButtonWidget extends Button {
 
     private final BooleanSupplier predicate;
 
     public PredicatedButtonWidget(int xPosition, int yPosition, int width, int height, IGuiTexture buttonTexture,
                                   Consumer<ClickData> onPressed, BooleanSupplier predicate, boolean defaultVisibility) {
-        super(xPosition, yPosition, width, height, buttonTexture, onPressed);
-        this.predicate = predicate;
+        this(xPosition, yPosition, width, height, onPressed, predicate);
+        buttonStyle(style -> style
+                .baseTexture(buttonTexture)
+                .hoverTexture(buttonTexture)
+                .pressedTexture(buttonTexture));
         setVisible(defaultVisibility);
     }
 
@@ -29,42 +29,14 @@ public class PredicatedButtonWidget extends ButtonWidget {
 
     public PredicatedButtonWidget(int xPosition, int yPosition, int width, int height, Consumer<ClickData> onPressed,
                                   BooleanSupplier predicate) {
-        super(xPosition, yPosition, width, height, onPressed);
         this.predicate = predicate;
-    }
-
-    @Override
-    public void writeInitialData(RegistryFriendlyByteBuf buffer) {
-        super.writeInitialData(buffer);
-        var result = predicate == null || predicate.getAsBoolean();
-        setVisible(result);
-        buffer.writeBoolean(result);
-    }
-
-    @Override
-    public void readInitialData(RegistryFriendlyByteBuf buffer) {
-        super.readInitialData(buffer);
-        setVisible(buffer.readBoolean());
-    }
-
-    @Override
-    public void detectAndSendChanges() {
-        super.detectAndSendChanges();
-        if (predicate != null) {
-            if (isVisible() != predicate.getAsBoolean()) {
-                setVisible(!isVisible());
-                writeUpdateInfo(1, buf -> buf.writeBoolean(isVisible()));
+        noText();
+        layout(layout -> layout.left(xPosition).top(yPosition).width(width).height(height));
+        setOnServerClick(event -> onPressed.accept(new ClickData()));
+        addEventListener(UIEvents.TICK, event -> {
+            if (this.predicate != null) {
+                setVisible(this.predicate.getAsBoolean());
             }
-        }
-    }
-
-    @Override
-    @OnlyIn(Dist.CLIENT)
-    public void readUpdateInfo(int id, RegistryFriendlyByteBuf buffer) {
-        if (id == 1) {
-            setVisible(buffer.readBoolean());
-        } else {
-            super.readUpdateInfo(id, buffer);
-        }
+        });
     }
 }

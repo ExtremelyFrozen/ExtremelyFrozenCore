@@ -30,6 +30,8 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 
 import com.lowdragmc.lowdraglib2.gui.ColorPattern;
+import com.lowdragmc.lowdraglib2.gui.sync.rpc.RPCEmitter;
+import com.lowdragmc.lowdraglib2.gui.sync.rpc.RPCEventBuilder;
 import com.lowdragmc.lowdraglib2.gui.texture.GuiTextureGroup;
 import com.lowdragmc.lowdraglib2.gui.texture.IGuiTexture;
 import com.lowdragmc.lowdraglib2.gui.texture.TextTexture;
@@ -40,8 +42,6 @@ import com.lowdragmc.lowdraglib2.gui.ui.elements.ScrollerView;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.TextField;
 import com.lowdragmc.lowdraglib2.gui.ui.event.UIEvents;
 import com.lowdragmc.lowdraglib2.gui.ui.rendering.GUIContext;
-import com.lowdragmc.lowdraglib2.gui.sync.rpc.RPCEmitter;
-import com.lowdragmc.lowdraglib2.gui.sync.rpc.RPCEventBuilder;
 import lombok.Getter;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.jetbrains.annotations.Contract;
@@ -344,8 +344,7 @@ public abstract class AbstractEnderLinkCover<T extends VirtualEntry> extends Cov
             channelsGroup.layout(layout -> layout.left(0).top(20).width(170).height(110));
             channelsGroup.viewPort(view -> view.style(style -> style.backgroundTexture(IGuiTexture.EMPTY)));
             channelsGroup.verticalScroller(scroller -> {
-                scroller.scrollContainer(container -> container.style(style ->
-                        style.backgroundTexture(ColorPattern.T_GRAY.rectTexture())));
+                scroller.scrollContainer(container -> container.style(style -> style.backgroundTexture(ColorPattern.T_GRAY.rectTexture())));
                 scroller.scrollBar(bar -> bar.buttonStyle(style -> style
                         .baseTexture(ColorPattern.T_WHITE.rectTexture())
                         .hoverTexture(ColorPattern.T_WHITE.rectTexture())

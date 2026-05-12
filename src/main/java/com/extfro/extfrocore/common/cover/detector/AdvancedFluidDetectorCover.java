@@ -28,9 +28,9 @@ import com.lowdragmc.lowdraglib2.gui.ui.elements.Label;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.TextField;
 import lombok.Getter;
 
+import java.util.List;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
-import java.util.List;
 
 import static com.extfro.extfrocore.utils.RedstoneUtil.computeLatchedRedstoneBetweenValues;
 import static com.extfro.extfrocore.utils.RedstoneUtil.computeRedstoneBetweenValues;

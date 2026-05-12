@@ -3,33 +3,21 @@ package com.extfro.extfrocore.api.machine;
 import com.extfro.extfrocore.api.EFValues;
 import com.extfro.extfrocore.api.blockentity.BlockEntityCreationInfo;
 import com.extfro.extfrocore.api.capability.recipe.*;
-import com.extfro.extfrocore.api.gui.editor.EditableMachineUI;
 import com.extfro.extfrocore.api.machine.feature.IFancyUIMachine;
 import com.extfro.extfrocore.api.recipe.GTRecipe;
-import com.extfro.extfrocore.api.recipe.GTRecipeType;
 import com.extfro.extfrocore.api.recipe.content.ContentModifier;
 import com.extfro.extfrocore.api.recipe.modifier.ModifierFunction;
 import com.extfro.extfrocore.api.recipe.modifier.ParallelLogic;
 import com.extfro.extfrocore.api.recipe.modifier.RecipeModifier;
-import com.extfro.extfrocore.api.recipe.ui.GTRecipeTypeUI;
 import com.extfro.extfrocore.common.data.GTMedicalConditions;
 import com.extfro.extfrocore.common.machine.trait.hazard.EnvironmentalHazardEmitterTrait;
 
-import net.minecraft.Util;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.resources.ResourceLocation;
-
-import com.google.common.collect.Tables;
-import com.lowdragmc.lowdraglib2.gui.widget.WidgetGroup;
-import com.lowdragmc.lowdraglib2.math.Position;
-import com.lowdragmc.lowdraglib2.math.Size;
+import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.FluidSlot;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.ItemSlot;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.ProgressBar;
 import it.unimi.dsi.fastutil.ints.Int2IntFunction;
 import lombok.Getter;
-
-import java.util.Collections;
-import java.util.EnumMap;
-import java.util.LinkedHashMap;
-import java.util.function.BiFunction;
 
 /**
  * All singleblock generators are implemented here.
@@ -128,35 +116,77 @@ public class SimpleGeneratorMachine extends WorkableTieredMachine
     // *********** GUI ***********//
     //////////////////////////////////////
 
-    @SuppressWarnings("UnstableApiUsage")
-    public static BiFunction<ResourceLocation, GTRecipeType, EditableMachineUI> EDITABLE_UI_CREATOR = Util
-            .memoize((path, recipeType) -> new EditableMachineUI("generator", path, () -> {
-                WidgetGroup template = recipeType.getRecipeUI().createEditableUITemplate(false, false).createDefault();
-                WidgetGroup group = new WidgetGroup(0, 0, template.getSize().width + 4 + 8,
-                        template.getSize().height + 8);
-                Size size = group.getSize();
-                template.setSelfPosition(new Position(
-                        (size.width - 4 - template.getSize().width) / 2 + 4,
-                        (size.height - template.getSize().height) / 2));
-                group.addWidget(template);
-                return group;
-            }, (template, machine) -> {
-                if (machine instanceof SimpleGeneratorMachine generatorMachine) {
-                    var storages = Tables.newCustomTable(new EnumMap<>(IO.class),
-                            LinkedHashMap<RecipeCapability<?>, Object>::new);
-                    storages.put(IO.IN, ItemRecipeCapability.CAP, generatorMachine.importItems.storage);
-                    storages.put(IO.OUT, ItemRecipeCapability.CAP, generatorMachine.exportItems.storage);
-                    storages.put(IO.IN, FluidRecipeCapability.CAP, generatorMachine.importFluids);
-                    storages.put(IO.OUT, FluidRecipeCapability.CAP, generatorMachine.exportFluids);
+    @Override
+    public UIElement createUIWidget() {
+        UIElement template = createRecipeTemplate();
+        int templateWidth = (int) template.getSizeWidth();
+        int templateHeight = (int) template.getSizeHeight();
+        UIElement energyBar = createEnergyBar(this);
+        int groupWidth = templateWidth + 18 + 12;
+        int groupHeight = Math.max(templateHeight + 8, 68);
+        UIElement group = new UIElement().layout(layout -> layout.width(groupWidth).height(groupHeight));
+        energyBar.layout(layout -> layout.left(3).top((groupHeight - 60) / 2f).width(18).height(60));
+        template.layout(layout -> layout.left((groupWidth - 18 - 4 - templateWidth) / 2f + 24)
+                .top((groupHeight - templateHeight) / 2f));
+        group.addChild(energyBar);
+        group.addChild(template);
+        return group;
+    }
 
-                    generatorMachine.getRecipeType().getRecipeUI().createEditableUITemplate(false, false).setupUI(
-                            template,
-                            new GTRecipeTypeUI.RecipeHolder(generatorMachine.recipeLogic::getProgressPercent,
-                                    storages,
-                                    new CompoundTag(),
-                                    Collections.emptyList(),
-                                    false, false));
-                    createEnergyBar().setupUI(template, generatorMachine);
-                }
-            }));
+    private UIElement createRecipeTemplate() {
+        var recipeUI = getRecipeType().getRecipeUI();
+        UIElement template = recipeUI.createXEIElement(false, false);
+        bindRecipeSlots(template);
+        var progress = template.selectRegex("^progress$", ProgressBar.class).findFirst();
+        UIElement wrapper = new UIElement() {
+
+            @Override
+            public void screenTick() {
+                progress.ifPresent(progressBar -> progressBar.setProgress(recipeLogic.getProgressPercent()));
+                super.screenTick();
+            }
+        };
+        wrapper.layout(layout -> layout.width(template.getSizeWidth()).height(template.getSizeHeight()));
+        template.layout(layout -> layout.left(0).top(0));
+        wrapper.addChild(template);
+        return wrapper;
+    }
+
+    private void bindRecipeSlots(UIElement template) {
+        bindItemSlots(template, IO.IN, importItems.storage);
+        bindItemSlots(template, IO.OUT, exportItems.storage);
+        bindFluidSlots(template, IO.IN, importFluids);
+        bindFluidSlots(template, IO.OUT, exportFluids);
+    }
+
+    private void bindItemSlots(UIElement template, IO io, net.neoforged.neoforge.items.IItemHandlerModifiable handler) {
+        String regex = "^%s_[0-9]+$".formatted(ItemRecipeCapability.CAP.slotName(io));
+        template.selectRegex(regex, ItemSlot.class).forEach(slot -> {
+            int index = slotIndex(slot.getId());
+            if (index >= 0 && index < handler.getSlots()) {
+                slot.bind(handler, index);
+            }
+        });
+    }
+
+    private void bindFluidSlots(UIElement template, IO io,
+                                com.extfro.extfrocore.api.transfer.fluid.IFluidHandlerModifiable handler) {
+        String regex = "^%s_[0-9]+$".formatted(FluidRecipeCapability.CAP.slotName(io));
+        template.selectRegex(regex, FluidSlot.class).forEach(slot -> {
+            int index = slotIndex(slot.getId());
+            if (index >= 0 && index < handler.getTanks()) {
+                slot.bind(handler, index);
+            }
+        });
+    }
+
+    private int slotIndex(String id) {
+        int idx = id.lastIndexOf('_');
+        if (idx < 0 || idx == id.length() - 1) return -1;
+        try {
+            return Integer.parseInt(id.substring(idx + 1));
+        } catch (NumberFormatException ignored) {
+            return -1;
+        }
+    }
 }

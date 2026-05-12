@@ -37,15 +37,6 @@ public interface IFancyUIMachine extends IUIMachine, IFancyUIProvider {
      */
     @Override
     default UIElement createMainPage(FancyMachineUIWidget widget) {
-        var editableUI = self().getDefinition().getEditableUI();
-        if (editableUI != null) {
-            var template = editableUI.createCustomUI();
-            if (template == null) {
-                template = editableUI.createDefault();
-            }
-            editableUI.setupUI(template, self());
-            return createUIWidget();
-        }
         return createUIWidget();
     }
 

@@ -6,15 +6,16 @@ import com.extfro.extfrocore.integration.ae2.gui.widget.ConfigWidget;
 import com.extfro.extfrocore.integration.ae2.slot.ExportOnlyAESlot;
 import com.extfro.extfrocore.integration.ae2.slot.IConfigurableSlot;
 import com.extfro.extfrocore.integration.ae2.utils.AEUtil;
+
+import net.minecraft.world.item.ItemStack;
+
+import appeng.api.stacks.AEItemKey;
+import appeng.api.stacks.GenericStack;
 import com.lowdragmc.lowdraglib2.gui.sync.rpc.RPCEmitter;
 import com.lowdragmc.lowdraglib2.gui.sync.rpc.RPCEventBuilder;
 import com.lowdragmc.lowdraglib2.gui.ui.event.UIEvents;
 import com.lowdragmc.lowdraglib2.gui.ui.rendering.GUIContext;
 import com.lowdragmc.lowdraglib2.gui.util.TextFormattingUtil;
-import net.minecraft.world.item.ItemStack;
-
-import appeng.api.stacks.AEItemKey;
-import appeng.api.stacks.GenericStack;
 
 import static com.lowdragmc.lowdraglib2.gui.util.DrawerHelper.drawItemStack;
 import static com.lowdragmc.lowdraglib2.gui.util.DrawerHelper.drawStringFixedCorner;

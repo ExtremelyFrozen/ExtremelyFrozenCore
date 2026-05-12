@@ -5,50 +5,37 @@ import com.extfro.extfrocore.api.blockentity.BlockEntityCreationInfo;
 import com.extfro.extfrocore.api.capability.GTCapabilityHelper;
 import com.extfro.extfrocore.api.capability.recipe.*;
 import com.extfro.extfrocore.api.gui.GuiTextures;
-import com.extfro.extfrocore.api.gui.editor.EditableMachineUI;
-import com.extfro.extfrocore.api.gui.editor.EditableUI;
 import com.extfro.extfrocore.api.gui.fancy.ConfiguratorPanel;
 import com.extfro.extfrocore.api.gui.fancy.IFancyConfigurator;
 import com.extfro.extfrocore.api.gui.fancy.IFancyConfiguratorButton;
-import com.extfro.extfrocore.api.gui.widget.GhostCircuitSlotWidget;
-import com.extfro.extfrocore.api.gui.widget.SlotWidget;
 import com.extfro.extfrocore.api.machine.fancyconfigurator.CircuitFancyConfigurator;
 import com.extfro.extfrocore.api.machine.feature.IFancyUIMachine;
 import com.extfro.extfrocore.api.machine.feature.IHasCircuitSlot;
 import com.extfro.extfrocore.api.machine.trait.AutoOutputTrait;
 import com.extfro.extfrocore.api.machine.trait.NotifiableItemStackHandler;
-import com.extfro.extfrocore.api.recipe.GTRecipeType;
-import com.extfro.extfrocore.api.recipe.ui.GTRecipeTypeUI;
 import com.extfro.extfrocore.api.sync_system.annotations.SaveField;
 import com.extfro.extfrocore.api.sync_system.annotations.SyncToClient;
 import com.extfro.extfrocore.api.transfer.item.CustomItemStackHandler;
 import com.extfro.extfrocore.common.item.behavior.IntCircuitBehaviour;
 import com.extfro.extfrocore.config.ConfigHolder;
-import com.extfro.extfrocore.data.lang.LangHandler;
 import com.extfro.extfrocore.utils.ISubscription;
 
-import net.minecraft.Util;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
 
-import com.google.common.collect.Tables;
 import com.lowdragmc.lowdraglib2.gui.texture.GuiTextureGroup;
 import com.lowdragmc.lowdraglib2.gui.texture.IGuiTexture;
 import com.lowdragmc.lowdraglib2.gui.texture.ResourceTexture;
+import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.FluidSlot;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.ItemSlot;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.ProgressBar;
 import com.lowdragmc.lowdraglib2.gui.util.ClickData;
-import com.lowdragmc.lowdraglib2.gui.widget.WidgetGroup;
-import com.lowdragmc.lowdraglib2.math.Position;
 import it.unimi.dsi.fastutil.ints.Int2IntFunction;
 import lombok.Getter;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Collections;
-import java.util.EnumMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
 import java.util.function.BooleanSupplier;
 
 /**
@@ -205,80 +192,90 @@ public class SimpleTieredMachine extends WorkableTieredMachine
         return toggle;
     }
 
-    @SuppressWarnings("UnstableApiUsage")
-    public static BiFunction<ResourceLocation, GTRecipeType, EditableMachineUI> EDITABLE_UI_CREATOR = Util
-            .memoize((path, recipeType) -> new EditableMachineUI("simple", path, () -> {
-                WidgetGroup template = recipeType.getRecipeUI().createEditableUITemplate(false, false).createDefault();
-                SlotWidget batterySlot = createBatterySlot().createDefault();
-                WidgetGroup group = new WidgetGroup(0, 0, template.getSize().width,
-                        Math.max(template.getSize().height, 78));
-                template.setSelfPosition(new Position(0, (group.getSize().height - template.getSize().height) / 2));
-                batterySlot.setSelfPosition(new Position(group.getSize().width / 2 - 9, group.getSize().height - 18));
-                group.addWidget(batterySlot);
-                group.addWidget(template);
+    @Override
+    public UIElement createUIWidget() {
+        UIElement recipeTemplate = createRecipeTemplate(false);
+        UIElement energyGroup = new UIElement().layout(layout -> layout.width(18).height(79));
+        energyGroup.addChild(createEnergyBar(this));
+        energyGroup.addChild(itemSlot(chargerInventory, 0, 0, 61,
+                new GuiTextureGroup(GuiTextures.SLOT, GuiTextures.CHARGER_OVERLAY), true, true,
+                Component.translatable("gtceu.gui.charger_slot.tooltip", EFValues.VNF[getTier()],
+                        EFValues.VNF[getTier()])));
 
-                // TODO fix this.
-                // if (ConfigHolder.INSTANCE.machines.ghostCircuit) {
-                // SlotWidget circuitSlot = createCircuitConfigurator().createDefault();
-                // circuitSlot.setSelfPosition(new Position(120, 62));
-                // group.addWidget(circuitSlot);
-                // }
+        int templateWidth = (int) recipeTemplate.getSizeWidth();
+        int templateHeight = (int) recipeTemplate.getSizeHeight();
+        int groupWidth = Math.max(18 + templateWidth + 4 + 8, 172);
+        int groupHeight = Math.max(templateHeight + 8, 87);
+        UIElement group = new UIElement().layout(layout -> layout.width(groupWidth).height(groupHeight));
 
-                return group;
-            }, (template, machine) -> {
-                if (machine instanceof SimpleTieredMachine tieredMachine) {
-                    var storages = Tables.newCustomTable(new EnumMap<>(IO.class),
-                            LinkedHashMap<RecipeCapability<?>, Object>::new);
-                    storages.put(IO.IN, ItemRecipeCapability.CAP, tieredMachine.importItems.storage);
-                    storages.put(IO.OUT, ItemRecipeCapability.CAP, tieredMachine.exportItems.storage);
-                    storages.put(IO.IN, FluidRecipeCapability.CAP, tieredMachine.importFluids);
-                    storages.put(IO.OUT, FluidRecipeCapability.CAP, tieredMachine.exportFluids);
-                    storages.put(IO.IN, CWURecipeCapability.CAP, tieredMachine.importComputation);
-                    storages.put(IO.OUT, CWURecipeCapability.CAP, tieredMachine.exportComputation);
+        energyGroup.layout(layout -> layout.left(3).top((groupHeight - 79) / 2f).width(18).height(79));
+        recipeTemplate.layout(layout -> layout.left((groupWidth - 18 - 4 - templateWidth) / 2f + 24)
+                .top((groupHeight - templateHeight) / 2f));
 
-                    tieredMachine.getRecipeType().getRecipeUI().createEditableUITemplate(false, false).setupUI(template,
-                            new GTRecipeTypeUI.RecipeHolder(tieredMachine.recipeLogic::getProgressPercent,
-                                    storages,
-                                    new CompoundTag(),
-                                    Collections.emptyList(),
-                                    false, false));
-                    createBatterySlot().setupUI(template, tieredMachine);
-                    // createCircuitConfigurator().setupUI(template, tieredMachine);
-                }
-            }));
+        group.addChild(energyGroup);
+        group.addChild(recipeTemplate);
+        return group;
+    }
 
-    /**
-     * Create a battery slot widget.
-     */
-    protected static EditableUI<SlotWidget, SimpleTieredMachine> createBatterySlot() {
-        return new EditableUI<>("battery_slot", SlotWidget.class, () -> {
-            var slotWidget = new SlotWidget();
-            slotWidget.setBackground(GuiTextures.SLOT, GuiTextures.CHARGER_OVERLAY);
-            return slotWidget;
-        }, (slotWidget, machine) -> {
-            slotWidget.setHandlerSlot(machine.chargerInventory, 0);
-            slotWidget.setCanPutItems(true);
-            slotWidget.setCanTakeItems(true);
-            slotWidget.setHoverTooltips(LangHandler.getMultiLang("gtceu.gui.charger_slot.tooltip",
-                    EFValues.VNF[machine.getTier()], EFValues.VNF[machine.getTier()]).toArray(Component[]::new));
+    protected UIElement createRecipeTemplate(boolean generator) {
+        var recipeUI = getRecipeType().getRecipeUI();
+        UIElement template = recipeUI.createXEIElement(false, false);
+        bindRecipeSlots(template, generator);
+        var progress = template.selectRegex("^progress$", ProgressBar.class).findFirst();
+        UIElement wrapper = new UIElement() {
+
+            @Override
+            public void screenTick() {
+                progress.ifPresent(progressBar -> progressBar.setProgress(recipeLogic.getProgressPercent()));
+                super.screenTick();
+            }
+        };
+        wrapper.layout(layout -> layout.width(template.getSizeWidth()).height(template.getSizeHeight()));
+        template.layout(layout -> layout.left(0).top(0));
+        wrapper.addChild(template);
+        return wrapper;
+    }
+
+    protected void bindRecipeSlots(UIElement template, boolean generator) {
+        bindItemSlots(template, IO.IN, importItems.storage);
+        if (!generator) {
+            bindItemSlots(template, IO.OUT, exportItems.storage);
+        }
+        bindFluidSlots(template, IO.IN, importFluids);
+        if (!generator) {
+            bindFluidSlots(template, IO.OUT, exportFluids);
+        }
+    }
+
+    protected void bindItemSlots(UIElement template, IO io, net.neoforged.neoforge.items.IItemHandlerModifiable handler) {
+        String regex = "^%s_[0-9]+$".formatted(ItemRecipeCapability.CAP.slotName(io));
+        template.selectRegex(regex, ItemSlot.class).forEach(slot -> {
+            int index = slotIndex(slot.getId());
+            if (index >= 0 && index < handler.getSlots()) {
+                slot.bind(handler, index);
+            }
         });
     }
 
-    /**
-     * Create a ghost circuit slot widget.
-     */
-    protected static EditableUI<GhostCircuitSlotWidget, SimpleTieredMachine> createCircuitConfigurator() {
-        return new EditableUI<>("circuit_configurator", GhostCircuitSlotWidget.class, () -> {
-            var slotWidget = new GhostCircuitSlotWidget();
-            slotWidget.setBackground(GuiTextures.SLOT, GuiTextures.INT_CIRCUIT_OVERLAY);
-            return slotWidget;
-        }, (slotWidget, machine) -> {
-            slotWidget.setCircuitInventory(machine.circuitInventory);
-            slotWidget.setCanPutItems(false);
-            slotWidget.setCanTakeItems(false);
-            slotWidget.setHoverTooltips(
-                    LangHandler.getMultiLang("gtceu.gui.configurator_slot.tooltip").toArray(Component[]::new));
+    protected void bindFluidSlots(UIElement template, IO io,
+                                  com.extfro.extfrocore.api.transfer.fluid.IFluidHandlerModifiable handler) {
+        String regex = "^%s_[0-9]+$".formatted(FluidRecipeCapability.CAP.slotName(io));
+        template.selectRegex(regex, FluidSlot.class).forEach(slot -> {
+            int index = slotIndex(slot.getId());
+            if (index >= 0 && index < handler.getTanks()) {
+                slot.bind(handler, index);
+            }
         });
+    }
+
+    protected int slotIndex(String id) {
+        int idx = id.lastIndexOf('_');
+        if (idx < 0 || idx == id.length() - 1) return -1;
+        try {
+            return Integer.parseInt(id.substring(idx + 1));
+        } catch (NumberFormatException ignored) {
+            return -1;
+        }
     }
 
     // Method provided to override

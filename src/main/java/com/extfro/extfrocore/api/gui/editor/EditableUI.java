@@ -2,14 +2,13 @@ package com.extfro.extfrocore.api.gui.editor;
 
 import com.extfro.extfrocore.api.gui.WidgetUtils;
 
-import com.lowdragmc.lowdraglib2.gui.widget.Widget;
-import com.lowdragmc.lowdraglib2.gui.widget.WidgetGroup;
+import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
 import lombok.Getter;
 
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
-public class EditableUI<W extends Widget, T> implements IEditableUI<W, T> {
+public class EditableUI<W extends UIElement, T> implements IEditableUI<W, T> {
 
     @Getter
     final String id;
@@ -32,7 +31,7 @@ public class EditableUI<W extends Widget, T> implements IEditableUI<W, T> {
         return widget;
     }
 
-    public void setupUI(WidgetGroup template, T instance) {
+    public void setupUI(UIElement template, T instance) {
         WidgetUtils.widgetByIdForEach(template, "^" + id + "$", clazz, w -> binder.accept(w, instance));
     }
 }

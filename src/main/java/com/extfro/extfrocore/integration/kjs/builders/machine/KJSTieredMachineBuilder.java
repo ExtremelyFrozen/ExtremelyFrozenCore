@@ -3,7 +3,6 @@ package com.extfro.extfrocore.integration.kjs.builders.machine;
 import com.extfro.extfrocore.ExtForCore;
 import com.extfro.extfrocore.api.EFValues;
 import com.extfro.extfrocore.api.blockentity.BlockEntityCreationInfo;
-import com.extfro.extfrocore.api.gui.editor.EditableMachineUI;
 import com.extfro.extfrocore.api.machine.MachineDefinition;
 import com.extfro.extfrocore.api.machine.MetaMachine;
 import com.extfro.extfrocore.api.recipe.GTRecipeType;
@@ -26,7 +25,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Locale;
 import java.util.Objects;
-import java.util.function.BiFunction;
 
 import static com.extfro.extfrocore.api.EFValues.*;
 import static com.extfro.extfrocore.utils.FormattingUtil.toEnglishName;
@@ -52,8 +50,6 @@ public class KJSTieredMachineBuilder extends BuilderBase<@Nullable MachineDefini
     @Setter
     public transient boolean isGenerator = false;
 
-    public transient BiFunction<ResourceLocation, GTRecipeType, EditableMachineUI> editableUI;
-
     public KJSTieredMachineBuilder(ResourceLocation id) {
         super(GTResourceLocation.implicitAsGtceu(id));
         this.addDefaultTooltips = false;
@@ -61,12 +57,9 @@ public class KJSTieredMachineBuilder extends BuilderBase<@Nullable MachineDefini
         this.dummyBuilder = true;
     }
 
-    public KJSTieredMachineBuilder(ResourceLocation id, TieredCreationFunction machine,
-                                   BiFunction<ResourceLocation, GTRecipeType, EditableMachineUI> editableUI,
-                                   boolean isGenerator) {
+    public KJSTieredMachineBuilder(ResourceLocation id, TieredCreationFunction machine, boolean isGenerator) {
         super(GTResourceLocation.implicitAsGtceu(id));
         this.machine = machine;
-        this.editableUI = editableUI;
         this.isGenerator = isGenerator;
         this.dummyBuilder = true;
     }
@@ -128,9 +121,6 @@ public class KJSTieredMachineBuilder extends BuilderBase<@Nullable MachineDefini
 
             if (builder.recipeTypes().length > 0) {
                 GTRecipeType recipeType = builder.recipeTypes()[0];
-                if (this.editableUI != null && builder.editableUI() == null) {
-                    builder.editableUI(this.editableUI.apply(this.id, recipeType));
-                }
                 if (tankScalingFunction != null && addDefaultTooltips) {
                     builder.tooltips(
                             GTMachineUtils.workableTiered(tier, EFValues.V[tier], EFValues.V[tier] * 64, recipeType,
