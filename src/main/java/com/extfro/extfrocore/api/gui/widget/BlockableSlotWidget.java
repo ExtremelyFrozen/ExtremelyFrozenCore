@@ -1,0 +1,64 @@
+package com.extfro.extfrocore.api.gui.widget;
+
+import net.minecraft.world.Container;
+import net.neoforged.neoforge.items.IItemHandlerModifiable;
+
+import com.lowdragmc.lowdraglib2.gui.ui.rendering.GUIContext;
+import com.lowdragmc.lowdraglib2.math.Position;
+import com.lowdragmc.lowdraglib2.math.Size;
+import com.mojang.blaze3d.systems.RenderSystem;
+
+import java.util.function.BooleanSupplier;
+
+/** Basically just your normal SlotWidget, but can render the slot as "grayed-out" with a Supplier value. */
+public class BlockableSlotWidget extends SlotWidget {
+
+    private static final int OVERLAY_COLOR = 0x80404040;
+
+    private BooleanSupplier isBlocked = () -> false;
+
+    public BlockableSlotWidget(Container inventory, int slotIndex, int xPosition, int yPosition, boolean canTakeItems,
+                               boolean canPutItems) {
+        super(inventory, slotIndex, xPosition, yPosition, canTakeItems, canPutItems);
+    }
+
+    public BlockableSlotWidget(IItemHandlerModifiable itemHandler, int slotIndex, int xPosition, int yPosition,
+                               boolean canTakeItems, boolean canPutItems) {
+        super(itemHandler, slotIndex, xPosition, yPosition, canTakeItems, canPutItems);
+    }
+
+    public BlockableSlotWidget(IItemHandlerModifiable itemHandler, int slotIndex, int xPosition, int yPosition) {
+        super(itemHandler, slotIndex, xPosition, yPosition);
+    }
+
+    public BlockableSlotWidget(Container inventory, int slotIndex, int xPosition, int yPosition) {
+        super(inventory, slotIndex, xPosition, yPosition);
+    }
+
+    public BlockableSlotWidget setIsBlocked(BooleanSupplier isBlocked) {
+        this.isBlocked = isBlocked;
+        return this;
+    }
+
+    @Override
+    public void drawBackgroundAdditional(GUIContext guiContext) {
+        super.drawBackgroundAdditional(guiContext);
+        if (isBlocked.getAsBoolean()) {
+            Position pos = getPosition();
+            Size size = getSize();
+            RenderSystem.disableDepthTest();
+            RenderSystem.colorMask(true, true, true, false);
+            guiContext.graphics.fill(pos.getX() + 1, pos.getY() + 1, pos.getX() + 1 + size.getWidth() - 2,
+                    pos.getY() + 1 + size.getHeight() - 2, OVERLAY_COLOR);
+            RenderSystem.colorMask(true, true, true, true);
+            RenderSystem.enableDepthTest();
+            RenderSystem.enableBlend();
+        }
+    }
+
+    @Override
+    public boolean isMouseOverElement(float mouseX, float mouseY) {
+        // prevent slot removal and hover highlighting when slot is blocked
+        return super.isMouseOverElement(mouseX, mouseY) && !isBlocked.getAsBoolean();
+    }
+}

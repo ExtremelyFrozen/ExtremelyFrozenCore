@@ -1,0 +1,10 @@
+{
+	"parent": "extfrocore:block/computer_casing",
+	"textures": {
+		"bottom": "extfrocore:block/casings/hpca/advanced_computer_casing/bottom",
+		"top": "extfrocore:block/casings/hpca/advanced_computer_casing/top",
+		"front": "extfrocore:block/casings/hpca/advanced_computer_casing/front",
+		"back": "extfrocore:block/casings/hpca/advanced_computer_casing/back",
+		"side": "extfrocore:block/casings/hpca/advanced_computer_casing/side"
+	}
+}

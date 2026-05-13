@@ -1,0 +1,6 @@
+{
+	"parent": "extfrocore:block/overlay/front",
+	"textures": {
+		"overlay": "extfrocore:block/cover/pump"
+	}
+}

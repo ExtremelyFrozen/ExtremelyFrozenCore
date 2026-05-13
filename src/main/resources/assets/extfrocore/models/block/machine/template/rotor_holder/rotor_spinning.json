@@ -1,0 +1,6 @@
+{
+	"parent": "extfrocore:block/machine/template/rotor_holder/rotor_idle",
+	"textures": {
+		"rotor": "extfrocore:block/multiblock/large_turbine/rotor_spinning"
+	}
+}

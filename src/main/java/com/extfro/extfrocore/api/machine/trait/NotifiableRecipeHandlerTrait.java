@@ -1,0 +1,42 @@
+package com.extfro.extfrocore.api.machine.trait;
+
+import com.extfro.extfrocore.api.machine.MetaMachine;
+import com.extfro.extfrocore.api.sync_system.annotations.SaveField;
+import com.extfro.extfrocore.api.sync_system.annotations.SyncToClient;
+import com.extfro.extfrocore.utils.ISubscription;
+
+import lombok.Getter;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public abstract class NotifiableRecipeHandlerTrait<T> extends MachineTrait implements IRecipeHandlerTrait<T> {
+
+    protected List<Runnable> listeners = new ArrayList<>();
+
+    @SaveField
+    @SyncToClient
+    @Getter
+    protected boolean isDistinct;
+
+    public NotifiableRecipeHandlerTrait() {}
+
+    public NotifiableRecipeHandlerTrait(MetaMachine machine) {
+        super(machine);
+    }
+
+    public void setDistinct(boolean distinct) {
+        isDistinct = distinct;
+        syncDataHolder.markClientSyncFieldDirty("isDistinct");
+    }
+
+    @Override
+    public ISubscription addChangedListener(Runnable listener) {
+        listeners.add(listener);
+        return () -> listeners.remove(listener);
+    }
+
+    public void notifyListeners() {
+        listeners.forEach(Runnable::run);
+    }
+}

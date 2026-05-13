@@ -1,0 +1,6 @@
+{
+	"parent": "extfrocore:block/machine/template/quantum/quantum_container",
+	"textures": {
+		"overlay_container": "extfrocore:block/overlay/machine/overlay_qchest_emissive"
+	}
+}

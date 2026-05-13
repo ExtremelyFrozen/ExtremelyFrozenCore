@@ -1,0 +1,7 @@
+{
+	"parent": "extfrocore:block/cube_2_layer/tinted_bot/all",
+	"textures": {
+		"bot_all": "extfrocore:block/storage/crates/metal_crate",
+		"top_all": "extfrocore:block/overlay/machine/overlay_crate_taped"
+	}
+}

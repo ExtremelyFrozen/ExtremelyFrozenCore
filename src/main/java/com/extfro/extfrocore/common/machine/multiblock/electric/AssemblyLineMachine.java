@@ -1,0 +1,307 @@
+package com.extfro.extfrocore.common.machine.multiblock.electric;
+
+import com.extfro.extfrocore.ExtForCore;
+import com.extfro.extfrocore.api.blockentity.BlockEntityCreationInfo;
+import com.extfro.extfrocore.api.capability.recipe.*;
+import com.extfro.extfrocore.api.machine.feature.multiblock.IMultiPart;
+import com.extfro.extfrocore.api.machine.multiblock.MultiblockControllerMachine;
+import com.extfro.extfrocore.api.machine.multiblock.WorkableElectricMultiblockMachine;
+import com.extfro.extfrocore.api.machine.trait.NotifiableFluidTank;
+import com.extfro.extfrocore.api.machine.trait.NotifiableItemStackHandler;
+import com.extfro.extfrocore.api.machine.trait.RecipeLogic;
+import com.extfro.extfrocore.api.pattern.util.RelativeDirection;
+import com.extfro.extfrocore.api.recipe.ActionResult;
+import com.extfro.extfrocore.api.recipe.GTRecipe;
+import com.extfro.extfrocore.api.recipe.RecipeHelper;
+import com.extfro.extfrocore.api.sync_system.annotations.SaveField;
+import com.extfro.extfrocore.config.ConfigHolder;
+
+import net.minecraft.MethodsReturnNonnullByDefault;
+import net.minecraft.world.item.ItemStack;
+import net.neoforged.neoforge.common.crafting.SizedIngredient;
+import net.neoforged.neoforge.fluids.FluidStack;
+import net.neoforged.neoforge.fluids.crafting.SizedFluidIngredient;
+
+import it.unimi.dsi.fastutil.objects.Object2IntMap;
+import lombok.Getter;
+import lombok.experimental.Accessors;
+
+import java.util.*;
+
+import javax.annotation.ParametersAreNonnullByDefault;
+
+@ParametersAreNonnullByDefault
+@MethodsReturnNonnullByDefault
+public class AssemblyLineMachine extends WorkableElectricMultiblockMachine {
+
+    @Accessors(fluent = true)
+    @Getter
+    @SaveField
+    protected boolean allowCircuitSlots;
+
+    public AssemblyLineMachine(BlockEntityCreationInfo info, boolean allowCircuitSlots) {
+        super(info, new AsslineRecipeLogic());
+        this.allowCircuitSlots = allowCircuitSlots;
+    }
+
+    public AssemblyLineMachine(BlockEntityCreationInfo info) {
+        this(info, false);
+    }
+
+    public static Comparator<IMultiPart> partSorter(MultiblockControllerMachine mc) {
+        return Comparator.comparing(p -> p.self().getBlockPos(),
+                RelativeDirection.RIGHT.getSorter(mc.getFrontFacing(), mc.getUpwardsFacing(), mc.isFlipped()));
+    }
+
+    private boolean checkItemInputs(GTRecipe recipe, boolean isTick) {
+        var itemInputs = (isTick ? recipe.tickInputs : recipe.inputs).getOrDefault(ItemRecipeCapability.CAP,
+                Collections.emptyList());
+        if (itemInputs.isEmpty()) return true;
+        int inputsSize = itemInputs.size();
+        var itemHandlers = getCapabilitiesFlat(IO.IN, ItemRecipeCapability.CAP);
+        if (itemHandlers.size() < inputsSize) return false;
+
+        var itemInventory = itemHandlers.stream()
+                .filter(IRecipeHandler::shouldSearchContent)
+                .map(container -> container.getContents().stream()
+                        .filter(ItemStack.class::isInstance)
+                        .map(ItemStack.class::cast)
+                        .filter(s -> !s.isEmpty())
+                        .findFirst())
+                .limit(inputsSize)
+                .map(o -> o.orElse(ItemStack.EMPTY))
+                .toList();
+
+        if (itemInventory.size() < inputsSize) return false;
+
+        for (int i = 0; i < inputsSize; i++) {
+            var itemStack = itemInventory.get(i);
+            SizedIngredient recipeStack = ItemRecipeCapability.CAP.of(itemInputs.get(i).content);
+            if (!recipeStack.test(itemStack)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private ActionResult consumeItemContents(GTRecipe recipe, boolean isTick) {
+        var itemInputs = (isTick ? recipe.tickInputs : recipe.inputs).getOrDefault(ItemRecipeCapability.CAP,
+                Collections.emptyList());
+        if (itemInputs.isEmpty()) return ActionResult.SUCCESS;
+        int inputsSize = itemInputs.size();
+        var itemHandlers = getCapabilitiesFlat(IO.IN, ItemRecipeCapability.CAP);
+        if (itemHandlers.size() < inputsSize) return ActionResult.FAIL_NO_REASON;
+
+        var itemInventory = itemHandlers.stream()
+                .filter(IRecipeHandler::shouldSearchContent).toList();
+
+        if (itemInventory.size() < inputsSize) return ActionResult.FAIL_NO_REASON;
+
+        for (int i = 0; i < inputsSize; i++) {
+            SizedIngredient recipeStack = ItemRecipeCapability.CAP.of(itemInputs.get(i).content);
+            var currentBus = itemInventory.get(i);
+            if (!(currentBus instanceof NotifiableItemStackHandler itemBus)) throw new RuntimeException(
+                    "Handler in Assline.consumeItemContent's ItemRecipeCapability.IN was not of type NotifiableItemStackHandler");
+            List<SizedIngredient> left = itemBus.handleRecipeInner(IO.IN, recipe, new ArrayList<>(List.of(recipeStack)),
+                    true);
+            if (!(left == null || left.isEmpty())) return ActionResult.FAIL_NO_REASON;
+        }
+        // If we get here, the recipe should be consumable
+
+        for (int i = 0; i < inputsSize; i++) {
+            SizedIngredient recipeStack = ItemRecipeCapability.CAP.of(itemInputs.get(i).content);
+            var currentBus = itemInventory.get(i);
+            if (!(currentBus instanceof NotifiableItemStackHandler itemBus)) throw new RuntimeException(
+                    "Handler in Assline.consumeItemContent's ItemRecipeCapability.IN was not of type NotifiableItemStackHandler");
+            List<SizedIngredient> left = itemBus.handleRecipeInner(IO.IN, recipe, new ArrayList<>(List.of(recipeStack)),
+                    false);
+            if (!(left == null || left.isEmpty())) {
+                ExtForCore.LOGGER.error(
+                        "Recipe in Assline.consumeItemContents was true when simulating, but false when consuming.");
+                return ActionResult.FAIL_NO_REASON;
+            }
+        }
+
+        return ActionResult.SUCCESS;
+    }
+
+    private boolean checkFluidInputs(GTRecipe recipe, boolean isTick) {
+        var fluidInputs = (isTick ? recipe.tickInputs : recipe.inputs).getOrDefault(FluidRecipeCapability.CAP,
+                Collections.emptyList());
+        if (fluidInputs.isEmpty()) return true;
+        int inputsSize = fluidInputs.size();
+        var fluidHandlers = getCapabilitiesFlat(IO.IN, FluidRecipeCapability.CAP);
+        if (fluidHandlers.size() < inputsSize) return false;
+
+        var fluidInventory = fluidHandlers.stream()
+                .filter(IRecipeHandler::shouldSearchContent)
+                .map(container -> container.getContents().stream()
+                        .filter(FluidStack.class::isInstance)
+                        .map(FluidStack.class::cast)
+                        .filter(f -> !f.isEmpty())
+                        .findFirst())
+                .limit(inputsSize)
+                .map(o -> o.orElse(FluidStack.EMPTY))
+                .toList();
+
+        if (fluidInventory.size() < inputsSize) return false;
+
+        for (int i = 0; i < inputsSize; i++) {
+            var fluidStack = fluidInventory.get(i);
+            SizedFluidIngredient recipeStack = FluidRecipeCapability.CAP.of(fluidInputs.get(i).content);
+            if (!recipeStack.test(fluidStack)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private ActionResult consumeFluidContents(GTRecipe recipe, boolean isTick) {
+        var fluidInputs = (isTick ? recipe.tickInputs : recipe.inputs).getOrDefault(FluidRecipeCapability.CAP,
+                Collections.emptyList());
+        if (fluidInputs.isEmpty()) return ActionResult.SUCCESS;
+        int fluidsSize = fluidInputs.size();
+        var fluidHandlers = getCapabilitiesFlat(IO.IN, FluidRecipeCapability.CAP);
+        if (fluidHandlers.size() < fluidsSize) return ActionResult.FAIL_NO_REASON;
+
+        var fluidInventory = fluidHandlers.stream()
+                .filter(IRecipeHandler::shouldSearchContent).toList();
+
+        if (fluidInventory.size() < fluidsSize) return ActionResult.FAIL_NO_REASON;
+
+        for (int i = 0; i < fluidsSize; i++) {
+            SizedFluidIngredient recipeStack = FluidRecipeCapability.CAP.of(fluidInputs.get(i).content);
+            var currentBus = fluidInventory.get(i);
+            if (!(currentBus instanceof NotifiableFluidTank fluidTank)) throw new RuntimeException(
+                    "Handler in Assline.consumeItemContent's FluidRecipeCapability.IN was not of type NotifiableFluidTank");
+            List<SizedFluidIngredient> left = fluidTank.handleRecipeInner(IO.IN, recipe,
+                    new ArrayList<>(List.of(recipeStack)), true);
+            if (!(left == null || left.isEmpty())) return ActionResult.FAIL_NO_REASON;
+        }
+        // If we get here, the recipe should be consumable
+
+        for (int i = 0; i < fluidsSize; i++) {
+            SizedFluidIngredient recipeStack = FluidRecipeCapability.CAP.of(fluidInputs.get(i).content);
+            var currentBus = fluidInventory.get(i);
+            if (!(currentBus instanceof NotifiableFluidTank fluidTank)) throw new RuntimeException(
+                    "Handler in Assline.consumeItemContent's FluidRecipeCapability.IN was not of type NotifiableFluidTank");
+            List<SizedFluidIngredient> left = fluidTank.handleRecipeInner(IO.IN, recipe,
+                    new ArrayList<>(List.of(recipeStack)), false);
+            if (!(left == null || left.isEmpty())) {
+                ExtForCore.LOGGER.error(
+                        "Recipe in Assline.consumeFluidContents was true when simulating, but false when consuming.");
+                return ActionResult.FAIL_NO_REASON;
+            }
+        }
+
+        return ActionResult.SUCCESS;
+    }
+
+    private ActionResult consumeAll(GTRecipe recipe, boolean isTick,
+                                    Map<RecipeCapability<?>, Object2IntMap<?>> chanceCaches) {
+        GTRecipe copyWithItems = recipe.copy();
+        copyWithItems.inputs.clear();
+        copyWithItems.tickInputs.clear();
+
+        GTRecipe copyWithFluids = recipe.copy();
+        copyWithFluids.inputs.clear();
+        copyWithFluids.tickInputs.clear();
+
+        GTRecipe copyWithoutItemsFluids = recipe.copy();
+        copyWithoutItemsFluids.inputs.clear();
+        copyWithoutItemsFluids.tickInputs.clear();
+
+        for (var entry : recipe.inputs.entrySet()) {
+            if (entry.getKey().equals(FluidRecipeCapability.CAP)) {
+                copyWithFluids.inputs.put(entry.getKey(), entry.getValue());
+            } else if (entry.getKey().equals(ItemRecipeCapability.CAP)) {
+                copyWithItems.inputs.put(entry.getKey(), entry.getValue());
+            } else {
+                copyWithoutItemsFluids.inputs.put(entry.getKey(), entry.getValue());
+            }
+        }
+        for (var entry : recipe.tickInputs.entrySet()) {
+            if (entry.getKey().equals(FluidRecipeCapability.CAP)) {
+                copyWithFluids.tickInputs.put(entry.getKey(), entry.getValue());
+            } else if (entry.getKey().equals(ItemRecipeCapability.CAP)) {
+                copyWithItems.tickInputs.put(entry.getKey(), entry.getValue());
+            } else {
+                copyWithoutItemsFluids.tickInputs.put(entry.getKey(), entry.getValue());
+            }
+        }
+        var config = ConfigHolder.INSTANCE.machines;
+        ActionResult result;
+        if (config.orderedAssemblyLineItems) {
+            result = consumeItemContents(copyWithItems, isTick);
+        } else {
+            result = isTick ?
+                    RecipeHelper.handleTickRecipeIO(this, copyWithItems, IO.IN, chanceCaches) :
+                    RecipeHelper.handleRecipeIO(this, copyWithItems, IO.IN, chanceCaches);
+        }
+        if (!result.isSuccess()) return result;
+
+        if (config.orderedAssemblyLineFluids) {
+            result = consumeFluidContents(copyWithFluids, isTick);
+        } else {
+            result = isTick ?
+                    RecipeHelper.handleTickRecipeIO(this, copyWithFluids, IO.IN, chanceCaches) :
+                    RecipeHelper.handleRecipeIO(this, copyWithFluids, IO.IN, chanceCaches);
+        }
+        if (!result.isSuccess()) return result;
+
+        return isTick ?
+                RecipeHelper.handleTickRecipeIO(this, copyWithoutItemsFluids, IO.IN, chanceCaches) :
+                RecipeHelper.handleRecipeIO(this, copyWithoutItemsFluids, IO.IN, chanceCaches);
+    }
+
+    private static class AsslineRecipeLogic extends RecipeLogic {
+
+        public AsslineRecipeLogic() {
+            super();
+        }
+
+        @Override
+        public AssemblyLineMachine getMachine() {
+            return (AssemblyLineMachine) super.getMachine();
+        }
+
+        @Override
+        protected List<Class<?>> validMachineClasses() {
+            return List.of(AssemblyLineMachine.class);
+        }
+
+        @Override
+        protected ActionResult handleRecipeIO(GTRecipe recipe, IO io) {
+            if (io.equals(IO.IN)) {
+                return getMachine().consumeAll(recipe, false, this.getChanceCaches());
+            }
+            return RecipeHelper.handleRecipeIO(getMachine(), recipe, io, this.chanceCaches);
+        }
+
+        @Override
+        protected ActionResult handleTickRecipeIO(GTRecipe recipe, IO io) {
+            if (io.equals(IO.IN)) {
+                return getMachine().consumeAll(recipe, true, this.getChanceCaches());
+            }
+            return RecipeHelper.handleTickRecipeIO(getMachine(), recipe, io, this.chanceCaches);
+        }
+
+        @Override
+        protected ActionResult matchRecipe(GTRecipe recipe) {
+            // Match by normal inputs first
+            ActionResult normalMatch = RecipeHelper.matchContents(getMachine(), recipe);
+            if (!normalMatch.isSuccess()) return normalMatch;
+
+            var config = ConfigHolder.INSTANCE.machines;
+            if (!config.orderedAssemblyLineItems && !config.orderedAssemblyLineFluids) return ActionResult.SUCCESS;
+            if (!getMachine().checkItemInputs(recipe, false)) return ActionResult.FAIL_NO_REASON;
+            if (!getMachine().checkItemInputs(recipe, true)) return ActionResult.FAIL_NO_REASON;
+
+            if (!config.orderedAssemblyLineFluids) return ActionResult.SUCCESS;
+            if (!getMachine().checkFluidInputs(recipe, false)) return ActionResult.FAIL_NO_REASON;
+            if (!getMachine().checkFluidInputs(recipe, true)) return ActionResult.FAIL_NO_REASON;
+            return ActionResult.SUCCESS;
+        }
+    }
+}

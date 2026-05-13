@@ -1,0 +1,8 @@
+{
+	"parent": "item/handheld",
+	"textures": {
+		"layer0": "extfrocore:item/void",
+		"layer1": "extfrocore:item/tools/wrench",
+		"layer2": "extfrocore:item/tools/wrench_overlay"
+	}
+}

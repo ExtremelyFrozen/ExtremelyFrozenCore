@@ -1,7 +1,9 @@
 package com.extfro.extfrocore;
 
+import com.extfro.extfrocore.api.EFAPI;
 import com.extfro.extfrocore.api.EFValues;
 import com.extfro.extfrocore.common.CommonProxy;
+import com.extfro.extfrocore.config.ConfigHolder;
 import com.extfro.extfrocore.utils.FormattingUtil;
 
 import net.minecraft.client.Minecraft;
@@ -18,6 +20,7 @@ import net.neoforged.neoforge.data.loading.DatagenModLoader;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
 
 import com.mojang.serialization.Codec;
+import dev.emi.emi.config.EmiConfig;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.ApiStatus;
@@ -32,17 +35,25 @@ public class ExtForCore {
 
     public static final Logger LOGGER = LogManager.getLogger(MOD_NAME);
 
+    public static final Path EF_FOLDER = getGameDir().resolve("extfrocore");
+
     public static final Codec<ResourceLocation> ExtForCore_ID = Codec.STRING.comapFlatMap(
             str -> ResourceLocation.read(appendIdString(str)),
             s -> s.getNamespace().equals(MOD_ID) ? s.getPath() : s.toString());
+    public static final Codec<ResourceLocation> GTCEU_ID = ExtForCore_ID;
 
     private static final ResourceLocation TEMPLATE_LOCATION = ResourceLocation.fromNamespaceAndPath(MOD_ID, "");
 
     @ApiStatus.Internal
-    public static IEventBus tenModBus;
+    public static IEventBus modBus;
+    @ApiStatus.Internal
+    public static IEventBus gtModBus;
 
     public ExtForCore(IEventBus modBus, FMLModContainer container) {
-        ExtForCore.tenModBus = modBus;
+        EFAPI.instance = this;
+        ExtForCore.modBus = modBus;
+        ExtForCore.gtModBus = modBus;
+        ConfigHolder.init();
         CommonProxy.init(modBus);
     }
 
@@ -158,25 +169,16 @@ public class ExtForCore {
     public static class Mods {
 
         public static boolean isAnyRecipeViewerLoaded() {
-            return isModLoaded(EFValues.MODID_EMI) || isModLoaded(EFValues.MODID_JEI) ||
-                    isModLoaded(EFValues.MODID_REI);
+            return isModLoaded(EFValues.MODID_EMI) || isModLoaded(EFValues.MODID_JEI);
         }
 
         public static boolean isJEILoaded() {
-            return !(isModLoaded(EFValues.MODID_EMI) || isModLoaded(EFValues.MODID_REI)) &&
+            return !isModLoaded(EFValues.MODID_EMI) &&
                     isModLoaded(EFValues.MODID_JEI);
         }
 
-        public static boolean isREILoaded() {
-            return isModLoaded(EFValues.MODID_REI) && (!isClientSide()
-            // || REIRuntime.getInstance().isOverlayVisible()
-            );
-        }
-
         public static boolean isEMILoaded() {
-            return isModLoaded(EFValues.MODID_EMI) && (!isClientSide()
-            // || EmiConfig.enabled
-            );
+            return isModLoaded(EFValues.MODID_EMI) && (!isClientSide() || EmiConfig.enabled);
         }
 
         public static boolean isKubeJSLoaded() {

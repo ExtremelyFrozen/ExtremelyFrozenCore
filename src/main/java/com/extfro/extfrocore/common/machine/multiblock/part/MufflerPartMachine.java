@@ -1,0 +1,197 @@
+package com.extfro.extfrocore.common.machine.multiblock.part;
+
+import com.extfro.extfrocore.api.EFValues;
+import com.extfro.extfrocore.api.blockentity.BlockEntityCreationInfo;
+import com.extfro.extfrocore.api.capability.GTCapabilityHelper;
+import com.extfro.extfrocore.api.capability.IHazardParticleContainer;
+import com.extfro.extfrocore.api.gui.GuiTextures;
+import com.extfro.extfrocore.api.gui.ModularUIBuilder;
+import com.extfro.extfrocore.api.gui.UITemplate;
+import com.extfro.extfrocore.api.gui.widget.SlotWidget;
+import com.extfro.extfrocore.api.machine.TickableSubscription;
+import com.extfro.extfrocore.api.machine.feature.IRecipeLogicMachine;
+import com.extfro.extfrocore.api.machine.feature.IUIMachine;
+import com.extfro.extfrocore.api.machine.feature.multiblock.IWorkableMultiController;
+import com.extfro.extfrocore.api.machine.multiblock.MultiblockControllerMachine;
+import com.extfro.extfrocore.api.machine.multiblock.part.TieredPartMachine;
+import com.extfro.extfrocore.api.recipe.GTRecipe;
+import com.extfro.extfrocore.api.sync_system.annotations.SaveField;
+import com.extfro.extfrocore.api.transfer.item.CustomItemStackHandler;
+import com.extfro.extfrocore.common.data.GTMedicalConditions;
+import com.extfro.extfrocore.common.data.GTParticleTypes;
+import com.extfro.extfrocore.common.machine.gui.MachineUIHelper;
+import com.extfro.extfrocore.common.machine.trait.hazard.EnvironmentalHazardEmitterTrait;
+import com.extfro.extfrocore.utils.GTUtil;
+
+import net.minecraft.MethodsReturnNonnullByDefault;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
+import net.neoforged.neoforge.items.ItemHandlerHelper;
+
+import com.lowdragmc.lowdraglib2.gui.ui.ModularUI;
+import lombok.Getter;
+import org.jetbrains.annotations.MustBeInvokedByOverriders;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.stream.IntStream;
+
+import javax.annotation.ParametersAreNonnullByDefault;
+
+@ParametersAreNonnullByDefault
+@MethodsReturnNonnullByDefault
+public class MufflerPartMachine extends TieredPartMachine implements IUIMachine {
+
+    @Getter
+    private final int recoveryChance;
+    @Getter
+    @SaveField
+    private final CustomItemStackHandler inventory;
+
+    private TickableSubscription snowSubscription;
+    @Getter
+    private final EnvironmentalHazardEmitterTrait hazardEmitter;
+
+    public MufflerPartMachine(BlockEntityCreationInfo info, int tier) {
+        super(info, tier);
+        this.recoveryChance = Math.max(1, tier * 10);
+        this.inventory = new CustomItemStackHandler((int) Math.pow(tier + 1, 2));
+        this.hazardEmitter = attachTrait(
+                new EnvironmentalHazardEmitterTrait(GTMedicalConditions.CARBON_MONOXIDE_POISONING,
+                        2.5f / Math.max(tier, 1)));
+    }
+
+    //////////////////////////////////////
+    // ******** Muffler *********//
+    //////////////////////////////////////
+
+    public void recoverItemsTable(ItemStack... recoveryItems) {
+        int numRolls = Math.min(recoveryItems.length, inventory.getSlots());
+        IntStream.range(0, numRolls).forEach(slot -> {
+            if (calculateChance()) {
+                ItemHandlerHelper.insertItemStacked(inventory, recoveryItems[slot].copy(), false);
+            }
+        });
+    }
+
+    private boolean calculateChance() {
+        return recoveryChance >= 100 || recoveryChance >= EFValues.RNG.nextInt(100);
+    }
+
+    @Override
+    @OnlyIn(Dist.CLIENT)
+    public void clientTick() {
+        super.clientTick();
+        for (MultiblockControllerMachine controller : getControllers()) {
+            if (controller instanceof IRecipeLogicMachine recipeLogicMachine &&
+                    recipeLogicMachine.getRecipeLogic().isWorking()) {
+                emitPollutionParticles();
+                break;
+            }
+        }
+    }
+
+    @Override
+    public @Nullable GTRecipe modifyRecipe(GTRecipe recipe) {
+        return isFrontFaceFree() ? recipe : super.modifyRecipe(recipe);
+    }
+
+    @Override
+    public boolean afterWorking(IWorkableMultiController controller) {
+        hazardEmitter.emitHazard();
+        var supplier = controller.self().getDefinition().getRecoveryItems();
+        if (supplier != null) {
+            recoverItemsTable(supplier.get());
+        }
+        return super.afterWorking(controller);
+    }
+
+    @Override
+    public void addedToController(MultiblockControllerMachine controller) {
+        super.addedToController(controller);
+        if (snowSubscription == null) {
+            this.snowSubscription = subscribeServerTick(null, this::tryBreakSnow);
+        }
+    }
+
+    @MustBeInvokedByOverriders
+    @Override
+    public void removedFromController(MultiblockControllerMachine controller) {
+        super.removedFromController(controller);
+        if (controllers.isEmpty()) {
+            unsubscribe(snowSubscription);
+            snowSubscription = null;
+        }
+    }
+
+    private void tryBreakSnow() {
+        if (getOffsetTimer() % 10 == 0) {
+            for (MultiblockControllerMachine controller : getControllers()) {
+                if (controller instanceof IRecipeLogicMachine recipeLogicMachine &&
+                        recipeLogicMachine.getRecipeLogic().isWorking()) {
+                    BlockPos mufflerPos = getBlockPos().relative(getFrontFacing());
+                    GTUtil.tryBreakSnow(getLevel(), mufflerPos, getLevel().getBlockState(mufflerPos), true);
+                }
+            }
+        }
+    }
+
+    public boolean isFrontFaceFree() {
+        var frontPos = self().getBlockPos().relative(self().getFrontFacing());
+        return self().getLevel().getBlockState(frontPos).isAir() ||
+                GTCapabilityHelper.getHazardContainer(self().getLevel(),
+                        frontPos, self().getFrontFacing().getOpposite()) != null;
+    }
+
+    public void emitPollutionParticles() {
+        var pos = self().getBlockPos();
+        var facing = self().getFrontFacing();
+
+        IHazardParticleContainer container = GTCapabilityHelper.getHazardContainer(self().getLevel(),
+                pos.relative(facing), facing.getOpposite());
+        if (container != null) {
+            // do not emit particles if front face has a duct on it.
+            return;
+        }
+
+        var center = pos.getCenter();
+        var offset = .75f;
+        var xPos = (float) (center.x + facing.getStepX() * offset + (EFValues.RNG.nextFloat() - .5f) * .35f);
+        var yPos = (float) (center.y + facing.getStepY() * offset + (EFValues.RNG.nextFloat() - .5f) * .35f);
+        var zPos = (float) (center.z + facing.getStepZ() * offset + (EFValues.RNG.nextFloat() - .5f) * .35f);
+
+        var ySpd = facing.getStepY() + (EFValues.RNG.nextFloat() - .15f) * .5f;
+        var xSpd = facing.getStepX() + (EFValues.RNG.nextFloat() - .5f) * .5f;
+        var zSpd = facing.getStepZ() + (EFValues.RNG.nextFloat() - .5f) * .5f;
+
+        self().getLevel().addParticle(GTParticleTypes.MUFFLER_PARTICLE.get(),
+                xPos, yPos, zPos, xSpd, ySpd, zSpd);
+    }
+
+    //////////////////////////////////////
+    // ********** GUI ***********//
+    //////////////////////////////////////
+    @Override
+    public ModularUI createUI(Player entityPlayer) {
+        int rowSize = (int) Math.sqrt(inventory.getSlots());
+        int xOffset = rowSize == 10 ? 9 : 0;
+        var modular = new ModularUIBuilder(176 + xOffset * 2,
+                18 + 18 * rowSize + 94, this, entityPlayer)
+                .background(GuiTextures.BACKGROUND)
+                .widget(MachineUIHelper.label(10, 5, getBlockState().getBlock().getDescriptionId()))
+                .widget(UITemplate.bindPlayerInventory(entityPlayer.getInventory(), GuiTextures.SLOT, 7 + xOffset,
+                        18 + 18 * rowSize + 12, true));
+
+        for (int y = 0; y < rowSize; y++) {
+            for (int x = 0; x < rowSize; x++) {
+                int index = y * rowSize + x;
+                modular.widget(new SlotWidget(inventory, index,
+                        (88 - rowSize * 9 + x * 18) + xOffset, 18 + y * 18, true, false)
+                        .setBackgroundTexture(GuiTextures.SLOT));
+            }
+        }
+        return modular;
+    }
+}

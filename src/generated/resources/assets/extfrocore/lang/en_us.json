@@ -1,0 +1,4 @@
+{
+    "extfrocore.debug.resource_rebuild.done": "Gradle resource rebuild done in %s",
+    "extfrocore.debug.resource_rebuild.start": "Invoking Gradle resource rebuild (./gradlew :processResources)"
+}

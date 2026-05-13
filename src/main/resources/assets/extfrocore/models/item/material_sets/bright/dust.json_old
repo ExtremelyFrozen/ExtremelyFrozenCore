@@ -1,0 +1,6 @@
+{
+  "parent": "extfrocore:item/material_sets/shiny/dust",
+  "textures": {
+    "layer2": "extfrocore:item/material_sets/bright/dust_overlay"
+  }
+}

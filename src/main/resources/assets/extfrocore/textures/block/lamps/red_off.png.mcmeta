@@ -1,0 +1,5 @@
+{
+	"ldlib": {
+		"connection": "extfrocore:block/lamps/red_off_ctm"
+	}
+}

@@ -1,0 +1,6 @@
+{
+	"parent": "extfrocore:block/cube/tinted/all",
+	"textures": {
+		"all": "extfrocore:block/storage/crates/metal_crate"
+	}
+}

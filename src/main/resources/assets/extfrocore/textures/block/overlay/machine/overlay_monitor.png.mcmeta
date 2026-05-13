@@ -1,0 +1,5 @@
+{
+	"ldlib": {
+		"connection": "extfrocore:block/overlay/machine/overlay_monitor_ctm"
+	}
+}

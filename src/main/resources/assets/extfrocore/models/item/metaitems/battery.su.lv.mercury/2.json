@@ -1,0 +1,7 @@
+{
+	"parent": "item/generated",
+	"textures": {
+		"layer0": "extfrocore:item/battery.hull.lv.su",
+		"layer1": "extfrocore:item/battery.su.lv.mercury/2"
+	}
+}

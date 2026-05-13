@@ -1,0 +1,7 @@
+{
+	"parent": "item/handheld",
+	"textures": {
+		"layer0": "extfrocore:item/material_sets/dull/rod",
+		"layer1": "extfrocore:item/material_sets/dull/rod_secondary"
+	}
+}

@@ -1,0 +1,7 @@
+{
+	"parent": "extfrocore:block/cube_2_layer/tinted_both/all_translucent",
+	"textures": {
+		"bot_all": "extfrocore:block/material_sets/dull/raw_ore_block",
+		"top_all": "extfrocore:block/material_sets/dull/raw_ore_block_secondary"
+	}
+}

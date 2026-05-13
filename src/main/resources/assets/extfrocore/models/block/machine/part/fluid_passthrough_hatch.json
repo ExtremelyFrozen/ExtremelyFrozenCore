@@ -1,0 +1,10 @@
+{
+	"parent": "extfrocore:block/machine/template/pipeline_endpoint_machine",
+	"textures": {
+		"overlay_side": "extfrocore:block/void",
+		"overlay_side_emissive": "extfrocore:block/void",
+
+		"overlay_hatch_in": "extfrocore:block/overlay/machine/overlay_fluid_hatch_input",
+		"overlay_hatch_out": "extfrocore:block/overlay/machine/overlay_fluid_hatch_output"
+	}
+}

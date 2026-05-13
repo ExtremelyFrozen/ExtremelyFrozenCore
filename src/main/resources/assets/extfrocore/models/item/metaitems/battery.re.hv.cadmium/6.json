@@ -1,0 +1,7 @@
+{
+	"parent": "item/generated",
+	"textures": {
+		"layer0": "extfrocore:item/battery.hull.hv",
+		"layer1": "extfrocore:item/battery.re.hv.cadmium/6"
+	}
+}

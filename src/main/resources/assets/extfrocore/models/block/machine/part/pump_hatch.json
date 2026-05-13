@@ -1,0 +1,11 @@
+{
+	"parent": "extfrocore:block/machine/template/part/hatch_machine_emissive",
+	"textures": {
+		"bottom": "extfrocore:block/casings/pump_deck/bottom",
+		"top": "extfrocore:block/casings/pump_deck/top",
+		"side": "#top",
+
+		"overlay": "extfrocore:block/overlay/machine/overlay_fluid_hatch_output",
+		"overlay_emissive": "extfrocore:block/overlay/machine/overlay_pipe_out_emissive"
+	}
+}

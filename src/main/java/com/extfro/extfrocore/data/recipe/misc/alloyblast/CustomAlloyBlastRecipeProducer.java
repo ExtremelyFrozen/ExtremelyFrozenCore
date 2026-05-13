@@ -1,0 +1,45 @@
+package com.extfro.extfrocore.data.recipe.misc.alloyblast;
+
+import com.extfro.extfrocore.api.data.chemical.material.Material;
+import com.extfro.extfrocore.api.data.tag.TagPrefix;
+import com.extfro.extfrocore.data.recipe.builder.GTRecipeBuilder;
+
+import com.google.common.base.Preconditions;
+import org.jetbrains.annotations.NotNull;
+
+public class CustomAlloyBlastRecipeProducer extends AlloyBlastRecipeProducer {
+
+    private final int circuitNum;
+    private final int gasCircuitNum;
+    private final int outputAmount;
+
+    /**
+     * @param circuitNum    the custom circuit number to use
+     * @param gasCircuitNum the custom gas circuit number to use
+     * @param outputAmount  the custom output amount in quantities of
+     *                      {@link TagPrefix#ingot}
+     *                      / {@link com.extfro.extfrocore.api.EFValues#M}) to use
+     */
+    public CustomAlloyBlastRecipeProducer(int circuitNum, int gasCircuitNum, int outputAmount) {
+        this.circuitNum = circuitNum;
+        this.gasCircuitNum = gasCircuitNum;
+        Preconditions.checkArgument(outputAmount != 0, "output amount cannot be zero");
+        this.outputAmount = outputAmount;
+    }
+
+    @Override
+    protected int addInputs(@NotNull Material material, @NotNull GTRecipeBuilder builder) {
+        int amount = super.addInputs(material, builder); // always must be called
+        return this.outputAmount < 0 ? amount : this.outputAmount;
+    }
+
+    @Override
+    protected int getCircuitNum(int componentAmount) {
+        return this.circuitNum < 0 ? super.getCircuitNum(componentAmount) : this.circuitNum;
+    }
+
+    @Override
+    protected int getGasCircuitNum(int componentAmount) {
+        return this.gasCircuitNum < 0 ? super.getGasCircuitNum(componentAmount) : this.gasCircuitNum;
+    }
+}

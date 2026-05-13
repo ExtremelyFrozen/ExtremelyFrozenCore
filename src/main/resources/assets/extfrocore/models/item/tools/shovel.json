@@ -1,0 +1,8 @@
+{
+	"parent": "item/handheld",
+	"textures": {
+		"layer0": "extfrocore:item/tools/handle_shovel",
+		"layer1": "extfrocore:item/tools/shovel",
+		"layer2": "extfrocore:item/tools/shovel_overlay"
+	}
+}

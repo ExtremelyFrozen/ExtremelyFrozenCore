@@ -1,0 +1,8 @@
+{
+	"ldlib": {
+		"connection": "extfrocore:block/lamps/light_gray_ctm"
+	},
+	"shimmer": {
+		"bloom": false
+	}
+}

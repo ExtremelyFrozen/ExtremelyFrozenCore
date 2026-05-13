@@ -1,0 +1,7 @@
+{
+	"parent": "extfrocore:block/overlay/2_layer/front",
+	"textures": {
+		"overlay": "extfrocore:block/overlay/machine/overlay_maintenance",
+		"overlay_2": "extfrocore:block/void"
+	}
+}

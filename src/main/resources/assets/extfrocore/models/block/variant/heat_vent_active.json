@@ -1,0 +1,7 @@
+{
+	"parent": "extfrocore:block/cube_2_layer/all",
+	"textures": {
+		"bot_all": "extfrocore:block/casings/unique/heat_vent",
+		"top_all": "extfrocore:block/casings/unique/heat_vent_bloom"
+	}
+}

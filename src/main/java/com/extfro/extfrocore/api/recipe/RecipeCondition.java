@@ -1,0 +1,106 @@
+package com.extfro.extfrocore.api.recipe;
+
+import com.extfro.extfrocore.api.gui.texture.CroppedTexture;
+import com.extfro.extfrocore.api.machine.trait.RecipeLogic;
+import com.extfro.extfrocore.api.recipe.condition.RecipeConditionType;
+import com.extfro.extfrocore.api.registry.GTRegistries;
+
+import net.minecraft.nbt.NbtAccounter;
+import net.minecraft.nbt.NbtOps;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.RegistryOps;
+
+import com.google.gson.JsonObject;
+import com.lowdragmc.lowdraglib2.gui.texture.IGuiTexture;
+import com.mojang.datafixers.Products;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.JsonOps;
+import com.mojang.serialization.MapCodec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.experimental.Accessors;
+import org.jetbrains.annotations.NotNull;
+
+import java.util.function.Function;
+
+@Accessors(chain = true)
+public abstract class RecipeCondition<T extends RecipeCondition<T>> {
+
+    public static final Codec<RecipeCondition<?>> CODEC = GTRegistries.RECIPE_CONDITIONS.byNameCodec()
+            .dispatch(RecipeCondition::getType, RecipeConditionType::getCodec);
+
+    // spotless:off
+    public static <RC extends RecipeCondition<RC>> Products.P1<RecordCodecBuilder.Mu<RC>, Boolean> isReverse(RecordCodecBuilder.Instance<RC> instance) {
+        return instance.group(Codec.BOOL.optionalFieldOf("reverse", false).forGetter(val -> val.isReverse));
+    }
+    // spotless:on
+
+    public static <RC extends RecipeCondition<RC>> MapCodec<RC> simpleCodec(Function<Boolean, RC> function) {
+        return RecordCodecBuilder.mapCodec(instance -> isReverse(instance).apply(instance, function));
+    }
+
+    @Getter
+    @Setter
+    protected boolean isReverse;
+
+    public RecipeCondition() {
+        this(false);
+    }
+
+    public RecipeCondition(boolean isReverse) {
+        this.isReverse = isReverse;
+    }
+
+    public abstract RecipeConditionType<T> getType();
+
+    public String getTranslationKey() {
+        return "gtceu.recipe.condition." + getType();
+    }
+
+    public IGuiTexture getInValidTexture() {
+        return CroppedTexture.of("extfrocore:textures/gui/condition/" + getType() + ".png", 0, 0, 1, 0.5f);
+    }
+
+    public IGuiTexture getValidTexture() {
+        return CroppedTexture.of("extfrocore:textures/gui/condition/" + getType() + ".png", 0, 0.5f, 1, 0.5f);
+    }
+
+    public boolean isOr() {
+        return false;
+    }
+
+    public abstract Component getTooltips();
+
+    public boolean check(@NotNull GTRecipe recipe, @NotNull RecipeLogic recipeLogic) {
+        boolean test = testCondition(recipe, recipeLogic);
+        return test != isReverse;
+    }
+
+    protected abstract boolean testCondition(@NotNull GTRecipe recipe, @NotNull RecipeLogic recipeLogic);
+
+    public abstract T createTemplate();
+
+    @NotNull
+    public final JsonObject serialize() {
+        var ops = RegistryOps.create(JsonOps.INSTANCE, GTRegistries.builtinRegistry());
+        return CODEC.encodeStart(ops, this).getOrThrow().getAsJsonObject();
+    }
+
+    public static RecipeCondition<?> deserialize(@NotNull JsonObject config) {
+        var ops = RegistryOps.create(JsonOps.INSTANCE, GTRegistries.builtinRegistry());
+        return CODEC.decode(ops, config).getOrThrow().getFirst();
+    }
+
+    public final void toNetwork(RegistryFriendlyByteBuf buf) {
+        var ops = RegistryOps.create(NbtOps.INSTANCE, buf.registryAccess());
+        buf.writeWithCodec(ops, CODEC, this);
+    }
+
+    public static RecipeCondition<?> fromNetwork(RegistryFriendlyByteBuf buf) {
+        var ops = RegistryOps.create(NbtOps.INSTANCE, buf.registryAccess());
+        return buf.readWithCodec(ops, CODEC, NbtAccounter.create(FriendlyByteBuf.DEFAULT_NBT_QUOTA));
+    }
+}

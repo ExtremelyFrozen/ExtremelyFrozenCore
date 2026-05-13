@@ -1,0 +1,7 @@
+{
+	"parent": "extfrocore:block/overlay/2_layer/front_emissive",
+	"textures": {
+		"overlay": "extfrocore:block/overlay/machine/overlay_maintenance_cleaning",
+		"overlay_emissive": "extfrocore:block/overlay/machine/overlay_maintenance_cleaning_emissive"
+	}
+}

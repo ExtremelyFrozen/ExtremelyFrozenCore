@@ -1,0 +1,7 @@
+{
+	"parent": "extfrocore:block/machine/template/part/hatch_machine_emissive",
+	"textures": {
+		"overlay": "extfrocore:block/overlay/machine/overlay_dual_hatch_input",
+		"overlay_emissive": "extfrocore:block/overlay/machine/overlay_pipe_in_emissive"
+	}
+}

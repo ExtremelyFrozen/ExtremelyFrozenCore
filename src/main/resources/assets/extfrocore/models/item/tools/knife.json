@@ -1,0 +1,8 @@
+{
+	"parent": "item/handheld",
+	"textures": {
+		"layer0": "extfrocore:item/tools/knife_base",
+		"layer1": "extfrocore:item/tools/knife",
+		"layer2": "extfrocore:item/tools/knife_overlay"
+	}
+}

@@ -1,0 +1,7 @@
+{
+	"parent": "extfrocore:block/cube_2_layer/all",
+	"textures": {
+		"bot_all": "extfrocore:block/casings/coils/machine_coil_molybdenum_disilicide",
+		"top_all": "extfrocore:block/casings/coils/machine_coil_molybdenum_disilicide_bloom"
+	}
+}

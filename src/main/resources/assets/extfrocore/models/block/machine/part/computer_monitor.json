@@ -1,0 +1,6 @@
+{
+	"parent": "extfrocore:block/overlay/front_all",
+	"textures": {
+		"overlay": "extfrocore:block/overlay/machine/overlay_monitor"
+	}
+}

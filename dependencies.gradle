@@ -5,7 +5,7 @@ dependencies {
 
     jarJar(forge.kotlinforforge.get())
 
-    jarJar(api(forge.ldlib.get()))
+    jarJar(api(forge.ldlib2.get()))
 
     // Registrate
     jarJar(api(forge.registrate.get()))
@@ -18,6 +18,48 @@ dependencies {
     // Recipe Viewers
     compileOnly(forge.bundles.jei)
     compileOnly(forge.emi)
+
+    // WAILA-likes
+    compileOnly(forge.jade)
+
+    // Curios
+    compileOnly(variantOf(forge.curios) { classifier("api") })
+
+    // AE2
+    compileOnly(forge.ae2)
+
+    // Create
+    compileOnly(forge.ponder)
+    compileOnly(variantOf(forge.create) { classifier("slim") })
+    compileOnly(forge.flywheel.forge.api)
+
+    // KJS
+    compileOnly(forge.bundles.kjs)
+
+    // Rendering / Optimizations
+    compileOnly(forge.sodium)
+    compileOnly(forge.iris)
+    compileOnly(forge.modernfix)
+
+    // Teams
+    compileOnly(forge.ftblibrary)
+    compileOnly(forge.ftbteams)
+    compileOnly(forge.ftbquests)
+    compileOnly(forge.resourcefullib)
+    compileOnly(forge.argonauts)
+    compileOnly(forge.heracles)
+
+    // Maps
+    compileOnly(forge.ftbchunks)
+    compileOnly(forge.xaeroslib)
+    compileOnly(forge.xaerosminimap)
+    compileOnly(forge.xaerosworldmap)
+    compileOnly(forge.journeymap.api)
+    compileOnly(forge.journeymap.forge)
+
+    // CC: Tweaked
+    compileOnly(forge.cc.tweaked.core.api)
+    compileOnly(forge.cc.tweaked.forge.api)
 
 
     // Standard runtime mods //

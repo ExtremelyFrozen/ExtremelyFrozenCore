@@ -1,0 +1,6 @@
+{
+	"parent": "extfrocore:item/material_sets/dull/foil",
+	"textures": {
+		"layer1": "extfrocore:item/material_sets/radioactive/foil_secondary"
+	}
+}

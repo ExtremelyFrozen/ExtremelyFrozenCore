@@ -1,0 +1,21 @@
+{
+	"parent": "extfrocore:block/material_sets/dull/block",
+	"loader": "neoforge:composite",
+	"children": {
+		"base": {
+			"parent": "extfrocore:block/cube/tinted/all_0",
+			"render_type": "solid",
+			"textures": {
+				"all": "extfrocore:block/material_sets/dull/block"
+			}
+		},
+		"secondary": {
+			"parent": "extfrocore:block/cube/tinted/all",
+			"render_type": "translucent",
+			"textures": {
+				"all": "extfrocore:block/material_sets/radioactive/block_secondary"
+			}
+		}
+	},
+	"item_render_order": ["base", "secondary"]
+}

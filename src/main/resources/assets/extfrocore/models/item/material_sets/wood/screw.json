@@ -1,0 +1,7 @@
+{
+	"parent": "item/generated",
+	"textures": {
+		"layer0": "extfrocore:item/material_sets/wood/screw",
+		"layer1": "extfrocore:item/material_sets/wood/screw_secondary"
+	}
+}

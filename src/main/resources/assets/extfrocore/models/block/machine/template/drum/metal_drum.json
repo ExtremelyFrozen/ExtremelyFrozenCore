@@ -1,0 +1,11 @@
+{
+	"parent": "extfrocore:block/cube_2_layer/tinted_bot/bottom_top",
+	"textures": {
+		"bot_bottom": "extfrocore:block/storage/drums/drum/bottom",
+		"bot_top": "extfrocore:block/storage/drums/drum/top",
+		"bot_side": "extfrocore:block/storage/drums/drum/side",
+		"top_bottom": "extfrocore:block/storage/drums/drum_top/bottom",
+		"top_top": "extfrocore:block/storage/drums/drum_top/top",
+		"top_side": "extfrocore:block/storage/drums/drum_top/side"
+	}
+}

@@ -1,0 +1,7 @@
+{
+	"parent": "item/handheld",
+	"textures": {
+		"layer0": "extfrocore:item/tools/electric_wirecutter_base_hv",
+		"layer1": "extfrocore:item/tools/electric_wirecutter_head"
+	}
+}

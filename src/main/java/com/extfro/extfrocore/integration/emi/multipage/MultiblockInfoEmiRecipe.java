@@ -1,0 +1,64 @@
+package com.extfro.extfrocore.integration.emi.multipage;
+
+import com.extfro.extfrocore.api.gui.widget.PatternPreviewWidget;
+import com.extfro.extfrocore.api.machine.MultiblockMachineDefinition;
+
+import net.minecraft.resources.ResourceLocation;
+
+import com.lowdragmc.lowdraglib2.gui.ui.ModularUI;
+import com.lowdragmc.lowdraglib2.gui.ui.UI;
+import com.lowdragmc.lowdraglib2.integration.xei.emi.ModularUIEMIRecipe;
+import dev.emi.emi.api.recipe.EmiRecipeCategory;
+import dev.emi.emi.api.stack.EmiStack;
+import dev.emi.emi.api.widget.SlotWidget;
+import dev.emi.emi.api.widget.WidgetHolder;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.List;
+
+public class MultiblockInfoEmiRecipe extends ModularUIEMIRecipe {
+
+    private final MultiblockMachineDefinition definition;
+    private SlotWidget slotWidget;
+
+    public MultiblockInfoEmiRecipe(MultiblockMachineDefinition definition) {
+        super(recipe -> ModularUI.of(UI.of(PatternPreviewWidget.getPatternWidget(definition))));
+        this.definition = definition;
+    }
+
+    @Override
+    public void addWidgets(WidgetHolder widgets) {
+        super.addWidgets(widgets);
+        // numbers gotten from the size of the widget
+        slotWidget = new SlotWidget(EmiStack.of(definition.getItem().asItem()), 138, 12)
+                .recipeContext(this)
+                .drawBack(false);
+
+        widgets.add(slotWidget);
+    }
+
+    @Override
+    public EmiRecipeCategory getCategory() {
+        return MultiblockInfoEmiCategory.CATEGORY;
+    }
+
+    @Override
+    public @Nullable ResourceLocation getId() {
+        return definition.getId().withPrefix("/");
+    }
+
+    @Override
+    public List<EmiStack> getOutputs() {
+        return List.of(EmiStack.of(definition.getItem()));
+    }
+
+    @Override
+    public int getDisplayWidth() {
+        return 160;
+    }
+
+    @Override
+    public int getDisplayHeight() {
+        return 160;
+    }
+}

@@ -1,0 +1,7 @@
+{
+	"parent": "item/handheld",
+	"textures": {
+		"layer0": "extfrocore:item/tools/handle_scythe",
+		"layer1": "extfrocore:item/tools/scythe"
+	}
+}

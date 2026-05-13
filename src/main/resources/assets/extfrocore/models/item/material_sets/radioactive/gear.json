@@ -1,0 +1,6 @@
+{
+	"parent": "extfrocore:item/material_sets/dull/gear",
+	"textures": {
+		"layer1": "extfrocore:item/material_sets/radioactive/gear_secondary"
+	}
+}

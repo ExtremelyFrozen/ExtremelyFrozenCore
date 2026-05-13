@@ -1,0 +1,12 @@
+{
+    "net/minecraft/core/MappedRegistry": [
+        "com/extfro/extfrocore/core/IMappedRegistryAccess<T>"
+    ],
+    "net/minecraft/client/renderer/block/model/BakedQuad": [
+        "com/extfro/extfrocore/core/IGTBakedQuad"
+    ],
+    "net/minecraft/world/entity/Entity": [
+        "com/extfro/extfrocore/core/IFireImmuneEntity",
+        "com/extfro/extfrocore/core/IBreathingEntity"
+    ]
+}

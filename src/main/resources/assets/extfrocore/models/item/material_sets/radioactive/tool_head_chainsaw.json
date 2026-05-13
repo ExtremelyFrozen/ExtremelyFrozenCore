@@ -1,0 +1,6 @@
+{
+	"parent": "extfrocore:item/material_sets/dull/tool_head_chainsaw",
+	"textures": {
+		"layer1": "extfrocore:item/material_sets/radioactive/tool_head_chainsaw_secondary"
+	}
+}

@@ -1,0 +1,215 @@
+package com.extfro.extfrocore.integration.ae2.machine;
+
+import com.extfro.extfrocore.api.blockentity.BlockEntityCreationInfo;
+import com.extfro.extfrocore.api.capability.recipe.IO;
+import com.extfro.extfrocore.api.machine.MetaMachine;
+import com.extfro.extfrocore.api.machine.trait.NotifiableFluidTank;
+import com.extfro.extfrocore.api.recipe.GTRecipe;
+import com.extfro.extfrocore.api.sync_system.annotations.SaveField;
+import com.extfro.extfrocore.api.transfer.fluid.CustomFluidTank;
+import com.extfro.extfrocore.integration.ae2.gui.AEUIHelper;
+import com.extfro.extfrocore.integration.ae2.gui.widget.list.AEListGridWidget;
+import com.extfro.extfrocore.integration.ae2.utils.KeyStorage;
+import com.extfro.extfrocore.utils.GTMath;
+
+import net.minecraft.MethodsReturnNonnullByDefault;
+import net.minecraft.network.chat.Component;
+import net.neoforged.neoforge.fluids.FluidStack;
+import net.neoforged.neoforge.fluids.crafting.SizedFluidIngredient;
+
+import appeng.api.config.Actionable;
+import appeng.api.stacks.AEFluidKey;
+import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.Collections;
+import java.util.List;
+
+import javax.annotation.ParametersAreNonnullByDefault;
+
+@MethodsReturnNonnullByDefault
+@ParametersAreNonnullByDefault
+public class MEOutputHatchPartMachine extends MEHatchPartMachine {
+
+    @SaveField
+    private KeyStorage internalBuffer; // Do not use KeyCounter, use our simple implementation
+
+    public MEOutputHatchPartMachine(BlockEntityCreationInfo info) {
+        super(info, IO.OUT);
+    }
+
+    /////////////////////////////////
+    // ***** Machine LifeCycle ****//
+    /////////////////////////////////
+
+    @Override
+    protected NotifiableFluidTank createTank(int initialCapacity, int slots) {
+        this.internalBuffer = new KeyStorage();
+        return new InaccessibleInfiniteTank(this);
+    }
+
+    @Override
+    public void onMachineDestroyed() {
+        super.onMachineDestroyed();
+        var grid = getMainNode().getGrid();
+        if (grid != null && !internalBuffer.isEmpty()) {
+            for (var entry : internalBuffer) {
+                grid.getStorageService().getInventory().insert(entry.getKey(), entry.getLongValue(),
+                        Actionable.MODULATE, actionSource);
+            }
+        }
+    }
+
+    /////////////////////////////////
+    // ********** Sync ME *********//
+    /////////////////////////////////
+
+    @Override
+    protected boolean shouldSubscribe() {
+        return super.shouldSubscribe() && !internalBuffer.storage.isEmpty();
+    }
+
+    @Override
+    protected void autoIO() {
+        if (!this.shouldSyncME()) return;
+        if (this.updateMEStatus()) {
+            var grid = getMainNode().getGrid();
+            if (grid != null && !internalBuffer.isEmpty()) {
+                internalBuffer.insertInventory(grid.getStorageService().getInventory(), actionSource);
+            }
+            this.updateTankSubscription();
+        }
+    }
+
+    ///////////////////////////////
+    // ********** GUI ***********//
+    ///////////////////////////////
+
+    @Override
+    public UIElement createUIWidget() {
+        UIElement group = AEUIHelper.group(0, 0, 170, 65);
+        group.addChild(AEUIHelper.label(5, 0, () -> this.isOnline ?
+                Component.translatable("gtceu.gui.me_network.online") :
+                Component.translatable("gtceu.gui.me_network.offline")));
+        group.addChild(AEUIHelper.label(5, 10, "gtceu.gui.waiting_list"));
+        group.addChild(new AEListGridWidget.Fluid(5, 20, 3, this.internalBuffer));
+        return group;
+    }
+
+    private class InaccessibleInfiniteTank extends NotifiableFluidTank {
+
+        FluidStorageDelegate storage;
+
+        public InaccessibleInfiniteTank(MetaMachine holder) {
+            super(List.of(new FluidStorageDelegate()), IO.OUT, IO.NONE);
+            internalBuffer.setOnContentsChanged(this::onContentsChanged);
+            storage = (FluidStorageDelegate) getStorages()[0];
+            allowSameFluids = true;
+        }
+
+        @Override
+        public int getTanks() {
+            return 128;
+        }
+
+        @Override
+        public List<Object> getContents() {
+            return Collections.emptyList();
+        }
+
+        @Override
+        public double getTotalContentAmount() {
+            return 0;
+        }
+
+        @Override
+        public boolean isEmpty() {
+            return true;
+        }
+
+        @Override
+        public FluidStack getFluidInTank(int tank) {
+            return FluidStack.EMPTY;
+        }
+
+        @Override
+        public void setFluidInTank(int tank, FluidStack fluidStack) {}
+
+        @Override
+        public int getTankCapacity(int tank) {
+            return storage.getCapacity();
+        }
+
+        @Override
+        public boolean isFluidValid(int tank, FluidStack stack) {
+            return true;
+        }
+
+        @Override
+        @Nullable
+        public List<SizedFluidIngredient> handleRecipeInner(IO io, GTRecipe recipe, List<SizedFluidIngredient> left,
+                                                            boolean simulate) {
+            if (io != IO.OUT) return left;
+            FluidAction action = simulate ? FluidAction.SIMULATE : FluidAction.EXECUTE;
+            for (var it = left.listIterator(); it.hasNext();) {
+                var ingredient = it.next();
+                if (ingredient.ingredient().hasNoFluids()) {
+                    it.remove();
+                    continue;
+                }
+
+                var fluids = ingredient.getFluids();
+                if (fluids.length == 0 || fluids[0].isEmpty()) {
+                    it.remove();
+                    continue;
+                }
+                FluidStack output = fluids[0];
+                int remainingAmount = ingredient.amount() - storage.fill(output, action);
+
+                if (remainingAmount > 0) it.set(new SizedFluidIngredient(ingredient.ingredient(), remainingAmount));
+                else it.remove();
+            }
+            return left.isEmpty() ? null : left;
+        }
+    }
+
+    private class FluidStorageDelegate extends CustomFluidTank {
+
+        public FluidStorageDelegate() {
+            super(0);
+        }
+
+        @Override
+        public int getCapacity() {
+            return Integer.MAX_VALUE;
+        }
+
+        @Override
+        public void setFluid(FluidStack fluid) {
+            // NO-OP
+        }
+
+        @Override
+        public int fill(FluidStack resource, FluidAction action) {
+            var key = AEFluidKey.of(resource);
+            int amount = resource.getAmount();
+            int oldValue = GTMath.saturatedCast(internalBuffer.storage.getOrDefault(key, 0));
+            int changeValue = Math.min(Integer.MAX_VALUE - oldValue, amount);
+            if (changeValue > 0 && action.execute()) {
+                internalBuffer.storage.put(key, oldValue + changeValue);
+                internalBuffer.onChanged();
+            }
+            return changeValue;
+        }
+
+        @Override
+        public boolean supportsFill(int tank) {
+            return false;
+        }
+
+        @Override
+        public boolean supportsDrain(int tank) {
+            return false;
+        }
+    }
+}
