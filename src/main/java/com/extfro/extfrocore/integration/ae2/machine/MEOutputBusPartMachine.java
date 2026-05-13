@@ -9,6 +9,7 @@ import com.extfro.extfrocore.integration.ae2.gui.AEUIHelper;
 import com.extfro.extfrocore.integration.ae2.gui.widget.list.AEListGridWidget;
 import com.extfro.extfrocore.integration.ae2.utils.KeyStorage;
 
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 
 import appeng.api.config.Actionable;

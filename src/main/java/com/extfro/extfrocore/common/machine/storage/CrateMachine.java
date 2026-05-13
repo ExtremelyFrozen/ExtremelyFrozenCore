@@ -4,6 +4,7 @@ import com.extfro.extfrocore.api.blockentity.BlockEntityCreationInfo;
 import com.extfro.extfrocore.api.capability.recipe.IO;
 import com.extfro.extfrocore.api.data.chemical.material.Material;
 import com.extfro.extfrocore.api.gui.GuiTextures;
+import com.extfro.extfrocore.api.gui.ModularUIBuilder;
 import com.extfro.extfrocore.api.gui.UITemplate;
 import com.extfro.extfrocore.api.gui.widget.SlotWidget;
 import com.extfro.extfrocore.api.machine.MetaMachine;
@@ -56,7 +57,7 @@ public class CrateMachine extends MetaMachine implements IUIMachine {
         int yOverflow = xOffset > 0 ? 18 : 9;
         int yOffset = inventorySize > 3 * yOverflow ?
                 (inventorySize - 3 * yOverflow - (inventorySize - 3 * yOverflow) % yOverflow) / yOverflow * 18 : 0;
-        var modularUI = new ModularUI(176 + xOffset, 166 + yOffset, this, entityPlayer)
+        var modularUI = new ModularUIBuilder(176 + xOffset, 166 + yOffset, this, entityPlayer)
                 .background(GuiTextures.BACKGROUND)
                 .widget(MachineUIHelper.label(5, 5, getBlockState().getBlock().getDescriptionId()))
                 .widget(UITemplate.bindPlayerInventory(entityPlayer.getInventory(), GuiTextures.SLOT, 7 + xOffset / 2,

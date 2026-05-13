@@ -273,9 +273,11 @@ public class HPCAMachine extends WorkableElectricMultiblockMachine
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
                 final int index = i * 3 + j;
+                int left = startX + 15 * j;
+                int top = startY + 15 * i;
                 Supplier<IGuiTexture> textureSupplier = () -> hpcaHandler.getComponentTexture(index);
                 builder.addChild(new UIElement()
-                        .layout(layout -> layout.left(startX + (15 * j)).top(startY + (15 * i)).width(13).height(13))
+                        .layout(layout -> layout.left(left).top(top).width(13).height(13))
                         .style(style -> style.backgroundTexture(textureSupplier.get())));
             }
         }

@@ -142,7 +142,7 @@ public class SimpleGeneratorMachine extends WorkableTieredMachine
 
             @Override
             public void screenTick() {
-                progress.ifPresent(progressBar -> progressBar.setProgress(recipeLogic.getProgressPercent()));
+                progress.ifPresent(progressBar -> progressBar.setProgress((float) recipeLogic.getProgressPercent()));
                 super.screenTick();
             }
         };

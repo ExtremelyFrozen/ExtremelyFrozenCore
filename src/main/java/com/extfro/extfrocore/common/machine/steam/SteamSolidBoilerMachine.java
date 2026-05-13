@@ -7,6 +7,8 @@ import com.extfro.extfrocore.api.capability.recipe.ItemRecipeCapability;
 import com.extfro.extfrocore.api.data.chemical.ChemicalHelper;
 import com.extfro.extfrocore.api.data.tag.TagPrefix;
 import com.extfro.extfrocore.api.gui.GuiTextures;
+import com.extfro.extfrocore.api.gui.ModularUIBuilder;
+import com.extfro.extfrocore.api.gui.ProgressTextures;
 import com.extfro.extfrocore.api.gui.widget.SlotWidget;
 import com.extfro.extfrocore.api.machine.steam.SteamBoilerMachine;
 import com.extfro.extfrocore.api.machine.trait.NotifiableItemStackHandler;
@@ -22,7 +24,6 @@ import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.fluids.FluidUtil;
 
 import com.lowdragmc.lowdraglib2.gui.texture.GuiTextureGroup;
-import com.lowdragmc.lowdraglib2.gui.ui.ModularUI;
 import com.lowdragmc.lowdraglib2.gui.ui.data.FillDirection;
 import it.unimi.dsi.fastutil.objects.Object2BooleanMap;
 import it.unimi.dsi.fastutil.objects.Object2BooleanOpenHashMap;
@@ -113,7 +114,7 @@ public class SteamSolidBoilerMachine extends SteamBoilerMachine {
     }
 
     @Override
-    public ModularUI createUI(Player entityPlayer) {
+    public ModularUIBuilder createUI(Player entityPlayer) {
         return super.createUI(entityPlayer)
                 .widget(new SlotWidget(this.fuelHandler.storage, 0, 115, 62)
                         .setBackgroundTexture(new GuiTextureGroup(GuiTextures.SLOT_STEAM.get(isHighPressure),
@@ -122,8 +123,7 @@ public class SteamSolidBoilerMachine extends SteamBoilerMachine {
                         .setBackgroundTexture(new GuiTextureGroup(GuiTextures.SLOT_STEAM.get(isHighPressure),
                                 GuiTextures.DUST_OVERLAY_STEAM.get(isHighPressure))))
                 .widget(MachineUIHelper.progress(115, 44, 18, 18, recipeLogic::getProgressPercent,
-                        GuiTextures.PROGRESS_BAR_BOILER_FUEL.get(isHighPressure).getSubTexture(0, 0, 1, 0.5),
-                        GuiTextures.PROGRESS_BAR_BOILER_FUEL.get(isHighPressure).getSubTexture(0, 0.5, 1, 0.5),
-                        FillDirection.DOWN_TO_UP));
+                        ProgressTextures.from(GuiTextures.PROGRESS_BAR_BOILER_FUEL.get(isHighPressure),
+                                FillDirection.DOWN_TO_UP)));
     }
 }

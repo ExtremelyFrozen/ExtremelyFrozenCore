@@ -157,12 +157,17 @@ public class TankWidget extends FluidSlot {
         return this;
     }
 
+    public TankWidget setOverlay(IGuiTexture overlay) {
+        style(style -> style.overlay(overlay));
+        return this;
+    }
+
     public Position getPosition() {
-        return new Position(Math.round(getPositionX()), Math.round(getPositionY()));
+        return Position.of(Math.round(getPositionX()), Math.round(getPositionY()));
     }
 
     public Size getSize() {
-        return new Size(Math.round(getSizeWidth()), Math.round(getSizeHeight()));
+        return Size.of(Math.round(getSizeWidth()), Math.round(getSizeHeight()));
     }
 
     public Rect2i toRectangleBox() {

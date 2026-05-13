@@ -112,9 +112,10 @@ public class StorageCover extends CoverBehavior implements IUICover {
 
     private void addInventorySlots(UIElement group, int topOffset) {
         for (int slot = 0; slot < SIZE; slot++) {
+            int left = 7 + (slot % 6) * 18;
+            int top = topOffset + (slot / 6) * 18;
             ItemSlot itemSlot = new ItemSlot().bind(inventory, slot);
-            itemSlot.layout(layout -> layout.left(7 + (slot % 6) * 18).top(topOffset + (slot / 6) * 18)
-                    .width(18).height(18));
+            itemSlot.layout(layout -> layout.left(left).top(top).width(18).height(18));
             itemSlot.style(style -> style.background(GuiTextures.SLOT));
             group.addChild(itemSlot);
         }

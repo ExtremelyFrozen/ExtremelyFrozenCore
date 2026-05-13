@@ -36,7 +36,8 @@ public class TooltipsPanel extends UIElement {
         for (IFancyTooltip tooltip : this.tooltips) {
             if (!tooltip.showFancyTooltip()) continue;
             Button button = new Button().noText();
-            button.layout(layout -> layout.left(0).top(y).width(20).height(20));
+            int top = y;
+            button.layout(layout -> layout.left(0).top(top).width(20).height(20));
             button.buttonStyle(style -> style
                     .baseTexture(tooltip.getFancyTooltipIcon())
                     .hoverTexture(tooltip.getFancyTooltipIcon())

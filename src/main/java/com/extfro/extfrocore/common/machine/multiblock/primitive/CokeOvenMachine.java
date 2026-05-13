@@ -3,6 +3,7 @@ package com.extfro.extfrocore.common.machine.multiblock.primitive;
 import com.extfro.extfrocore.api.EFValues;
 import com.extfro.extfrocore.api.blockentity.BlockEntityCreationInfo;
 import com.extfro.extfrocore.api.gui.GuiTextures;
+import com.extfro.extfrocore.api.gui.ModularUIBuilder;
 import com.extfro.extfrocore.api.gui.UITemplate;
 import com.extfro.extfrocore.api.gui.widget.SlotWidget;
 import com.extfro.extfrocore.api.gui.widget.TankWidget;
@@ -33,7 +34,7 @@ public class CokeOvenMachine extends PrimitiveWorkableMachine implements IUIMach
 
     @Override
     public ModularUI createUI(Player entityPlayer) {
-        return new ModularUI(176, 166, this, entityPlayer)
+        return new ModularUIBuilder(176, 166, this, entityPlayer)
                 .background(GuiTextures.PRIMITIVE_BACKGROUND)
                 .widget(MachineUIHelper.label(5, 5, getBlockState().getBlock().getDescriptionId()))
                 .widget(new SlotWidget(importItems.storage, 0, 52, 30, true, true)

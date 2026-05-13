@@ -109,12 +109,14 @@ public class CombinedDirectionalConfigurator extends UIElement {
             final int elementHeight = (int) element.getSizeHeight();
             switch (configHandler.getScreenSide()) {
                 case LEFT -> {
-                    element.layout(layout -> layout.left(6).top(height - 6 - elementHeight - yOffsetLeft));
+                    int top = height - 6 - elementHeight - yOffsetLeft;
+                    element.layout(layout -> layout.left(6).top(top));
                     yOffsetLeft += elementHeight + 3;
                 }
                 case RIGHT -> {
-                    element.layout(layout -> layout.left(width - elementWidth - 6)
-                            .top(height - 6 - elementHeight - yOffsetRight));
+                    int left = width - elementWidth - 6;
+                    int top = height - 6 - elementHeight - yOffsetRight;
+                    element.layout(layout -> layout.left(left).top(top));
                     yOffsetRight += elementHeight + 3;
                 }
             }

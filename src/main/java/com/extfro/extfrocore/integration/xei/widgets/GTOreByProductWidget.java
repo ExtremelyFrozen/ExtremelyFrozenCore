@@ -159,7 +159,8 @@ public class GTOreByProductWidget extends UIElement {
                     .xeiRecipeSlot(FINAL_OUTPUT_INDICES.contains(i) ? IngredientIO.OUTPUT : IngredientIO.CATALYST,
                             xeiChance, 0, Stream.of(itemOutputs.get(slotIndex)));
             if (overlay != null) {
-                slot.style(style -> style.overlay(overlay));
+                IGuiTexture slotOverlay = overlay;
+                slot.style(style -> style.overlay(slotOverlay));
             }
             slot.addEventListener(UIEvents.HOVER_TOOLTIPS, event -> {
                 var tooltips = slot.getFullTooltipTexts();

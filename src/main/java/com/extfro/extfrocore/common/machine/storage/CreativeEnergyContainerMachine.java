@@ -6,6 +6,7 @@ import com.extfro.extfrocore.api.capability.GTCapabilityHelper;
 import com.extfro.extfrocore.api.capability.IEnergyContainer;
 import com.extfro.extfrocore.api.capability.ILaserContainer;
 import com.extfro.extfrocore.api.gui.GuiTextures;
+import com.extfro.extfrocore.api.gui.ModularUIBuilder;
 import com.extfro.extfrocore.api.machine.TieredMachine;
 import com.extfro.extfrocore.api.machine.feature.IUIMachine;
 import com.extfro.extfrocore.api.sync_system.annotations.SaveField;
@@ -18,9 +19,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 
 import com.lowdragmc.lowdraglib2.gui.ColorPattern;
-import com.lowdragmc.lowdraglib2.gui.texture.IGuiTexture;
 import com.lowdragmc.lowdraglib2.gui.ui.ModularUI;
-import com.lowdragmc.lowdraglib2.gui.ui.elements.Button;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.Selector;
 import org.apache.commons.lang3.ArrayUtils;
 
@@ -176,7 +175,7 @@ public class CreativeEnergyContainerMachine extends TieredMachine implements ILa
 
     @Override
     public ModularUI createUI(Player entityPlayer) {
-        return new ModularUI(176, 166, this, entityPlayer)
+        return new ModularUIBuilder(176, 166, this, entityPlayer)
                 .background(GuiTextures.BACKGROUND)
                 .widget(MachineUIHelper.label(7, 32, "gtceu.creative.energy.voltage"))
                 .widget(MachineUIHelper.longTextField(9, 47, 152, 16, () -> voltage,
@@ -224,18 +223,11 @@ public class CreativeEnergyContainerMachine extends TieredMachine implements ILa
         selector.layout(layout -> layout.left(7).top(7).width(50).height(20));
         selector.setCandidates(Arrays.stream(EFValues.VNF).toList());
         selector.setValue(EFValues.VNF[setTier], false);
-        selector.setOnChanged(tier -> {
+        selector.setOnValueChanged(tier -> {
             setTier = ArrayUtils.indexOf(EFValues.VNF, tier);
             voltage = EFValues.VEX[setTier];
         });
         selector.style(style -> style.background(ColorPattern.BLACK.rectTexture()));
-        IGuiTexture buttonTexture = GuiTextures.VANILLA_BUTTON;
-        Button selectorButton = selector.getButton();
-        if (selectorButton != null) {
-            selectorButton.buttonStyle(style -> style.baseTexture(buttonTexture)
-                    .hoverTexture(buttonTexture)
-                    .pressedTexture(buttonTexture));
-        }
         return selector;
     }
 }

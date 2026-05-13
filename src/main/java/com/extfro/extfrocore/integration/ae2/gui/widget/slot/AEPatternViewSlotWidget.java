@@ -2,7 +2,6 @@ package com.extfro.extfrocore.integration.ae2.gui.widget.slot;
 
 import com.extfro.extfrocore.api.gui.widget.SlotWidget;
 
-import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.world.Container;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
@@ -10,9 +9,7 @@ import net.neoforged.neoforge.items.IItemHandlerModifiable;
 
 import com.lowdragmc.lowdraglib2.gui.texture.GuiTextureGroup;
 import com.lowdragmc.lowdraglib2.gui.texture.IGuiTexture;
-import com.lowdragmc.lowdraglib2.math.Position;
-import com.lowdragmc.lowdraglib2.math.Size;
-import org.jetbrains.annotations.NotNull;
+import com.lowdragmc.lowdraglib2.gui.ui.rendering.GUIContext;
 
 public class AEPatternViewSlotWidget extends SlotWidget {
 
@@ -51,32 +48,11 @@ public class AEPatternViewSlotWidget extends SlotWidget {
         return this;
     }
 
-    @Override
     @OnlyIn(Dist.CLIENT)
-    public void updateScreen() {
-        super.updateScreen();
-        if (occupiedTexture != null) {
-            occupiedTexture.updateTick();
-        }
-    }
-
-    @Override
-    @OnlyIn(Dist.CLIENT)
-    protected void drawBackgroundTexture(@NotNull GuiGraphics graphics, int mouseX, int mouseY) {
-        Position pos = getPosition();
-        Size size = getSize();
-        if (getHandler() != null && getHandler().hasItem()) {
-            if (occupiedTexture != null) {
-                occupiedTexture.draw(graphics, mouseX, mouseY, pos.x, pos.y, size.width, size.height);
-            }
-        } else {
-            if (backgroundTexture != null) {
-                backgroundTexture.draw(graphics, mouseX, mouseY, pos.x, pos.y, size.width, size.height);
-            }
-        }
-
-        if (hoverTexture != null && isMouseOverElement(mouseX, mouseY)) {
-            hoverTexture.draw(graphics, mouseX, mouseY, pos.x, pos.y, size.width, size.height);
+    public void drawBackgroundAdditional(GUIContext guiContext) {
+        super.drawBackgroundAdditional(guiContext);
+        if (!getValue().isEmpty() && occupiedTexture != null) {
+            occupiedTexture.draw(guiContext, 0, 0, getSizeWidth(), getSizeHeight());
         }
     }
 }

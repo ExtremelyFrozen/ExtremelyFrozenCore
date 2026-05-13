@@ -74,7 +74,7 @@ public abstract class NumberInputWidget<T extends Number> extends UIElement {
     }
 
     public NumberInputWidget(Position position, Supplier<T> valueSupplier, Consumer<T> onChanged) {
-        this(position, new Size(100, 20), valueSupplier, onChanged);
+        this(position, Size.of(100, 20), valueSupplier, onChanged);
     }
 
     public NumberInputWidget(Position position, Size size, Supplier<T> valueSupplier, Consumer<T> onChanged) {

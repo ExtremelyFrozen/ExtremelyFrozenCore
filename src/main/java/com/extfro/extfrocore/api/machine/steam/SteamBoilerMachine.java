@@ -4,6 +4,7 @@ import com.extfro.extfrocore.api.EFValues;
 import com.extfro.extfrocore.api.blockentity.BlockEntityCreationInfo;
 import com.extfro.extfrocore.api.capability.recipe.IO;
 import com.extfro.extfrocore.api.gui.GuiTextures;
+import com.extfro.extfrocore.api.gui.ModularUIBuilder;
 import com.extfro.extfrocore.api.gui.UITemplate;
 import com.extfro.extfrocore.api.gui.widget.TankWidget;
 import com.extfro.extfrocore.api.machine.MetaMachine;
@@ -38,7 +39,6 @@ import net.neoforged.neoforge.fluids.FluidType;
 import net.neoforged.neoforge.fluids.FluidUtil;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler.FluidAction;
 
-import com.lowdragmc.lowdraglib2.gui.ui.ModularUI;
 import com.lowdragmc.lowdraglib2.gui.ui.data.FillDirection;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
@@ -296,8 +296,8 @@ public abstract class SteamBoilerMachine extends SteamWorkableMachine
     //////////////////////////////////////
 
     @Override
-    public ModularUI createUI(Player entityPlayer) {
-        return new ModularUI(176, 166, this, entityPlayer)
+    public ModularUIBuilder createUI(Player entityPlayer) {
+        return new ModularUIBuilder(176, 166, this, entityPlayer)
                 .background(GuiTextures.BACKGROUND_STEAM.get(isHighPressure))
                 .widget(MachineUIHelper.label(6, 6, getBlockState().getBlock().getDescriptionId()))
                 .widget(MachineUIHelper.progress(96, 26, 10, 54, this::getTemperaturePercent,

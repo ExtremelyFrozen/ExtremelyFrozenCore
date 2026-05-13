@@ -5,6 +5,7 @@ import com.extfro.extfrocore.api.capability.IControllable;
 import com.extfro.extfrocore.api.capability.IMiner;
 import com.extfro.extfrocore.api.capability.recipe.IO;
 import com.extfro.extfrocore.api.gui.GuiTextures;
+import com.extfro.extfrocore.api.gui.ModularUIBuilder;
 import com.extfro.extfrocore.api.gui.UITemplate;
 import com.extfro.extfrocore.api.gui.widget.PredicatedImageWidget;
 import com.extfro.extfrocore.api.gui.widget.SlotWidget;
@@ -142,7 +143,7 @@ public class SteamMinerMachine extends SteamWorkableMachine implements IControll
     public ModularUI createUI(Player entityPlayer) {
         int rowSize = (int) Math.sqrt(inventorySize);
 
-        ModularUI builder = new ModularUI(175, 176, this, entityPlayer)
+        ModularUIBuilder builder = new ModularUIBuilder(175, 176, this, entityPlayer)
                 .background(GuiTextures.BACKGROUND_STEAM.get(isHighPressure()));
         builder.widget(UITemplate.bindPlayerInventory(entityPlayer.getInventory(),
                 GuiTextures.SLOT_STEAM.get(isHighPressure()), 7,

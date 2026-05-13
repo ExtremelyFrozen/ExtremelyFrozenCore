@@ -8,6 +8,7 @@ import com.extfro.extfrocore.api.capability.IMonitorComponent;
 import com.extfro.extfrocore.api.capability.recipe.IO;
 import com.extfro.extfrocore.api.capability.recipe.ItemRecipeCapability;
 import com.extfro.extfrocore.api.gui.GuiTextures;
+import com.extfro.extfrocore.api.gui.texture.CroppedTexture;
 import com.extfro.extfrocore.api.gui.widget.SlotWidget;
 import com.extfro.extfrocore.api.machine.feature.IDataInfoProvider;
 import com.extfro.extfrocore.api.machine.multiblock.MultiblockControllerMachine;
@@ -172,7 +173,8 @@ public class DataAccessHatchMachine extends TieredPartMachine
 
     @Override
     public IGuiTexture getComponentIcon() {
-        return SpriteTexture.of(ExtForCore.id("textures/item/data_module.png").toString()).getSubTexture(0, 0, 1, 1 / 13f);
+        return CroppedTexture.of(SpriteTexture.of(ExtForCore.id("textures/item/data_module.png").toString()),
+                0, 0, 1, 1 / 13f);
     }
 
     @Override

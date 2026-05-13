@@ -137,6 +137,7 @@ public class ComputerMonitorCover extends CoverBehavior
                 .layout(layout -> layout.width(2 * textFieldWidth + 3 * horizontalPadding).height(150));
         for (int i = 0; i < 8; i++) {
             int finalI = i;
+            int displayIndex = finalI + 1;
             if (i >= formatStringLines.size()) formatStringLines.add("");
             TextField formatStringInput = textField(
                     horizontalPadding + textFieldWidth / 2,
@@ -144,19 +145,20 @@ public class ComputerMonitorCover extends CoverBehavior
                     textFieldWidth, 15, formatStringLines.get(i),
                     s -> formatStringLines.set(finalI, s));
             formatStringInput.style(style -> style.tooltips(LangHandler
-                    .getMultiLang("gtceu.gui.computer_monitor_cover.main_textbox_tooltip", i + 1)
+                    .getMultiLang("gtceu.gui.computer_monitor_cover.main_textbox_tooltip", displayIndex)
                     .toArray(Component[]::new)));
             mainPage.addChild(formatStringInput);
 
             ItemSlot slot = new ItemSlot().bind(itemStackHandler, i);
             slot.layout(layout -> layout.left(horizontalPadding + 50).top(20 * finalI).width(18).height(18));
             slot.style(style -> style.background(GuiTextures.SLOT).tooltips(LangHandler
-                    .getMultiLang("gtceu.gui.computer_monitor_cover.slot_tooltip", i + 1)
+                    .getMultiLang("gtceu.gui.computer_monitor_cover.slot_tooltip", displayIndex)
                     .toArray(Component[]::new)));
             mainPage.addChild(slot);
         }
         for (int i = 0; i < 8; i++) {
             int finalI = i;
+            int displayIndex = finalI + 1;
             if (i >= formatStringArgs.size()) formatStringArgs.add("");
             TextField formatStringArgsInput = textField(
                     textFieldWidth / 2 + horizontalPadding,
@@ -165,7 +167,7 @@ public class ComputerMonitorCover extends CoverBehavior
                     s -> formatStringArgs.set(finalI, s));
             formatStringArgsInput.style(style -> style.tooltips(LangHandler
                     .getMultiLang("gtceu.gui.computer_monitor_cover.second_page_textbox_tooltip",
-                            GTStringUtils.getIntOrderingSuffix(i + 1))
+                            GTStringUtils.getIntOrderingSuffix(displayIndex))
                     .toArray(Component[]::new)));
             formatStringArgsPage.addChild(formatStringArgsInput);
         }

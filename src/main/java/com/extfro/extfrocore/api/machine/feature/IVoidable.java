@@ -5,6 +5,7 @@ import com.extfro.extfrocore.api.capability.recipe.ItemRecipeCapability;
 import com.extfro.extfrocore.api.capability.recipe.RecipeCapability;
 import com.extfro.extfrocore.api.gui.GuiTextures;
 import com.extfro.extfrocore.api.gui.fancy.ConfiguratorPanel;
+import com.extfro.extfrocore.api.gui.texture.CroppedTexture;
 import com.extfro.extfrocore.api.gui.widget.EnumSelectorWidget;
 import com.extfro.extfrocore.api.machine.fancyconfigurator.FancySelectorConfigurator;
 
@@ -62,7 +63,7 @@ public interface IVoidable extends IMachineFeature {
         VoidingMode(String name, Predicate<RecipeCapability<?>> canVoid) {
             this.localeName = name;
             this.canVoid = canVoid;
-            this.icon = GuiTextures.BUTTON_VOID_MULTIBLOCK.getSubTexture(0, ordinal() * 0.25, 1, 0.25);
+            this.icon = CroppedTexture.of(GuiTextures.BUTTON_VOID_MULTIBLOCK, 0, ordinal() * 0.25f, 1, 0.25f);
         }
 
         public boolean canVoid(RecipeCapability<?> capability) {

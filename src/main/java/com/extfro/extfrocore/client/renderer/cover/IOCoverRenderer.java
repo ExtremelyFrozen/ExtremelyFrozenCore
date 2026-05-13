@@ -21,7 +21,6 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.client.model.data.ModelData;
 
-import com.lowdragmc.lowdraglib2.client.bakedpipeline.FaceQuad;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -81,11 +80,11 @@ public class IOCoverRenderer implements ICoverRenderer {
                         overlaySprite));
             }
             if (isInverted && invertedEmissiveOverlaySprite != null) {
-                quads.add(FaceQuad.bakeFace(StaticFaceBakery.COVER_OVERLAY, coverBehavior.attachedSide,
-                        invertedEmissiveOverlaySprite, BlockModelRotation.X0_Y0, -101, 15, true, false));
+                quads.add(StaticFaceBakery.bakeFace(StaticFaceBakery.COVER_OVERLAY, coverBehavior.attachedSide,
+                        invertedEmissiveOverlaySprite, BlockModelRotation.X0_Y0, -101, true, false));
             } else if (emissiveOverlaySprite != null) {
-                quads.add(FaceQuad.bakeFace(StaticFaceBakery.COVER_OVERLAY, coverBehavior.attachedSide,
-                        emissiveOverlaySprite, BlockModelRotation.X0_Y0, -101, 15, true, false));
+                quads.add(StaticFaceBakery.bakeFace(StaticFaceBakery.COVER_OVERLAY, coverBehavior.attachedSide,
+                        emissiveOverlaySprite, BlockModelRotation.X0_Y0, -101, true, false));
             }
         }
     }

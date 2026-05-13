@@ -270,7 +270,7 @@ public abstract class ProspectorMode<T> {
                 float drawnHeight = (float) FillDirection.DOWN_TO_UP.getDrawnHeight(progress);
                 DrawerHelper.drawFluidForGui(graphics, new FluidStack(item.fluid(), item.left),
                         (int) (x + drawnU * width), (int) (y + drawnV * height), ((int) (width * drawnWidth)),
-                        ((int) (height * drawnHeight)));
+                        ((int) (height * drawnHeight)), 0);
             }
         }
     };

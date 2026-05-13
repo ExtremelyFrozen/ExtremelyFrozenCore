@@ -39,14 +39,7 @@ public class RecipeTypeUIProject implements IProject {
 
     public static RecipeTypeUIProject fromRecipeType(GTRecipeType recipeType) {
         var project = new RecipeTypeUIProject();
-        if (recipeType.getRecipeUI().hasCustomUI()) {
-            var nbt = recipeType.getRecipeUI().getCustomUI();
-            project.root = new UIElement();
-            project.root.deserializeNBT(com.extfro.extfrocore.api.registry.GTRegistries.builtinRegistry(),
-                    nbt.getCompound("root"));
-        } else {
-            project.root = recipeType.getRecipeUI().createEditableUITemplate(false, false).createDefault();
-        }
+        project.root = recipeType.getRecipeUI().createXEIElement(false, false);
         project.setRecipeType(recipeType);
         return project;
     }

@@ -4,6 +4,7 @@ import com.extfro.extfrocore.api.EFValues;
 import com.extfro.extfrocore.api.blockentity.BlockEntityCreationInfo;
 import com.extfro.extfrocore.api.capability.recipe.IO;
 import com.extfro.extfrocore.api.gui.GuiTextures;
+import com.extfro.extfrocore.api.gui.ModularUIBuilder;
 import com.extfro.extfrocore.api.gui.UITemplate;
 import com.extfro.extfrocore.api.gui.widget.TankWidget;
 import com.extfro.extfrocore.api.gui.widget.ToggleButtonWidget;
@@ -524,7 +525,7 @@ public class PumpMachine extends TieredEnergyMachine implements IUIMachine {
     //////////////////////////////////////
     @Override
     public ModularUI createUI(Player entityPlayer) {
-        return new ModularUI(176, 166, this, entityPlayer)
+        return new ModularUIBuilder(176, 166, this, entityPlayer)
                 .background(GuiTextures.BACKGROUND)
                 .widget(MachineUIHelper.image(7, 16, 81, 55, GuiTextures.DISPLAY))
                 .widget(MachineUIHelper.label(11, 20, "gtceu.gui.fluid_amount"))

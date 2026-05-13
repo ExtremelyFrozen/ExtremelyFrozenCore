@@ -460,7 +460,8 @@ public abstract class AbstractEnderLinkCover<T extends VirtualEntry> extends Cov
 
             // Color block
             ColorBlockElement colorBlockElement = new ColorBlockElement(() -> VirtualEntry.parseColor(entryColorStr(entry)));
-            colorBlockElement.layout(layout -> layout.left(currentX).top(0).width(BUTTON_SIZE).height(BUTTON_SIZE));
+            int colorBlockX = currentX;
+            colorBlockElement.layout(layout -> layout.left(colorBlockX).top(0).width(BUTTON_SIZE).height(BUTTON_SIZE));
             channelGroup.addChild(colorBlockElement);
             currentX += BUTTON_SIZE + MARGIN;
 

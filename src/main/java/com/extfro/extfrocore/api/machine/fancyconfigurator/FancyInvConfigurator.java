@@ -53,17 +53,21 @@ public class FancyInvConfigurator implements IFancyConfigurator {
             rowSize = 4;
             colSize = 2;
         }
+        int finalRowSize = rowSize;
+        int finalColSize = colSize;
         UIElement group = new UIElement()
-                .layout(layout -> layout.width(18 * rowSize + 16).height(18 * colSize + 16));
+                .layout(layout -> layout.width(18 * finalRowSize + 16).height(18 * finalColSize + 16));
         UIElement container = new UIElement()
-                .layout(layout -> layout.left(4).top(4).width(18 * rowSize + 8).height(18 * colSize + 8))
+                .layout(layout -> layout.left(4).top(4).width(18 * finalRowSize + 8).height(18 * finalColSize + 8))
                 .style(style -> style.background(GuiTextures.BACKGROUND_INVERSE));
         int index = 0;
         for (int y = 0; y < colSize; y++) {
             for (int x = 0; x < rowSize; x++) {
+                int left = 4 + x * 18;
+                int top = 4 + y * 18;
                 ItemSlot slot = new ItemSlot();
                 slot.bind(inventory, index++);
-                slot.layout(layout -> layout.left(4 + x * 18).top(4 + y * 18).width(18).height(18));
+                slot.layout(layout -> layout.left(left).top(top).width(18).height(18));
                 slot.style(style -> style.background(GuiTextures.SLOT));
                 slot.xeiRecipeIngredient(IngredientIO.INPUT);
                 container.addChild(slot);

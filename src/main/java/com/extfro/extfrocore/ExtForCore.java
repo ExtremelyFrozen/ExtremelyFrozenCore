@@ -40,15 +40,19 @@ public class ExtForCore {
     public static final Codec<ResourceLocation> ExtForCore_ID = Codec.STRING.comapFlatMap(
             str -> ResourceLocation.read(appendIdString(str)),
             s -> s.getNamespace().equals(MOD_ID) ? s.getPath() : s.toString());
+    public static final Codec<ResourceLocation> GTCEU_ID = ExtForCore_ID;
 
     private static final ResourceLocation TEMPLATE_LOCATION = ResourceLocation.fromNamespaceAndPath(MOD_ID, "");
 
     @ApiStatus.Internal
     public static IEventBus modBus;
+    @ApiStatus.Internal
+    public static IEventBus gtModBus;
 
     public ExtForCore(IEventBus modBus, FMLModContainer container) {
         EFAPI.instance = this;
         ExtForCore.modBus = modBus;
+        ExtForCore.gtModBus = modBus;
         ConfigHolder.init();
         CommonProxy.init(modBus);
     }

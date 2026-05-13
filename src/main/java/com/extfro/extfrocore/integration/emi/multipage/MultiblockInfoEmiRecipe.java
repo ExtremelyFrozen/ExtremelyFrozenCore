@@ -5,8 +5,9 @@ import com.extfro.extfrocore.api.machine.MultiblockMachineDefinition;
 
 import net.minecraft.resources.ResourceLocation;
 
-import com.lowdragmc.lowdraglib2.emi.ModularEmiRecipe;
-import com.lowdragmc.lowdraglib2.gui.widget.WidgetGroup;
+import com.lowdragmc.lowdraglib2.gui.ui.ModularUI;
+import com.lowdragmc.lowdraglib2.gui.ui.UI;
+import com.lowdragmc.lowdraglib2.integration.xei.emi.ModularUIEMIRecipe;
 import dev.emi.emi.api.recipe.EmiRecipeCategory;
 import dev.emi.emi.api.stack.EmiStack;
 import dev.emi.emi.api.widget.SlotWidget;
@@ -15,13 +16,13 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
-public class MultiblockInfoEmiRecipe extends ModularEmiRecipe<WidgetGroup> {
+public class MultiblockInfoEmiRecipe extends ModularUIEMIRecipe {
 
     private final MultiblockMachineDefinition definition;
     private SlotWidget slotWidget;
 
     public MultiblockInfoEmiRecipe(MultiblockMachineDefinition definition) {
-        super(() -> PatternPreviewWidget.getPatternWidget(definition));
+        super(recipe -> ModularUI.of(UI.of(PatternPreviewWidget.getPatternWidget(definition))));
         this.definition = definition;
     }
 
@@ -49,5 +50,15 @@ public class MultiblockInfoEmiRecipe extends ModularEmiRecipe<WidgetGroup> {
     @Override
     public List<EmiStack> getOutputs() {
         return List.of(EmiStack.of(definition.getItem()));
+    }
+
+    @Override
+    public int getDisplayWidth() {
+        return 160;
+    }
+
+    @Override
+    public int getDisplayHeight() {
+        return 160;
     }
 }

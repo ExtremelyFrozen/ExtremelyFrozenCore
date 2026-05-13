@@ -7,7 +7,9 @@ import com.extfro.extfrocore.api.capability.recipe.EURecipeCapability;
 import com.extfro.extfrocore.api.capability.recipe.IO;
 import com.extfro.extfrocore.api.capability.recipe.IRecipeHandler;
 import com.extfro.extfrocore.api.gui.GuiTextures;
+import com.extfro.extfrocore.api.gui.ModularUIBuilder;
 import com.extfro.extfrocore.api.gui.fancy.*;
+import com.extfro.extfrocore.api.gui.texture.CroppedTexture;
 import com.extfro.extfrocore.api.machine.feature.IFancyUIMachine;
 import com.extfro.extfrocore.api.machine.feature.IOverclockMachine;
 import com.extfro.extfrocore.api.machine.feature.ITieredMachine;
@@ -173,7 +175,7 @@ public class WorkableElectricMultiblockMachine extends WorkableMultiblockMachine
 
     @Override
     public ModularUI createUI(Player entityPlayer) {
-        return new ModularUI(198, 208, this, entityPlayer).widget(new FancyMachineUIWidget(this, 198, 208));
+        return new ModularUIBuilder(198, 208, this, entityPlayer).widget(new FancyMachineUIWidget(this, 198, 208));
     }
 
     @Override
@@ -187,8 +189,8 @@ public class WorkableElectricMultiblockMachine extends WorkableMultiblockMachine
         if (getDefinition().getRecipeModifier() instanceof RecipeModifierList list && Arrays.stream(list.getModifiers())
                 .anyMatch(modifier -> modifier == GTRecipeModifiers.BATCH_MODE)) {
             configuratorPanel.attachConfigurators(new IFancyConfiguratorButton.Toggle(
-                    GuiTextures.BUTTON_BATCH.getSubTexture(0, 0, 1, 0.5),
-                    GuiTextures.BUTTON_BATCH.getSubTexture(0, 0.5, 1, 0.5),
+                    CroppedTexture.of(GuiTextures.BUTTON_BATCH, 0, 0, 1, 0.5f),
+                    CroppedTexture.of(GuiTextures.BUTTON_BATCH, 0, 0.5f, 1, 0.5f),
                     this::isBatchEnabled,
                     (cd, p) -> setBatchEnabled(p))
                     .setTooltipsSupplier(

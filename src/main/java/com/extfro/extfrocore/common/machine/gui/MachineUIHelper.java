@@ -1,6 +1,7 @@
 package com.extfro.extfrocore.common.machine.gui;
 
 import com.extfro.extfrocore.api.gui.GuiTextures;
+import com.extfro.extfrocore.api.gui.ProgressTextures;
 import com.extfro.extfrocore.api.gui.widget.ExtendedProgressWidget;
 
 import net.minecraft.network.chat.Component;
@@ -36,6 +37,12 @@ public final class MachineUIHelper {
 
     public static UIElement image(int x, int y, int width, int height, IGuiTexture texture) {
         return group(x, y, width, height).style(style -> style.backgroundTexture(texture));
+    }
+
+    public static ExtendedProgressWidget progress(int x, int y, int width, int height, DoubleSupplier progressSupplier,
+                                                  ProgressTextures textures) {
+        return progress(x, y, width, height, progressSupplier, textures.background(), textures.bar(),
+                textures.fillDirection());
     }
 
     public static ExtendedProgressWidget progress(int x, int y, int width, int height, DoubleSupplier progressSupplier,
@@ -100,7 +107,8 @@ public final class MachineUIHelper {
             panel.addChild(label(0, y, width, lineHeight, () -> component));
             y += lineHeight;
         }
-        panel.layout(layout -> layout.width(width).height(Math.max(10, y)));
+        int height = Math.max(10, y);
+        panel.layout(layout -> layout.width(width).height(height));
     }
 
     public static TextField intTextField(int x, int y, int width, int height, Supplier<Integer> supplier,

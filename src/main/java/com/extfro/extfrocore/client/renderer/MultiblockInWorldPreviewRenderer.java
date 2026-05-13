@@ -17,6 +17,7 @@ import net.minecraft.client.renderer.block.BlockRenderDispatcher;
 import net.minecraft.client.renderer.block.ModelBlockRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.Block;
@@ -28,6 +29,7 @@ import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
+import net.neoforged.neoforge.client.model.data.ModelData;
 
 import com.lowdragmc.lowdraglib2.client.scene.WorldSceneRenderer;
 import com.lowdragmc.lowdraglib2.utils.data.BlockInfo;
@@ -112,7 +114,6 @@ public class MultiblockInWorldPreviewRenderer {
         MultiblockShapeInfo shapeInfo = controller.getDefinition().getMatchingShapes().get(0);
 
         Map<BlockPos, BlockInfo> blockMap = new HashMap<>();
-        MultiblockControllerMachine controllerBase = null;
         LEVEL = new TrackedDummyWorld();
 
         var blocks = shapeInfo.getBlocks();
@@ -194,22 +195,12 @@ public class MultiblockInWorldPreviewRenderer {
 
                     BlockPos realPos = pos.offset(offset);
 
-                    // spotless:off
-                    if (column[z].getBlockEntity(realPos, controller.getLevel().registryAccess()) instanceof MultiblockControllerMachine cont) {
-                        cont.setLevel(LEVEL);
-                        controllerBase = cont;
-                    } else {
-                        blockMap.put(realPos, BlockInfo.fromBlockState(blockState));
-                    }
-                    // spotless:on
+                    blockMap.put(realPos, BlockInfo.fromBlockState(blockState));
                 }
             }
         }
 
         LEVEL.addBlocks(blockMap);
-        if (controllerBase != null) {
-            LEVEL.setInnerBlockEntity(controllerBase.self());
-        }
 
         prepareBuffers(LEVEL, blockMap.keySet(), duration);
     }
@@ -448,10 +439,12 @@ public class MultiblockInWorldPreviewRenderer {
                 poseStack.scale(0.8f, 0.8f, 0.8f);
                 poseStack.translate(-0.5, -0.5, -0.5);
 
-                level.setRenderFilter(p -> p.equals(pos));
-                WorldSceneRenderer.renderBlocksForge(dispatcher, state, pos, level, poseStack, wrapperBuffer,
-                        EFValues.RNG, layer);
-                level.setRenderFilter(p -> true);
+                level.setBlockFilter(p -> p.equals(pos));
+                BakedModel model = dispatcher.getBlockModel(state);
+                ModelData modelData = model.getModelData(level, pos, state, ModelData.EMPTY);
+                dispatcher.getModelRenderer().tesselateBlock(level, model, state, pos, poseStack, wrapperBuffer, true,
+                        EFValues.RNG, state.getSeed(pos), OverlayTexture.NO_OVERLAY, modelData, layer);
+                level.setBlockFilter(p -> true);
                 poseStack.popPose();
             }
 

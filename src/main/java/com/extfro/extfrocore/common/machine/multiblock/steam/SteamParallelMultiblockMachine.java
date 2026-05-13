@@ -5,6 +5,7 @@ import com.extfro.extfrocore.api.blockentity.BlockEntityCreationInfo;
 import com.extfro.extfrocore.api.capability.recipe.FluidRecipeCapability;
 import com.extfro.extfrocore.api.capability.recipe.IO;
 import com.extfro.extfrocore.api.gui.GuiTextures;
+import com.extfro.extfrocore.api.gui.ModularUIBuilder;
 import com.extfro.extfrocore.api.gui.UITemplate;
 import com.extfro.extfrocore.api.machine.MetaMachine;
 import com.extfro.extfrocore.api.machine.feature.multiblock.IDisplayUIMachine;
@@ -166,7 +167,7 @@ public class SteamParallelMultiblockMachine extends WorkableMultiblockMachine im
         screen.addChild(MachineUIHelper.label(4, 5, self().getBlockState().getBlock().getDescriptionId()));
         screen.addChild(MachineUIHelper.componentPanel(4, 17, 150, 10, this::addDisplayText));
         addDisplayControls(screen);
-        return new ModularUI(176, 216, this, entityPlayer)
+        return new ModularUIBuilder(176, 216, this, entityPlayer)
                 .background(GuiTextures.BACKGROUND_STEAM.get(ConfigHolder.INSTANCE.machines.steelSteamMultiblocks))
                 .widget(screen)
                 .widget(UITemplate.bindPlayerInventory(entityPlayer.getInventory(),

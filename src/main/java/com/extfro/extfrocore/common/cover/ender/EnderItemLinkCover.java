@@ -131,13 +131,14 @@ public class EnderItemLinkCover extends AbstractEnderLinkCover<VirtualItemStorag
     protected UIElement addVirtualEntryWidget(VirtualEntry entry, int x, int y, int width, int height, boolean canClick) {
         UIElement group = new UIElement().layout(layout -> layout.left(x).top(y).width(width).height(height));
         for (int i = 0; i < ((VirtualItemStorage) entry).getHandler().getSlots(); i++) {
+            int left = 8 * i;
             if (canClick) {
                 ItemSlot slot = new ItemSlot().bind(((VirtualItemStorage) entry).getHandler(), i);
-                slot.layout(layout -> layout.left(8 * i).top(0).width(width).height(height));
+                slot.layout(layout -> layout.left(left).top(0).width(width).height(height));
                 group.addChild(slot);
             } else {
                 ItemPreviewElement slot = new ItemPreviewElement(((VirtualItemStorage) entry).getHandler(), i);
-                slot.layout(layout -> layout.left(8 * i).top(0).width(width).height(height));
+                slot.layout(layout -> layout.left(left).top(0).width(width).height(height));
                 group.addChild(slot);
             }
         }

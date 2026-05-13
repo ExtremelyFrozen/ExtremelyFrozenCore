@@ -3,7 +3,6 @@ package com.extfro.extfrocore.client.util;
 import com.extfro.extfrocore.ExtForCore;
 import com.extfro.extfrocore.client.model.machine.MachineModel;
 import com.extfro.extfrocore.client.renderer.cover.ICoverableRenderer;
-import com.extfro.extfrocore.core.mixins.neoforge.BakedModelWrapperAccessor;
 import com.extfro.extfrocore.integration.modernfix.GTModernFixIntegration;
 
 import net.minecraft.ChatFormatting;
@@ -28,8 +27,6 @@ import net.neoforged.neoforge.client.event.ModelEvent;
 import net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent;
 import net.neoforged.neoforge.client.event.TextureAtlasStitchedEvent;
 import net.neoforged.neoforge.client.model.data.ModelData;
-
-import com.lowdragmc.lowdraglib2.client.model.custommodel.CustomBakedModel;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -125,17 +122,7 @@ public class ModelUtils {
         // don't process the CTM model unwrapping here if modernfix dynamic resources is enabled
         if (ExtForCore.Mods.isModernFixLoaded() && GTModernFixIntegration.isDynamicResourcesEnabled()) return;
 
-        // Unwrap all machine models from LDLib CTM models so we don't need to be as aggressive with mixins
-        // Also, the caching they have stops our models from updating properly
-        for (var entry : event.getModels().entrySet()) {
-            BakedModel model = entry.getValue();
-            if (!(model instanceof CustomBakedModel<?> ctmModel)) {
-                continue;
-            }
-            if (((BakedModelWrapperAccessor<?>) ctmModel).gtceu$getParent() instanceof MachineModel machine) {
-                entry.setValue(machine);
-            }
-        }
+        // LDLib2 no longer exposes the old CustomBakedModel wrapper used here.
     }
 
     @SuppressWarnings("unchecked")

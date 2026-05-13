@@ -352,10 +352,11 @@ public class CentralMonitorMachine extends WorkableElectricMultiblockMachine
             groupConfig.addChild(label(0, 5, 150, 12,
                     Component.translatable("gtceu.central_monitor.gui.currently_editing", group.getName())));
             for (int i = 0; i < 8; i++) {
+                int slotIndex = i;
                 ItemSlot slot = new ItemSlot().bind(group.getPlaceholderSlotsHandler(), i);
-                slot.layout(layout -> layout.left(-38).top(16 * i + 46).width(18).height(18));
+                slot.layout(layout -> layout.left(-38).top(16 * slotIndex + 46).width(18).height(18));
                 slot.style(style -> style.background(GuiTextures.SLOT).tooltips(LangHandler
-                        .getMultiLang("gtceu.gui.computer_monitor_cover.slot_tooltip", i + 1)
+                        .getMultiLang("gtceu.gui.computer_monitor_cover.slot_tooltip", slotIndex + 1)
                         .toArray(Component[]::new)));
                 groupConfig.addChild(slot);
             }

@@ -46,8 +46,6 @@ import net.neoforged.neoforge.client.model.data.ModelData;
 import net.neoforged.neoforge.client.model.data.ModelProperty;
 import net.neoforged.neoforge.client.model.geometry.UnbakedGeometryHelper;
 
-import com.lowdragmc.lowdraglib2.client.bakedpipeline.FaceQuad;
-import com.lowdragmc.lowdraglib2.client.model.custommodel.CustomBakedModel;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Transformation;
 import lombok.Getter;
@@ -236,8 +234,8 @@ public final class MachineModel extends BaseBakedModel implements ICoverableRend
             if (itemFace != null && side == itemFace) {
                 quads.add(StaticFaceBakery.bakeFace(StaticFaceBakery.OUTPUT_OVERLAY, side, pipeOverlaySprite));
                 if (outputTrait.isAutoOutputItems()) {
-                    quads.add(FaceQuad.bakeFace(StaticFaceBakery.AUTO_OUTPUT_OVERLAY, side,
-                            itemOutputOverlaySprite, BlockModelRotation.X0_Y0, -101, 15, true, true));
+                    quads.add(StaticFaceBakery.bakeFace(StaticFaceBakery.AUTO_OUTPUT_OVERLAY, side,
+                            itemOutputOverlaySprite, BlockModelRotation.X0_Y0, -101, true, true));
                 }
             }
         }
@@ -246,8 +244,8 @@ public final class MachineModel extends BaseBakedModel implements ICoverableRend
             if (fluidFace != null && side == fluidFace) {
                 quads.add(StaticFaceBakery.bakeFace(StaticFaceBakery.OUTPUT_OVERLAY, side, pipeOverlaySprite));
                 if (outputTrait.isAutoOutputFluids()) {
-                    quads.add(FaceQuad.bakeFace(StaticFaceBakery.AUTO_OUTPUT_OVERLAY, side,
-                            fluidOutputOverlaySprite, BlockModelRotation.X0_Y0, -101, 15, true, true));
+                    quads.add(StaticFaceBakery.bakeFace(StaticFaceBakery.AUTO_OUTPUT_OVERLAY, side,
+                            fluidOutputOverlaySprite, BlockModelRotation.X0_Y0, -101, true, true));
                 }
             }
         }
@@ -279,7 +277,8 @@ public final class MachineModel extends BaseBakedModel implements ICoverableRend
         // we have to recalculate CTM ourselves.
         // this is the slowest part by a long shot because the LDLib quad logic isn't very optimized.
         if (level != null && pos != null && blockState != null) {
-            return CustomBakedModel.reBakeCustomQuads(quads, level, pos, blockState, side, 0.0f);
+            // LDLib2 no longer exposes the old CTM rebake helper; keep the gathered quads as-is for now.
+            return quads;
         }
         return quads;
     }

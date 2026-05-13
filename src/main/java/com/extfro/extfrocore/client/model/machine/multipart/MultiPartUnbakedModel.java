@@ -7,7 +7,6 @@ import com.extfro.extfrocore.client.model.machine.variant.MultiVariantModel;
 
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.resources.model.*;
-import net.minecraft.client.resources.model.MultiPartBakedModel;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.state.StateDefinition;
 
@@ -44,17 +43,18 @@ public record MultiPartUnbakedModel(StateDefinition<MachineDefinition, MachineRe
     }
 
     @Override
-    public net.minecraft.client.resources.model.MultiPartBakedModel bake(ModelBaker baker, Function<Material, TextureAtlasSprite> spriteGetter,
-                                                                         ModelState state) {
-        net.minecraft.client.resources.model.MultiPartBakedModel.Builder builder = new MultiPartBakedModel.Builder();
+    public MultiPartBakedModel bake(ModelBaker baker, Function<Material, TextureAtlasSprite> spriteGetter,
+                                    ModelState state) {
+        List<org.apache.commons.lang3.tuple.Pair<java.util.function.Predicate<MachineRenderState>, BakedModel>> bakedSelectors = new ArrayList<>();
 
         for (MultiPartSelector selector : this.selectors()) {
             BakedModel bakedmodel = selector.getVariant().bake(baker, spriteGetter, state);
             if (bakedmodel != null) {
-                builder.add(selector.getPredicate(this.definition), bakedmodel);
+                bakedSelectors.add(org.apache.commons.lang3.tuple.Pair.of(selector.getPredicate(this.definition),
+                        bakedmodel));
             }
         }
-        return builder.build();
+        return new MultiPartBakedModel(bakedSelectors);
     }
 
     public static MultiPartUnbakedModel deserialize(MachineDefinition definition, JsonArray elements) {

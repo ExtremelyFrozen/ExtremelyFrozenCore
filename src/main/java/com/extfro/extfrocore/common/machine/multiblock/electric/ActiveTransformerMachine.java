@@ -6,6 +6,7 @@ import com.extfro.extfrocore.api.capability.IEnergyContainer;
 import com.extfro.extfrocore.api.capability.recipe.EURecipeCapability;
 import com.extfro.extfrocore.api.capability.recipe.IO;
 import com.extfro.extfrocore.api.gui.GuiTextures;
+import com.extfro.extfrocore.api.gui.ModularUIBuilder;
 import com.extfro.extfrocore.api.gui.fancy.FancyMachineUIWidget;
 import com.extfro.extfrocore.api.machine.ConditionalSubscriptionHandler;
 import com.extfro.extfrocore.api.machine.MetaMachine;
@@ -216,6 +217,6 @@ public class ActiveTransformerMachine extends WorkableElectricMultiblockMachine
 
     @Override
     public @NotNull ModularUI createUI(@NotNull Player entityPlayer) {
-        return new ModularUI(198, 208, this, entityPlayer).widget(new FancyMachineUIWidget(this, 198, 208));
+        return new ModularUIBuilder(198, 208, this, entityPlayer).widget(new FancyMachineUIWidget(this, 198, 208));
     }
 }

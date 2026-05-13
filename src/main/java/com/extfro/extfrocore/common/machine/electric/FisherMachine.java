@@ -18,6 +18,7 @@ import com.extfro.extfrocore.config.ConfigHolder;
 import com.extfro.extfrocore.utils.ISubscription;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.NonNullList;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;

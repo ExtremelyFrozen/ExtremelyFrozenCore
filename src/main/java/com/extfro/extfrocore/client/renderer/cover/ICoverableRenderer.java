@@ -5,6 +5,7 @@ import com.extfro.extfrocore.api.capability.ICoverable;
 import com.extfro.extfrocore.api.cover.CoverBehavior;
 import com.extfro.extfrocore.api.machine.MetaMachine;
 import com.extfro.extfrocore.client.util.RenderUtil;
+import com.extfro.extfrocore.client.util.StaticFaceBakery;
 import com.extfro.extfrocore.utils.GTUtil;
 
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -21,7 +22,6 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.client.model.data.ModelData;
 
-import com.lowdragmc.lowdraglib2.client.bakedpipeline.FaceQuad;
 import com.mojang.blaze3d.vertex.PoseStack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -58,11 +58,9 @@ public interface ICoverableRenderer {
                             normal.getY() >= 0 ? 0.99 : min,
                             normal.getZ() >= 0 ? 0.99 : min);
                     if (side == null) { // render back
-                        quads.add(FaceQuad.builder(face.getOpposite(), COVER_BACK_PLATE[0])
-                                .cube(cube).cubeUV().bake());
+                        quads.add(StaticFaceBakery.bakeFace(cube, face.getOpposite(), COVER_BACK_PLATE[0]));
                     } else if (side != face.getOpposite()) { // render sides
-                        quads.add(FaceQuad.builder(side, COVER_BACK_PLATE[0])
-                                .cube(cube).cubeUV().bake());
+                        quads.add(StaticFaceBakery.bakeFace(cube, side, COVER_BACK_PLATE[0]));
                     }
                 }
                 // it won't ever be null on the client

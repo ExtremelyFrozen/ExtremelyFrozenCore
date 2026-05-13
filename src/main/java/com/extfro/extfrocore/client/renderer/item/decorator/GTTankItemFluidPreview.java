@@ -97,7 +97,7 @@ public class GTTankItemFluidPreview implements IItemDecorator {
                 continue;
             }
             DrawerHelper.drawFluidForGui(guiGraphics, fluidInTank,
-                    x + OFFSET[renderedCount][0], y + OFFSET[renderedCount][1], 8.0F, 8.0F);
+                    x + OFFSET[renderedCount][0], y + OFFSET[renderedCount][1], 8.0F, 8.0F, 0);
             renderedCount++;
         }
 

@@ -317,7 +317,7 @@ public class RenderUtil {
                         var texture = FluidTextureType.STILL.map(clientExt, output);
                         int color = clientExt.getTintColor(output);
 
-                        DrawerHelper.drawFluidTexture(graphics, x, y, texture, 0, 0, z, color);
+                        DrawerHelper.drawFluidForGui(graphics, output, x, y, 16, 16, z);
                         return true;
                     }
                 }

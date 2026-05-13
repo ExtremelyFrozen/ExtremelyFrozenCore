@@ -105,7 +105,8 @@ public class ConfiguratorPanel extends UIElement {
             if (tab == expanded) {
                 continue;
             }
-            tab.layout(layout -> layout.left(0).top(collapsedIndex++ * (tabSize + 2)).width(tabSize).height(tabSize));
+            int top = collapsedIndex++ * (tabSize + 2);
+            tab.layout(layout -> layout.left(0).top(top).width(tabSize).height(tabSize));
         }
         if (expanded != null) {
             expanded.layout(layout -> layout.left(-expanded.getExpandedWidth() + tabSize).top(0)

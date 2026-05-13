@@ -2,6 +2,8 @@ package com.extfro.extfrocore.common.machine.steam;
 
 import com.extfro.extfrocore.api.blockentity.BlockEntityCreationInfo;
 import com.extfro.extfrocore.api.gui.GuiTextures;
+import com.extfro.extfrocore.api.gui.ModularUIBuilder;
+import com.extfro.extfrocore.api.gui.ProgressTextures;
 import com.extfro.extfrocore.api.machine.steam.SteamBoilerMachine;
 import com.extfro.extfrocore.api.machine.trait.RecipeLogic;
 import com.extfro.extfrocore.common.machine.gui.MachineUIHelper;
@@ -12,8 +14,6 @@ import net.minecraft.MethodsReturnNonnullByDefault;
 import net.minecraft.core.Direction;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.player.Player;
-
-import com.lowdragmc.lowdraglib2.gui.ui.ModularUI;
 
 import java.util.Objects;
 
@@ -66,13 +66,12 @@ public class SteamSolarBoiler extends SteamBoilerMachine {
     }
 
     @Override
-    public ModularUI createUI(Player entityPlayer) {
+    public ModularUIBuilder createUI(Player entityPlayer) {
         return super.createUI(entityPlayer)
                 .widget(MachineUIHelper.progress(114, 44, 20, 20,
                         () -> GTUtil.canSeeSunClearly(Objects.requireNonNull(getLevel()), getBlockPos()) ? 1.0 : 0.0,
-                        GuiTextures.PROGRESS_BAR_SOLAR_STEAM.get(isHighPressure).getSubTexture(0, 0, 1, 0.5),
-                        GuiTextures.PROGRESS_BAR_SOLAR_STEAM.get(isHighPressure).getSubTexture(0, 0.5, 1, 0.5),
-                        com.lowdragmc.lowdraglib2.gui.ui.data.FillDirection.LEFT_TO_RIGHT));
+                        ProgressTextures.from(GuiTextures.PROGRESS_BAR_SOLAR_STEAM.get(isHighPressure),
+                                com.lowdragmc.lowdraglib2.gui.ui.data.FillDirection.LEFT_TO_RIGHT)));
     }
 
     @Override

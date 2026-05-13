@@ -54,8 +54,8 @@ public class GTOreVeinWidget extends UIElement {
     public GTOreVeinWidget(Holder<GTOreDefinition> ore) {
         layout(layout -> layout.width(width).height(160));
         this.translationKey = getOreName(ore);
-        this.weight = ore.value().getWeight();
-        this.dimensionFilter = ore.value().getDimensionFilter();
+        this.weight = ore.value().weight();
+        this.dimensionFilter = ore.value().dimensionFilter();
         this.range = range(ore.value());
         setupBaseGui(ore.value());
         setupText(ore.value());
@@ -74,8 +74,8 @@ public class GTOreVeinWidget extends UIElement {
     public GTOreVeinWidget(Holder<BedrockOreDefinition> bedrockOre, Void marker) {
         layout(layout -> layout.width(width).height(140));
         this.translationKey = getBedrockOreName(bedrockOre);
-        this.weight = bedrockOre.value().getWeight();
-        this.dimensionFilter = bedrockOre.value().getDimensionFilter();
+        this.weight = bedrockOre.value().weight();
+        this.dimensionFilter = bedrockOre.value().dimensionFilter();
         this.range = "NULL";
         setupBaseGui(bedrockOre.value());
         setupText(bedrockOre.value());
@@ -83,7 +83,7 @@ public class GTOreVeinWidget extends UIElement {
 
     @SuppressWarnings("all")
     private String range(GTOreDefinition oreDefinition) {
-        HeightProvider height = oreDefinition.getHeightRange().height;
+        HeightProvider height = oreDefinition.heightRange().height;
         int minHeight = 0, maxHeight = 0;
         if (height instanceof UniformHeight uniform) {
             minHeight = uniform.minInclusive.resolveY(null);
@@ -94,7 +94,7 @@ public class GTOreVeinWidget extends UIElement {
 
     private void setupBaseGui(GTOreDefinition oreDefinition) {
         NonNullList<ItemStack> containedOresAsItemStacks = NonNullList.create();
-        IntList chances = oreDefinition.getVeinGenerator().getAllChances();
+        IntList chances = oreDefinition.veinGenerator().getAllChances();
         containedOresAsItemStacks.addAll(getRawMaterialList(oreDefinition));
         int n = containedOresAsItemStacks.size();
         int x = (width - 18 * n) / 2;
@@ -218,7 +218,7 @@ public class GTOreVeinWidget extends UIElement {
     }
 
     public static List<ItemStack> getContainedOresAndBlocks(GTOreDefinition oreDefinition) {
-        return oreDefinition.getVeinGenerator().getAllEntries().stream()
+        return oreDefinition.veinGenerator().getAllEntries().stream()
                 .flatMap(entry -> entry.map(state -> Stream.of(state.getBlock().asItem().getDefaultInstance()),
                         material -> {
                             Set<ItemStack> ores = new HashSet<>();
@@ -232,14 +232,14 @@ public class GTOreVeinWidget extends UIElement {
     }
 
     public static List<ItemStack> getRawMaterialList(GTOreDefinition oreDefinition) {
-        return oreDefinition.getVeinGenerator().getAllEntries().stream()
+        return oreDefinition.veinGenerator().getAllEntries().stream()
                 .map(entry -> entry.map(state -> state.getBlock().asItem().getDefaultInstance(),
                         material -> ChemicalHelper.get(TagPrefix.rawOre, material)))
                 .toList();
     }
 
     public static List<ItemStack> getRawMaterialList(BedrockOreDefinition bedrockOreDefinition) {
-        return bedrockOreDefinition.getMaterials().stream()
+        return bedrockOreDefinition.materials().stream()
                 .map(entry -> ChemicalHelper.get(TagPrefix.rawOre, entry.material()))
                 .toList();
     }

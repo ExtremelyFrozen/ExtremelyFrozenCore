@@ -18,7 +18,7 @@ public class GTUIEditorFactory implements IContainerUIHolder {
     public static final ResourceLocation UI_ID = LDLib2.id("gt_ui_editor");
 
     private GTUIEditorFactory() {
-        PlayerUIMenuType.register(UI_ID, player -> this);
+        PlayerUIMenuType.register(UI_ID, player -> this::createUI);
     }
 
     public boolean openUI(Player player) {

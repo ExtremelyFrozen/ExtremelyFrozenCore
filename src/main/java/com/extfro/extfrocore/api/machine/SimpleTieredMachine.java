@@ -8,6 +8,7 @@ import com.extfro.extfrocore.api.gui.GuiTextures;
 import com.extfro.extfrocore.api.gui.fancy.ConfiguratorPanel;
 import com.extfro.extfrocore.api.gui.fancy.IFancyConfigurator;
 import com.extfro.extfrocore.api.gui.fancy.IFancyConfiguratorButton;
+import com.extfro.extfrocore.api.gui.texture.CroppedTexture;
 import com.extfro.extfrocore.api.machine.fancyconfigurator.CircuitFancyConfigurator;
 import com.extfro.extfrocore.api.machine.feature.IFancyUIMachine;
 import com.extfro.extfrocore.api.machine.feature.IHasCircuitSlot;
@@ -24,7 +25,6 @@ import net.minecraft.network.chat.Component;
 
 import com.lowdragmc.lowdraglib2.gui.texture.GuiTextureGroup;
 import com.lowdragmc.lowdraglib2.gui.texture.IGuiTexture;
-import com.lowdragmc.lowdraglib2.gui.texture.ResourceTexture;
 import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.FluidSlot;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.ItemSlot;
@@ -170,17 +170,17 @@ public class SimpleTieredMachine extends WorkableTieredMachine
                 (cd, nextState) -> this.autoOutput.setAllowAutoOutputItems(nextState));
     }
 
-    private IFancyConfigurator createAutoOutputConfigurator(ResourceTexture modesButtonTexture,
+    private IFancyConfigurator createAutoOutputConfigurator(IGuiTexture modesButtonTexture,
                                                             String tooltipBaseLangKey,
                                                             BooleanSupplier stateSupplier,
                                                             BiConsumer<ClickData, Boolean> onToggle) {
         var toggle = new IFancyConfiguratorButton.Toggle(
                 new GuiTextureGroup(
-                        GuiTextures.TOGGLE_BUTTON_BACK.getSubTexture(0, 0, 1, 0.5),
-                        modesButtonTexture.getSubTexture(0, 1 / 3f, 1, 1 / 3f)),
+                        CroppedTexture.of(GuiTextures.TOGGLE_BUTTON_BACK, 0, 0, 1, 0.5f),
+                        modesButtonTexture),
                 new GuiTextureGroup(
-                        GuiTextures.TOGGLE_BUTTON_BACK.getSubTexture(0, 0.5, 1, 0.5),
-                        modesButtonTexture.getSubTexture(0, 2 / 3f, 1, 1 / 3f)),
+                        CroppedTexture.of(GuiTextures.TOGGLE_BUTTON_BACK, 0, 0.5f, 1, 0.5f),
+                        modesButtonTexture),
                 stateSupplier,
                 onToggle);
 
@@ -226,7 +226,7 @@ public class SimpleTieredMachine extends WorkableTieredMachine
 
             @Override
             public void screenTick() {
-                progress.ifPresent(progressBar -> progressBar.setProgress(recipeLogic.getProgressPercent()));
+                progress.ifPresent(progressBar -> progressBar.setProgress((float) recipeLogic.getProgressPercent()));
                 super.screenTick();
             }
         };

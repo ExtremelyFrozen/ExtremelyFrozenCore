@@ -120,7 +120,7 @@ public class GTRegistrate extends AbstractRegistrate<GTRegistrate> {
                     ExtForCore.LOGGER.fatal(hashtags);
                 });
             } else {
-                registrate.registerEventListeners(modEventBus.orElse(ExtForCore.gtModBus));
+                registrate.registerEventListeners(modEventBus.orElse(ExtForCore.modBus));
             }
         }
         EXISTING_REGISTRATES.put(modId, registrate);

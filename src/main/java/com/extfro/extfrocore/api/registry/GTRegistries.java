@@ -1,6 +1,7 @@
 package com.extfro.extfrocore.api.registry;
 
 import com.extfro.extfrocore.ExtForCore;
+import com.extfro.extfrocore.api.EFAPI;
 import com.extfro.extfrocore.api.capability.recipe.RecipeCapability;
 import com.extfro.extfrocore.api.cover.CoverDefinition;
 import com.extfro.extfrocore.api.data.DimensionMarker;
@@ -105,6 +106,7 @@ public final class GTRegistries {
 
     private static MaterialRegistry makeMaterialRegistry() {
         MaterialRegistry registry = new MaterialRegistry(MATERIAL_REGISTRY);
+        EFAPI.materialManager = registry;
         LOAD_ORDER.put(MATERIAL_REGISTRY.location(), registry);
         return registry;
     }

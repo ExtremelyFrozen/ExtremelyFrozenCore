@@ -3,6 +3,7 @@ package com.extfro.extfrocore.common.machine.multiblock.part;
 import com.extfro.extfrocore.api.blockentity.BlockEntityCreationInfo;
 import com.extfro.extfrocore.api.capability.recipe.IO;
 import com.extfro.extfrocore.api.gui.GuiTextures;
+import com.extfro.extfrocore.api.gui.ModularUIBuilder;
 import com.extfro.extfrocore.api.gui.UITemplate;
 import com.extfro.extfrocore.api.gui.widget.SlotWidget;
 import com.extfro.extfrocore.api.gui.widget.ToggleButtonWidget;
@@ -32,7 +33,7 @@ public class SteamItemBusPartMachine extends ItemBusPartMachine {
     public ModularUI createUI(@NotNull Player entityPlayer) {
         int rowSize = (int) Math.sqrt(getInventorySize());
         int xOffset = rowSize == 10 ? 9 : 0;
-        var modular = new ModularUI(176 + xOffset * 2,
+        var modular = new ModularUIBuilder(176 + xOffset * 2,
                 18 + 18 * rowSize + 105, this, entityPlayer)
                 .background(GuiTextures.BACKGROUND_STEAM.get(ConfigHolder.INSTANCE.machines.steelSteamMultiblocks))
                 .widget(MachineUIHelper.label(10, 5, getBlockState().getBlock().getDescriptionId()))

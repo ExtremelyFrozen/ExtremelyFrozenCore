@@ -4,6 +4,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
 
 import com.lowdragmc.lowdraglib2.gui.texture.IGuiTexture;
+import com.lowdragmc.lowdraglib2.gui.texture.SpriteTexture;
 import com.lowdragmc.lowdraglib2.gui.ui.rendering.GUIContext;
 import com.mojang.blaze3d.systems.RenderSystem;
 
@@ -11,6 +12,10 @@ public record CroppedTexture(ResourceLocation location, float u, float v, float 
 
     public static CroppedTexture of(String location, float u, float v, float width, float height) {
         return new CroppedTexture(ResourceLocation.parse(location), u, v, width, height);
+    }
+
+    public static CroppedTexture of(SpriteTexture texture, float u, float v, float width, float height) {
+        return new CroppedTexture(texture.getImageLocation(), u, v, width, height);
     }
 
     @Override

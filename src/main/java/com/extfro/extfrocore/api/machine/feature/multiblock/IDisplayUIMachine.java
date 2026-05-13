@@ -1,6 +1,7 @@
 package com.extfro.extfrocore.api.machine.feature.multiblock;
 
 import com.extfro.extfrocore.api.gui.GuiTextures;
+import com.extfro.extfrocore.api.gui.ModularUIBuilder;
 import com.extfro.extfrocore.api.gui.UITemplate;
 import com.extfro.extfrocore.api.machine.feature.IUIMachine;
 import com.extfro.extfrocore.api.machine.multiblock.MultiblockControllerMachine;
@@ -39,7 +40,7 @@ public interface IDisplayUIMachine extends IUIMachine {
         screen.addChild(MachineUIHelper.label(4, 5, self().getBlockState().getBlock().getDescriptionId()));
         screen.addChild(MachineUIHelper.componentPanel(4, 17, 150, 10, this::addDisplayText));
         addDisplayControls(screen);
-        return new ModularUI(176, 216, this, entityPlayer)
+        return new ModularUIBuilder(176, 216, this, entityPlayer)
                 .background(GuiTextures.BACKGROUND)
                 .widget(screen)
                 .widget(UITemplate.bindPlayerInventory(entityPlayer.getInventory(), GuiTextures.SLOT, 7, 134, true));

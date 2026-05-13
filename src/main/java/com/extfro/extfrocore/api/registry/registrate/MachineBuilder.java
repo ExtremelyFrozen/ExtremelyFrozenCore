@@ -56,7 +56,6 @@ import com.tterrag.registrate.util.entry.BlockEntry;
 import com.tterrag.registrate.util.nullness.NonNullBiConsumer;
 import com.tterrag.registrate.util.nullness.NonNullConsumer;
 import com.tterrag.registrate.util.nullness.NonNullUnaryOperator;
-import dev.latvian.mods.kubejs.registry.BuilderBase;
 import dev.latvian.mods.rhino.util.HideFromJS;
 import dev.latvian.mods.rhino.util.RemapPrefixForJS;
 import it.unimi.dsi.fastutil.objects.Reference2IntMap;
@@ -77,9 +76,9 @@ import static com.extfro.extfrocore.common.data.models.GTMachineModels.*;
 @SuppressWarnings("unused")
 @RemapPrefixForJS("kjs$")
 @Accessors(chain = true, fluent = true)
-public class MachineBuilder<DEFINITION extends MachineDefinition, TYPE extends MachineBuilder<DEFINITION, TYPE>>
-                           extends BuilderBase<DEFINITION> {
+public class MachineBuilder<DEFINITION extends MachineDefinition, TYPE extends MachineBuilder<DEFINITION, TYPE>> {
 
+    protected final ResourceLocation id;
     protected final GTRegistrate registrate;
     protected final String name;
     protected final BiFunction<BlockBehaviour.Properties, DEFINITION, MetaMachineBlock> blockFactory;
@@ -145,7 +144,7 @@ public class MachineBuilder<DEFINITION extends MachineDefinition, TYPE extends M
                           BiFunction<BlockBehaviour.Properties, DEFINITION, MetaMachineBlock> blockFactory,
                           BiFunction<MetaMachineBlock, Item.Properties, MetaMachineItem> itemFactory,
                           Function<BlockEntityCreationInfo, MetaMachine> blockEntityFactory) {
-        super(ResourceLocation.fromNamespaceAndPath(registrate.getModid(), name));
+        this.id = ResourceLocation.fromNamespaceAndPath(registrate.getModid(), name);
         this.registrate = registrate;
         this.name = name;
         this.blockFactory = blockFactory;
@@ -780,7 +779,6 @@ public class MachineBuilder<DEFINITION extends MachineDefinition, TYPE extends M
     }
     // spotless:on
 
-    @Override
     public DEFINITION createObject() {
         return register();
     }

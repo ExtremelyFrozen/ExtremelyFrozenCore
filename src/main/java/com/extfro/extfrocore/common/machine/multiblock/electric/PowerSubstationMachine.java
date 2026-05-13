@@ -6,6 +6,7 @@ import com.extfro.extfrocore.api.capability.IEnergyInfoProvider;
 import com.extfro.extfrocore.api.capability.recipe.EURecipeCapability;
 import com.extfro.extfrocore.api.capability.recipe.IO;
 import com.extfro.extfrocore.api.gui.GuiTextures;
+import com.extfro.extfrocore.api.gui.ModularUIBuilder;
 import com.extfro.extfrocore.api.gui.fancy.FancyMachineUIWidget;
 import com.extfro.extfrocore.api.gui.fancy.IFancyUIProvider;
 import com.extfro.extfrocore.api.gui.fancy.TooltipsPanel;
@@ -362,7 +363,7 @@ public class PowerSubstationMachine extends WorkableMultiblockMachine
 
     @Override
     public ModularUI createUI(Player entityPlayer) {
-        return new ModularUI(198, 208, this, entityPlayer).widget(new FancyMachineUIWidget(this, 198, 208));
+        return new ModularUIBuilder(198, 208, this, entityPlayer).widget(new FancyMachineUIWidget(this, 198, 208));
     }
 
     @Override

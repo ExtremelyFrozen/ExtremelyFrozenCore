@@ -88,6 +88,10 @@ public abstract class ManagedSyncBlockEntity extends BlockEntity implements ISyn
         isDirty = true;
     }
 
+    public final void markAsDirty() {
+        markAsChanged();
+    }
+
     public final void updateTick() {
         setChanged();
         if (isDirty) {

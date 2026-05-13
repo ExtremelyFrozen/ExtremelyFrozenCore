@@ -35,7 +35,6 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.client.model.data.ModelData;
 
-import com.lowdragmc.lowdraglib2.client.bakedpipeline.FaceQuad;
 import com.mojang.blaze3d.vertex.PoseStack;
 import it.unimi.dsi.fastutil.ints.Int2ObjectArrayMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
@@ -197,9 +196,9 @@ public class FacadeCoverRenderer extends BaseBakedModel implements ICoverRendere
             AABB cube = COVER_BACK_CUBES.get(attachedSide);
 
             for (BakedQuad quad : facadeQuads) {
-                coverQuads.add(FaceQuad.bakeFace(cube, attachedSide.getOpposite(),
+                coverQuads.add(StaticFaceBakery.bakeFace(cube, attachedSide.getOpposite(),
                         quad.getSprite(), BlockModelRotation.X0_Y0,
-                        quad.getTintIndex(), 0, false, quad.isShade()));
+                        quad.getTintIndex(), false, quad.isShade()));
             }
         }
 

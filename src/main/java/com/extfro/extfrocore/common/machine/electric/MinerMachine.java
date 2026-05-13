@@ -153,9 +153,10 @@ public class MinerMachine extends WorkableTieredMachine
         addDisplayText(displayText);
         int lineY = 2;
         for (Component component : displayText) {
+            int top = lineY;
             Label line = new Label();
             line.setValue(component);
-            line.layout(layout -> layout.left(2).top(lineY).width(102).height(10));
+            line.layout(layout -> layout.left(2).top(top).width(102).height(10));
             line.textStyle(style -> style.textColor(0x404040).textShadow(false));
             line.style(style -> style.tooltips(component));
             textScroller.addScrollViewChild(line);

@@ -13,6 +13,7 @@ import com.extfro.extfrocore.integration.ae2.utils.KeyStorage;
 import com.extfro.extfrocore.utils.GTMath;
 
 import net.minecraft.MethodsReturnNonnullByDefault;
+import net.minecraft.network.chat.Component;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.crafting.SizedFluidIngredient;
 

@@ -6,6 +6,7 @@ import com.extfro.extfrocore.api.capability.recipe.IO;
 import com.extfro.extfrocore.api.capability.recipe.ItemRecipeCapability;
 import com.extfro.extfrocore.api.capability.recipe.RecipeCapability;
 import com.extfro.extfrocore.api.gui.GuiTextures;
+import com.extfro.extfrocore.api.gui.ModularUIBuilder;
 import com.extfro.extfrocore.api.gui.UITemplate;
 import com.extfro.extfrocore.api.gui.widget.PredicatedImageWidget;
 import com.extfro.extfrocore.api.machine.MetaMachine;
@@ -30,6 +31,7 @@ import net.minecraft.world.entity.player.Player;
 
 import com.google.common.collect.Tables;
 import com.lowdragmc.lowdraglib2.gui.ui.ModularUI;
+import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
 import com.lowdragmc.lowdraglib2.math.Position;
 import lombok.Getter;
 
@@ -180,21 +182,19 @@ public class SimpleSteamMachine extends SteamWorkableMachine implements IUIMachi
         storages.put(IO.IN, ItemRecipeCapability.CAP, importItems.storage);
         storages.put(IO.OUT, ItemRecipeCapability.CAP, exportItems.storage);
 
-        var group = getRecipeType().getRecipeUI().createUITemplate(recipeLogic::getProgressPercent,
-                storages,
-                new CompoundTag(),
-                Collections.emptyList(),
-                true,
+        UIElement group = getRecipeType().getRecipeUI().createXEIElement(true, isHighPressure);
+        getRecipeType().getRecipeUI().bindXEIElement(group, storages, new CompoundTag(), Collections.emptyList(), true,
                 isHighPressure);
-        Position pos = new Position((Math.max(group.getSize().width + 4 + 8, 176) - 4 - group.getSize().width) / 2 + 4,
-                32);
-        group.setSelfPosition(pos);
-        return new ModularUI(176, 166, this, entityPlayer)
+        int groupWidth = Math.round(group.getSizeWidth());
+        int groupHeight = Math.round(group.getSizeHeight());
+        Position pos = Position.of((Math.max(groupWidth + 4 + 8, 176) - 4 - groupWidth) / 2 + 4, 32);
+        group.layout(layout -> layout.left(pos.x).top(pos.y));
+        return new ModularUIBuilder(176, 166, this, entityPlayer)
                 .background(GuiTextures.BACKGROUND_STEAM.get(isHighPressure))
                 .widget(group)
                 .widget(MachineUIHelper.label(5, 5, getBlockState().getBlock().getDescriptionId()))
-                .widget(new PredicatedImageWidget(pos.x + group.getSize().width / 2 - 9,
-                        pos.y + group.getSize().height / 2 - 9, 18, 18,
+                .widget(new PredicatedImageWidget(pos.x + groupWidth / 2 - 9,
+                        pos.y + groupHeight / 2 - 9, 18, 18,
                         GuiTextures.INDICATOR_NO_STEAM.get(isHighPressure))
                         .setPredicate(recipeLogic::isWaiting))
                 .widget(UITemplate.bindPlayerInventory(entityPlayer.getInventory(),

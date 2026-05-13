@@ -4,6 +4,7 @@ import com.extfro.extfrocore.api.blockentity.BlockEntityCreationInfo;
 import com.extfro.extfrocore.api.capability.recipe.FluidRecipeCapability;
 import com.extfro.extfrocore.api.capability.recipe.IO;
 import com.extfro.extfrocore.api.gui.GuiTextures;
+import com.extfro.extfrocore.api.gui.ModularUIBuilder;
 import com.extfro.extfrocore.api.gui.widget.TankWidget;
 import com.extfro.extfrocore.api.machine.steam.SteamBoilerMachine;
 import com.extfro.extfrocore.api.machine.trait.NotifiableFluidTank;
@@ -19,7 +20,6 @@ import net.minecraft.world.level.material.Fluid;
 import net.neoforged.neoforge.fluids.FluidType;
 import net.neoforged.neoforge.fluids.FluidUtil;
 
-import com.lowdragmc.lowdraglib2.gui.ui.ModularUI;
 import com.lowdragmc.lowdraglib2.gui.ui.data.FillDirection;
 import it.unimi.dsi.fastutil.objects.Object2BooleanMap;
 import it.unimi.dsi.fastutil.objects.Object2BooleanOpenHashMap;
@@ -62,7 +62,7 @@ public class SteamLiquidBoilerMachine extends SteamBoilerMachine {
     }
 
     @Override
-    public ModularUI createUI(Player entityPlayer) {
+    public ModularUIBuilder createUI(Player entityPlayer) {
         return super.createUI(entityPlayer)
                 .widget(new TankWidget(fuelTank.getStorages()[0], 119, 26, 10, 54, true, true)
                         .setShowAmount(false)

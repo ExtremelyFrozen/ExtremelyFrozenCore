@@ -3,6 +3,7 @@ package com.extfro.extfrocore.api.machine.feature.multiblock;
 import com.extfro.extfrocore.api.gui.GuiTextures;
 import com.extfro.extfrocore.api.gui.fancy.ConfiguratorPanel;
 import com.extfro.extfrocore.api.gui.fancy.IFancyConfiguratorButton;
+import com.extfro.extfrocore.api.gui.texture.CroppedTexture;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
@@ -20,8 +21,8 @@ public interface IDistinctPart extends IMultiPart {
     default void attachConfigurators(ConfiguratorPanel configuratorPanel) {
         superAttachConfigurators(configuratorPanel);
         configuratorPanel.attachConfigurators(new IFancyConfiguratorButton.Toggle(
-                GuiTextures.BUTTON_DISTINCT_BUSES.getSubTexture(0, 0.5, 1, 0.5),
-                GuiTextures.BUTTON_DISTINCT_BUSES.getSubTexture(0, 0, 1, 0.5),
+                CroppedTexture.of(GuiTextures.BUTTON_DISTINCT_BUSES, 0, 0.5f, 1, 0.5f),
+                CroppedTexture.of(GuiTextures.BUTTON_DISTINCT_BUSES, 0, 0, 1, 0.5f),
                 this::isDistinct, (clickData, pressed) -> setDistinct(pressed))
                 .setTooltipsSupplier(pressed -> List.of(
                         Component.translatable("gtceu.multiblock.universal.distinct")

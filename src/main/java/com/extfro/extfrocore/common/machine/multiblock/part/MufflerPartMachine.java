@@ -5,6 +5,7 @@ import com.extfro.extfrocore.api.blockentity.BlockEntityCreationInfo;
 import com.extfro.extfrocore.api.capability.GTCapabilityHelper;
 import com.extfro.extfrocore.api.capability.IHazardParticleContainer;
 import com.extfro.extfrocore.api.gui.GuiTextures;
+import com.extfro.extfrocore.api.gui.ModularUIBuilder;
 import com.extfro.extfrocore.api.gui.UITemplate;
 import com.extfro.extfrocore.api.gui.widget.SlotWidget;
 import com.extfro.extfrocore.api.machine.TickableSubscription;
@@ -176,7 +177,7 @@ public class MufflerPartMachine extends TieredPartMachine implements IUIMachine 
     public ModularUI createUI(Player entityPlayer) {
         int rowSize = (int) Math.sqrt(inventory.getSlots());
         int xOffset = rowSize == 10 ? 9 : 0;
-        var modular = new ModularUI(176 + xOffset * 2,
+        var modular = new ModularUIBuilder(176 + xOffset * 2,
                 18 + 18 * rowSize + 94, this, entityPlayer)
                 .background(GuiTextures.BACKGROUND)
                 .widget(MachineUIHelper.label(10, 5, getBlockState().getBlock().getDescriptionId()))

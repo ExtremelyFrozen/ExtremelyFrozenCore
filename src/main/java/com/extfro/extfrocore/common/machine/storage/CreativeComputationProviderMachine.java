@@ -3,6 +3,7 @@ package com.extfro.extfrocore.common.machine.storage;
 import com.extfro.extfrocore.api.blockentity.BlockEntityCreationInfo;
 import com.extfro.extfrocore.api.capability.IOpticalComputationProvider;
 import com.extfro.extfrocore.api.gui.GuiTextures;
+import com.extfro.extfrocore.api.gui.ModularUIBuilder;
 import com.extfro.extfrocore.api.machine.MetaMachine;
 import com.extfro.extfrocore.api.machine.TickableSubscription;
 import com.extfro.extfrocore.api.machine.feature.IUIMachine;
@@ -90,7 +91,7 @@ public class CreativeComputationProviderMachine extends MetaMachine
 
     @Override
     public ModularUI createUI(Player entityPlayer) {
-        return new ModularUI(140, 95, this, entityPlayer)
+        return new ModularUIBuilder(140, 95, this, entityPlayer)
                 .background(GuiTextures.BACKGROUND)
                 .widget(MachineUIHelper.label(7, 7, () -> Component.literal("CWUt")))
                 .widget(MachineUIHelper.intTextField(9, 20, 122, 16, () -> maxCWUt,
